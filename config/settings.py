@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "ninja",
     "apps.accounts",
     "apps.core",
+    "apps.orgs",
 ]
 
 MIDDLEWARE = [
@@ -83,6 +84,64 @@ DATABASES = {
 
 # Custom user model — must be set before the first migration.
 AUTH_USER_MODEL = "accounts.User"
+
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "core:home"
+LOGOUT_REDIRECT_URL = "core:home"
+
+
+# Authentication backends
+# https://docs.djangoproject.com/en/5.2/topics/auth/customizing/#other-authentication-sources
+#
+# ModelBackend always stays enabled, for local accounts and as a
+# break-glass path when LDAP is down. LDAP is off by default; set
+# LDAP_ENABLED=True and the AUTH_LDAP_* variables below to turn it on.
+# See docs/architecture.md, "Authentication and authorization".
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+LDAP_ENABLED = env.bool("LDAP_ENABLED", default=False)
+
+if LDAP_ENABLED:
+    import ldap
+    from django_auth_ldap.config import GroupOfNamesType, LDAPSearch
+
+    AUTH_LDAP_SERVER_URI = env("AUTH_LDAP_SERVER_URI")
+    AUTH_LDAP_BIND_DN = env("AUTH_LDAP_BIND_DN", default="")
+    AUTH_LDAP_BIND_PASSWORD = env("AUTH_LDAP_BIND_PASSWORD", default="")
+
+    AUTH_LDAP_USER_SEARCH = LDAPSearch(
+        env("AUTH_LDAP_USER_SEARCH_BASE"),
+        ldap.SCOPE_SUBTREE,
+        env("AUTH_LDAP_USER_SEARCH_FILTER", default="(uid=%(user)s)"),
+    )
+    AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+        env("AUTH_LDAP_GROUP_SEARCH_BASE"),
+        ldap.SCOPE_SUBTREE,
+        "(objectClass=groupOfNames)",
+    )
+    AUTH_LDAP_GROUP_TYPE = GroupOfNamesType()
+
+    AUTH_LDAP_USER_ATTR_MAP = {
+        "first_name": "givenName",
+        "last_name": "sn",
+        "email": "mail",
+    }
+
+    # Group mapping to internal roles lives in apps.orgs (RoleAssignment with
+    # a group scope), never as direct LDAP group name checks in code.
+    AUTH_LDAP_FIND_GROUP_PERMS = True
+    AUTH_LDAP_CACHE_TIMEOUT = 3600
+
+    AUTH_LDAP_ALWAYS_UPDATE_USER = True
+    AUTH_LDAP_USER_FLAGS_BY_GROUP = {}
+
+    AUTHENTICATION_BACKENDS = [
+        "django_auth_ldap.backend.LDAPBackend",
+        "django.contrib.auth.backends.ModelBackend",
+    ]
 
 
 # Password validation

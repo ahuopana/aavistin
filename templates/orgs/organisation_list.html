@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Organisations · Aavistin{% endblock %}
+
+{% block content %}
+  <h1>Organisations</h1>
+  {% if organisations %}
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Separation of duties</th></tr>
+      </thead>
+      <tbody>
+        {% for organisation in organisations %}
+          <tr>
+            <td><a href="{% url 'orgs:detail' organisation.slug %}">{{ organisation.name }}</a></td>
+            <td>{{ organisation.get_sod_policy_display }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No organisations visible to you yet.</p>
+  {% endif %}
+{% endblock %}
