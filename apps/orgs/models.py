@@ -105,9 +105,12 @@ class RoleAssignment(models.Model):
     """A (user or group, role, scope) grant, inherited down the hierarchy.
 
     Exactly one of ``user``/``group`` and exactly one of
-    ``organisation``/``product_family`` must be set. A grant at
-    ``organisation`` scope applies to every product family (and, from
-    Milestone 3, product) beneath it.
+    ``organisation``/``product_family``/``product`` must be set. A grant
+    at ``organisation`` scope applies to every product family and product
+    beneath it; a grant at ``product_family`` scope applies to every
+    product in that family. ``product`` is a lazy reference to
+    apps.products.Product to avoid a circular import (that app imports
+    ProductFamily from here).
     """
 
     user = models.ForeignKey(
@@ -139,6 +142,13 @@ class RoleAssignment(models.Model):
         blank=True,
         related_name="role_assignments",
     )
+    product = models.ForeignKey(
+        "products.Product",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="role_assignments",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     history = HistoricalRecords()
@@ -154,8 +164,21 @@ class RoleAssignment(models.Model):
             ),
             models.CheckConstraint(
                 condition=(
-                    models.Q(organisation__isnull=False, product_family__isnull=True)
-                    | models.Q(organisation__isnull=True, product_family__isnull=False)
+                    models.Q(
+                        organisation__isnull=False,
+                        product_family__isnull=True,
+                        product__isnull=True,
+                    )
+                    | models.Q(
+                        organisation__isnull=True,
+                        product_family__isnull=False,
+                        product__isnull=True,
+                    )
+                    | models.Q(
+                        organisation__isnull=True,
+                        product_family__isnull=True,
+                        product__isnull=False,
+                    )
                 ),
                 name="role_assignment_exactly_one_scope",
             ),
@@ -163,11 +186,14 @@ class RoleAssignment(models.Model):
 
     def __str__(self):
         grantee = self.user or self.group
-        scope = self.organisation or self.product_family
+        scope = self.organisation or self.product_family or self.product
         return f"{grantee} — {self.role} @ {scope}"
 
     def clean(self):
         if bool(self.user_id) == bool(self.group_id):
             raise ValidationError("Set exactly one of user or group.")
-        if bool(self.organisation_id) == bool(self.product_family_id):
-            raise ValidationError("Set exactly one of organisation or product_family.")
+        scopes_set = sum(
+            bool(v) for v in (self.organisation_id, self.product_family_id, self.product_id)
+        )
+        if scopes_set != 1:
+            raise ValidationError("Set exactly one of organisation, product_family or product.")

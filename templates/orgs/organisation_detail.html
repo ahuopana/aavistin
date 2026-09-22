@@ -8,19 +8,20 @@
 
   <h2>Product families</h2>
   {% if product_families %}
-    <table>
-      <thead>
-        <tr><th>Name</th><th>Separation of duties</th></tr>
-      </thead>
-      <tbody>
-        {% for family in product_families %}
-          <tr>
-            <td>{{ family.name }}</td>
-            <td>{{ family.effective_sod_policy }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    {% for family in product_families %}
+      <h3>{{ family.name }} <small>({{ family.effective_sod_policy }})</small></h3>
+      {% with products=family.products.all %}
+        {% if products %}
+          <ul>
+            {% for product in products %}
+              <li>{{ product.name }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No products yet.</p>
+        {% endif %}
+      {% endwith %}
+    {% endfor %}
   {% else %}
     <p>No product families yet.</p>
   {% endif %}

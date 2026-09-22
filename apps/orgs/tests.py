@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.accounts.models import User
+from apps.products.models import Product
 
 from .models import Organisation, ProductFamily, Role, RoleAssignment, SoDPolicy
 from .services import has_role, roles_for_user, visible_organisations
@@ -97,6 +98,47 @@ class RoleResolutionTests(TestCase):
         from django.contrib.auth.models import AnonymousUser
 
         self.assertEqual(roles_for_user(AnonymousUser(), organisation=self.org), set())
+
+
+class ProductScopeRoleTests(TestCase):
+    def setUp(self):
+        self.org = Organisation.objects.create(name="Acme", slug="acme")
+        self.family = ProductFamily.objects.create(
+            organisation=self.org, name="Sensors", slug="sensors"
+        )
+        self.product = Product.objects.create(
+            product_family=self.family, name="TempSense", slug="tempsense"
+        )
+        self.other_product = Product.objects.create(
+            product_family=self.family, name="HumSense", slug="humsense"
+        )
+        self.user = User.objects.create_user(username="alice", password="x")
+
+    def test_org_level_role_inherited_by_product(self):
+        RoleAssignment.objects.create(role=Role.VIEWER, user=self.user, organisation=self.org)
+        self.assertTrue(has_role(self.user, Role.VIEWER, product=self.product))
+
+    def test_family_level_role_inherited_by_product(self):
+        RoleAssignment.objects.create(role=Role.EDITOR, user=self.user, product_family=self.family)
+        self.assertTrue(has_role(self.user, Role.EDITOR, product=self.product))
+
+    def test_product_level_role_not_visible_on_sibling_product(self):
+        RoleAssignment.objects.create(role=Role.APPROVER, user=self.user, product=self.product)
+        self.assertTrue(has_role(self.user, Role.APPROVER, product=self.product))
+        self.assertFalse(has_role(self.user, Role.APPROVER, product=self.other_product))
+
+    def test_product_scoped_role_makes_organisation_visible(self):
+        RoleAssignment.objects.create(role=Role.VIEWER, user=self.user, product=self.product)
+        self.assertEqual(list(visible_organisations(self.user)), [self.org])
+
+    def test_exactly_one_scope_constraint_rejects_two_scopes(self):
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            RoleAssignment.objects.create(
+                role=Role.VIEWER,
+                user=self.user,
+                organisation=self.org,
+                product=self.product,
+            )
 
 
 class VisibleOrganisationsTests(TestCase):
