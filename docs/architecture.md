@@ -1,0 +1,243 @@
+# System Architecture: Technology Baseline
+
+Last updated: 2026-09-22
+
+## Summary
+
+The system is a server-rendered Django application on PostgreSQL, with HTMX for interactivity and a REST API alongside for scripting. Users are software professionals on wide screens; mobile is supported but not a design target.
+
+| Layer | Choice | Notes |
+| --- | --- | --- |
+| Backend | Django (current LTS) | Custom user model from day one |
+| Database | PostgreSQL in dev, CI and prod | SQLite only for throwaway experiments |
+| Authentication | Local accounts + LDAP (`django-auth-ldap`) | OIDC SSO later; SAML only if required |
+| UI | Django templates + HTMX + Alpine.js | No SPA, minimal or no JS build |
+| Editor | CodeMirror 6, Markdown mode | Side-by-side preview |
+| Markdown rendering | `markdown-it-py` or `mistune` + `nh3` sanitizing | Rendered server-side, cached per revision |
+| Charts | Apache ECharts (or Chart.js) | JSON from Django views |
+| API | django-ninja or DRF + `drf-spectacular` | Token auth, OpenAPI schema |
+| Background jobs | Django tasks with a worker backend, or Celery | Decide by ops preference |
+| Tooling | `uv`, `ruff`, `pytest-django` | Env-var config via `django-environ` |
+| Deployment | Containers, gunicorn behind a reverse proxy | nginx or existing proxy |
+
+## Backend and database
+
+PostgreSQL runs in every environment that matters: local development (via `docker compose`), CI and production. SQLite stays available for quick throwaway experiments only.
+
+Why not SQLite in development: the two databases differ in ways that surface late.
+
+- JSONField queries behave differently.
+- Case sensitivity and collation differ.
+- Constraint enforcement and concurrency differ.
+- Full-text search, `ArrayField` and `pg_trgm` have no SQLite equivalent.
+
+Running PostgreSQL everywhere lets the system use PostgreSQL features (notably full-text search for documents) without a second code path.
+
+The project defines a custom user model (`AUTH_USER_MODEL`) before the first migration. Changing it later is costly, and SSO will need extra fields.
+
+## Authentication and authorization
+
+Users sign in with LDAP or a local account; SSO is designed for now and built later. Authorization uses internal roles, independent of where a user's identity comes from.
+
+```mermaid
+flowchart LR
+  L[Login] --> B{Auth backends}
+  B --> LDAP[LDAP<br/>django-auth-ldap]
+  B --> LOC[Local accounts<br/>ModelBackend]
+  B -.-> SSO[OIDC SSO<br/>later]
+  LDAP --> M[Group mapping]
+  SSO -.-> M
+  M --> R[Internal roles<br/>Django groups]
+  LOC --> R
+```
+
+Every backend feeds the same internal roles, so adding SSO means adding one backend and one group mapping.
+
+- **Local accounts:** `ModelBackend` stays enabled for admins and as a break-glass path when LDAP is down.
+- **LDAP:** `django-auth-ldap`, over LDAPS or StartTLS only. LDAP groups map to internal roles in one place; code never checks LDAP group names directly.
+- **Identity source:** each user records its source (`local`, `ldap`, `oidc`) to prevent collisions when the same username exists in two sources.
+- **SSO (later):** OIDC first, via `mozilla-django-oidc` or `django-allauth`; it covers Entra ID, Keycloak and Okta. SAML only if a customer requires it.
+- **API access:** personal API tokens for scripting, managed by each user.
+
+## Browser interface
+
+The UI is server-rendered Django templates with HTMX, plus Alpine.js for small client-side behavior. The system has no visual editing or hard real-time needs, so an SPA would add a second codebase and build pipeline for no gain.
+
+Design principles for software professionals on wide screens:
+
+- **Use the full width.** No fixed 1200 px column. Master–detail and multi-pane layouts: list left, detail right, optional context panel.
+- **Dense, scannable data.** Compact tables with sorting, filtering, column selection and resizable panes.
+- **Keyboard first.** Shortcuts for navigation and search; a command palette (Ctrl/Cmd+K) as the app grows.
+- **Deep links for every state.** Filters, selected items and tabs live in the URL so links can be pasted into tickets and chat.
+- **Dark mode from the start**, built on CSS variables.
+- **Mobile: usable, not designed for.** Panes collapse into stacked views on narrow screens.
+
+## Documents and concurrent editing
+
+Documents are Markdown, protected against lost updates by optimistic locking, soft edit locks and full revision history. Real-time co-editing (CRDTs such as Yjs over WebSockets) is out of scope unless people routinely write in the same document at the same moment.
+
+**Optimistic locking.** Each document has a `version` number, and the edit form carries the version it started from. A save runs `UPDATE ... WHERE id=? AND version=?`; if another save came first, it is rejected, the user's text is kept, and a merge view opens.
+
+**Soft edit locks.** Opening the editor records a lease ("Alice is editing since 22:40"), renewed by an HTMX heartbeat every 30–60 s. Others see a warning but are not blocked; stale leases expire on their own.
+
+**Revision history.** Every save stores a revision, giving audit, diffs and rollback.
+
+```mermaid
+flowchart TD
+  S[Save with version N] --> C{Current version = N?}
+  C -- yes --> OK[Store revision N+1]
+  C -- no --> M[Three-way merge<br/>base, theirs, yours]
+  M -- clean --> OK
+  M -- conflict --> D[Show diff,<br/>user resolves]
+  D --> S
+```
+
+The automatic merge uses `diff-match-patch` or `difflib`; the user sees a diff only when it fails.
+
+Markdown handling:
+
+- **Editor:** CodeMirror 6 in Markdown mode, preview side by side on wide screens. It remains a plain text field underneath, so HTMX forms work unchanged.
+- **Rendering:** server-side with `markdown-it-py` or `mistune`. Output is always sanitized with `nh3` to prevent XSS, then cached per revision.
+- **Extras:** fenced code with Pygments highlighting, tables, task lists and links between documents.
+- **Search:** PostgreSQL full-text search.
+
+## Dashboards
+
+Dashboards refresh per widget with HTMX polling (`hx-trigger="every 60s"`); no WebSockets are needed at this level of freshness.
+
+- **Charts:** Apache ECharts or Chart.js, fed JSON by a Django view. Both work in server-rendered pages without a framework.
+- **Performance:** aggregate queries are cached with a short TTL via Django's cache framework, or precomputed by background jobs when heavy.
+- **Later option:** Server-Sent Events if push updates become necessary.
+
+## API, jobs, tooling and operations
+
+The system is API-first: everything a user can do in the browser should be scriptable.
+
+- **API:** django-ninja, or DRF with `drf-spectacular`, publishing an OpenAPI schema. Token authentication; a CLI can follow.
+- **Background jobs:** LDAP sync, notifications, imports, dashboard precomputation. Options are Django's built-in tasks framework with a production worker backend, Celery with Redis, or a PostgreSQL-backed queue to avoid running Redis.
+- **Configuration:** environment variables via `django-environ`, one settings module, no secrets in the repository.
+- **Tooling:** `uv` for dependencies, `ruff` for linting and formatting, `pytest-django` for tests, CI against PostgreSQL.
+- **Deployment:** containers running gunicorn (uvicorn if async is needed) behind nginx or the existing reverse proxy.
+- **Audit logging:** who changed what and when, via `django-simple-history` or similar, added from the start.
+
+## Requirement sources
+
+Regulations and other obligations are content, not code: versioned, schema-validated packages that the application evaluates. Adding a regulation means writing a package, never changing application code.
+
+| Source type | Binding nature | Applicability | Examples |
+| --- | --- | --- | --- |
+| Legislation | Legal | Rule-based from answers | CRA, RED, LVD, GDPR |
+| Harmonised standard | Presumption of conformity | Linked from legislation | EN 18031, EN 62368 |
+| QMS / internal procedure | Internal | Selected per organisation or family | ISO 9001 procedures |
+| Customer requirement | Contractual | Selected per product or customer | Customer security specs |
+| Guidance | Non-binding | Reference only | Blue Guide, RED guide, CRA FAQ |
+
+Only legislation can create legal obligations; the schema enforces this, and the UI labels guidance as non-binding. First targets: CRA, RED, LVD and GDPR; NIS2 as customer-driven supply-chain requirements; IEC 62443 later.
+
+A package contains:
+
+- **Identity:** id (namespaced), version, jurisdiction, legal sources (CELEX/ELI), dates of application, supersedes/amends links.
+- **Questions:** typed (boolean, choice, number with unit), each declaring its natural level (product, hardware, software, option), with optional conditions (radio band questions only if a radio is present). Questions are shared across packages.
+- **Scope rules:** inclusion, exclusions and exemptions, each with a legal reference.
+- **Classifications:** classes or categories that change requirements and assessment routes (CRA default / important I / important II / critical; RED 3(3)(d)(e)(f) categories).
+- **Requirements:** tagged by role (manufacturer, importer, distributor), class and date.
+- **Assessment routes:** internal control, type examination, notified body, and when each is allowed.
+- **Finding rules:** info, caution or action-required findings raised by answer combinations.
+- **Test fixtures:** example products with expected outcomes.
+
+Rules are declarative expressions (JSONLogic or a small custom language) evaluated safely, never Python `eval`.
+
+```yaml
+source: eu-cra
+type: legislation
+jurisdiction: EU
+version: 2024-2847@2026-09
+sources: [{celex: 32024R2847}]
+questions:
+  - id: has_data_connection
+    type: boolean
+    level: software
+scope:
+  include: {var: has_data_connection}
+  exclude:
+    - id: medical_devices
+      when: {var: is_medical_device}
+      ref: "Art. 2(2)"
+```
+
+**Copyright:** EU legal text may be stored with attribution. Standards (EN, IEC) are stored as references, clause numbers and own summaries only; fields carry `redistributable: false` where applicable.
+
+**Import and sanity checks.** Official packages live in version control and are reviewed by the maintainer. User packages pass four layers before use:
+
+1. **Structural:** JSON Schema validation.
+2. **Semantic linting:** referenced questions exist, expressions type-check against question types, no supersedes cycles, consistent dates, namespaced ids that cannot shadow official packages.
+3. **Fixtures:** the package's own test cases must pass.
+4. **Provenance:** the UI and reports show whether an assessment used an official or a local package.
+
+Every import shows a diff against the previous version and requires approval before publishing.
+
+## Products and assessments
+
+An assessment covers one configuration: a hardware variant and revision, a software release and a set of selected options. Answers are layered with explicit inheritance, and approval freezes a snapshot.
+
+```mermaid
+flowchart TD
+  O[Organisation] --> F[Product family]
+  F --> P[Product]
+  P --> H[HW variant / revision<br/>target markets]
+  P --> S[SW release]
+  S --> OP[SW options]
+  H --> C[Configuration]
+  S --> C
+  OP --> C
+  C --> A[Assessment snapshot]
+```
+
+Only configurations actually shipped are defined, to avoid assessing every combination.
+
+**Target markets first.** Each hardware variant selects its target markets (e.g. EU, US). Only packages for those jurisdictions are active, so their questions alone are asked; FCC questions never appear for an EU-only variant. Adding a market later adds unanswered questions and marks approved assessments stale.
+
+**Answer inheritance.**
+
+1. Each question declares its natural level in the package: product (intended use), hardware (radio, supply voltage), software (network services, personal data) or option.
+2. Answers resolve by precedence: option → SW release → HW variant → product. The UI shows each answer's origin ("inherited from HW rev B"); overriding requires a justification.
+3. A new release copies answers forward as "needs confirmation". Reviewers may confirm in bulk, but must confirm actively.
+4. Options are deltas: they override a few answers and inherit the rest, which shows exactly why an option changes scope.
+
+**Capability vs enablement.** Features such as radios are two answers at two levels:
+
+| Level | Question | Values |
+| --- | --- | --- |
+| Hardware | Capability | Not present · present · present but physically disabled |
+| SW release / option | Enablement | Enabled · disabled, user-enableable · disabled, enableable only by manufacturer update |
+
+Whether a dormant feature is in scope is an interpretation encoded in the package with a legal reference, not in application code.
+
+**Findings.** Rules produce findings alongside scope results, at three levels: info, caution and action required. A caution is the "OK, but" case, e.g. "Wi-Fi hardware present but disabled; enabling it by update or option changes RED and CRA scope and requires re-assessment." Findings appear in reports and later feed the risk assessment (dormant capability is attack surface). An option that enables a flagged feature triggers re-assessment automatically.
+
+**Results.** Per active source: in scope, out of scope, excluded (with reason and article), or in scope with limitations (class and assessment route).
+
+**Snapshots.** Approval freezes the resolved answers, package versions, results and findings. Later changes to parent answers or packages never alter an approved assessment; they flag it as stale for re-review.
+
+## Organisations and roles
+
+The tool is an open-source team tool, single-tenant per deployment, but with organisation as the top-level scope from day one; retrofitting it later is costly. Organisations and product families also structure navigation in the master–detail layout.
+
+**Role assignments** are records of (user or group, role, scope), inherited down the hierarchy organisation → family → product. An approver on a family approves all its products unless narrowed. LDAP groups can map directly to assignments. A custom table is preferred over a generic per-object permission library, for simpler hierarchical queries.
+
+| Role | Can |
+| --- | --- |
+| Viewer | Read products, assessments and reports |
+| Editor | Answer questions, create releases and configurations |
+| Approver | Approve assessment snapshots |
+| Content curator | Import and manage requirement sources |
+| Organisation admin | Manage members, role assignments and policies |
+
+**Separation of duties** is an organisation policy: off, warn (default) or enforce. Families and products may only tighten it, never loosen it. "Same person" means anyone who edited any answer in the snapshot, not just the last editor. An approval made despite a warning is recorded in the audit trail and shown in the report.
+
+## Open questions
+
+- [ ] Background jobs: Django tasks, Celery with Redis, or a PostgreSQL-backed queue?
+- [ ] API framework: django-ninja or DRF?
+- [ ] Which identity provider will SSO target first?
+- [ ] Risk assessment design: LVD hazards and CRA cybersecurity risks in one register (in progress).
