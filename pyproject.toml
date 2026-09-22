@@ -10,6 +10,7 @@ dependencies = [
     "django-ninja>=1.7.1",
     "django-simple-history>=3.13.0",
     "gunicorn>=26.2.0",
+    "jsonschema>=4.26.0",
     "nh3>=0.3.7",
     "psycopg[binary]>=3.3.6",
 ]
