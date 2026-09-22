@@ -1,0 +1,69 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Aavistin{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="app-brand" href="{% url 'core:home' %}">Aavistin</a>
+      <nav class="app-nav">
+        {% block nav %}{% endblock %}
+      </nav>
+      <div class="app-header-actions">
+        <button type="button" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+          <span aria-hidden="true">&#9788;</span>
+        </button>
+        {% if user.is_authenticated %}
+          <span class="app-user">{{ user }}</span>
+        {% endif %}
+      </div>
+    </header>
+    <div class="app-body">
+      {% block sidebar %}{% endblock %}
+      <main class="app-main">
+        {% if messages %}
+          <ul class="messages">
+            {% for message in messages %}
+              <li class="message message-{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </main>
+      {% block context_panel %}{% endblock %}
+    </div>
+  </div>
+  <script>
+    function toggleTheme() {
+      const root = document.documentElement;
+      const current = root.getAttribute("data-theme");
+      const next = current === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try {
+        localStorage.setItem("theme", next);
+      } catch (e) {
+        /* storage unavailable, theme resets on reload */
+      }
+    }
+    (function () {
+      try {
+        const saved = localStorage.getItem("theme");
+        if (saved) {
+          document.documentElement.setAttribute("data-theme", saved);
+        }
+      } catch (e) {
+        /* storage unavailable, fall back to prefers-color-scheme */
+      }
+    })();
+  </script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>
