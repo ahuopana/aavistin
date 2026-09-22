@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.orgs",
     "apps.products",
     "apps.packages",
+    "apps.assessments",
 ]
 
 MIDDLEWARE = [
