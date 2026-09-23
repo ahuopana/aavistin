@@ -117,13 +117,17 @@ def _referenced_by_approved_work(evidence: Evidence) -> bool:
     product_filter = {
         "configuration__hardware_revision__hardware_variant__product": evidence.product,
     }
-    if has_control_link and RiskAssessment.objects.filter(
-        status=RiskAssessmentStatus.APPROVED, **product_filter
-    ).exists():
+    if (
+        has_control_link
+        and RiskAssessment.objects.filter(
+            status=RiskAssessmentStatus.APPROVED, **product_filter
+        ).exists()
+    ):
         return True
-    if has_requirement_link and Assessment.objects.filter(
-        status=AssessmentStatus.APPROVED, **product_filter
-    ).exists():
+    if (
+        has_requirement_link
+        and Assessment.objects.filter(status=AssessmentStatus.APPROVED, **product_filter).exists()
+    ):
         return True
     return False
 

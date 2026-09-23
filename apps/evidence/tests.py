@@ -184,12 +184,8 @@ class EvidenceLinkValidationTests(EvidenceFixture):
 class StoreEvidenceFileTests(EvidenceFixture):
     def test_dedup_by_content(self):
         content = b"sbom contents"
-        f1 = store_evidence_file(
-            SimpleUploadedFile("sbom.json", content), actor=self.user
-        )
-        f2 = store_evidence_file(
-            SimpleUploadedFile("sbom-copy.json", content), actor=self.user
-        )
+        f1 = store_evidence_file(SimpleUploadedFile("sbom.json", content), actor=self.user)
+        f2 = store_evidence_file(SimpleUploadedFile("sbom-copy.json", content), actor=self.user)
         self.assertEqual(f1.pk, f2.pk)
         self.assertEqual(EvidenceFile.objects.count(), 1)
 
@@ -251,11 +247,15 @@ class DeleteEvidenceTests(EvidenceFixture):
     def test_file_removed_only_once_unreferenced(self):
         shared_file = store_evidence_file(SimpleUploadedFile("sbom.json", b"same bytes"))
         e1 = Evidence.objects.create(
-            product=self.product, title="SBOM (product A copy)", kind=EvidenceKind.FILE,
+            product=self.product,
+            title="SBOM (product A copy)",
+            kind=EvidenceKind.FILE,
             file=shared_file,
         )
         e2 = Evidence.objects.create(
-            product=self.other_product, title="SBOM (product B copy)", kind=EvidenceKind.FILE,
+            product=self.other_product,
+            title="SBOM (product B copy)",
+            kind=EvidenceKind.FILE,
             file=shared_file,
         )
         delete_evidence(e1)
