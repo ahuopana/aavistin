@@ -1,0 +1,9 @@
+<svg viewBox="0 0 340 90" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(4,11) scale(0.55)">
+    <path d="M14,24 Q14,10 30,10 L90,10 Q106,10 106,24 L106,55 C106,95 85,118 60,132 C35,118 14,95 14,55 Z" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M60.43,94.72 L75.45,57.29 L76.74,56.72 L83.26,59.28 L83.83,60.57 L63.08,112.65 Z" fill="#D9B84A"/>
+    <polyline points="36,108 60,36 84,108" fill="none" stroke="#FFFFFF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M37.08,79.57 L37.25,78.16 L42.75,73.84 L44.16,74.01 L60.82,94.66 L63.47,112.60 Z" fill="#D9B84A"/>
+  </g>
+  <text x="80" y="57" font-family="'Space Grotesk', sans-serif" font-weight="700" font-size="38" fill="#FFFFFF" letter-spacing="0.3">Aavistin</text>
+</svg>
