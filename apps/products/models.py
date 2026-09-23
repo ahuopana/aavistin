@@ -1,7 +1,30 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.orgs.models import ProductFamily
+
+
+class Approvable(models.Model):
+    """Shared approval state for Product and everything beneath it.
+
+    See docs/adr/0008-product-level-authoring-and-approval-deferred.md:
+    approval only blocks *deletion* (apps.products.services.delete_entity);
+    an approved entity may still be freely modified.
+    """
+
+    is_approved = models.BooleanField(default=False)
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+    )
+
+    class Meta:
+        abstract = True
 
 
 class TargetMarket(models.Model):
@@ -22,7 +45,7 @@ class TargetMarket(models.Model):
         return self.code
 
 
-class Product(models.Model):
+class Product(Approvable):
     product_family = models.ForeignKey(
         ProductFamily, on_delete=models.CASCADE, related_name="products"
     )
@@ -43,7 +66,7 @@ class Product(models.Model):
         return self.name
 
 
-class HardwareVariant(models.Model):
+class HardwareVariant(Approvable):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="hw_variants")
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200)
@@ -62,7 +85,7 @@ class HardwareVariant(models.Model):
         return f"{self.product.name} / {self.name}"
 
 
-class HardwareRevision(models.Model):
+class HardwareRevision(Approvable):
     hardware_variant = models.ForeignKey(
         HardwareVariant, on_delete=models.CASCADE, related_name="revisions"
     )
@@ -82,7 +105,7 @@ class HardwareRevision(models.Model):
         return f"{self.hardware_variant} rev {self.label}"
 
 
-class SoftwareRelease(models.Model):
+class SoftwareRelease(Approvable):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="sw_releases")
     version = models.CharField(max_length=50)
     released_at = models.DateField(null=True, blank=True)
@@ -100,7 +123,7 @@ class SoftwareRelease(models.Model):
         return f"{self.product.name} {self.version}"
 
 
-class SoftwareOption(models.Model):
+class SoftwareOption(Approvable):
     software_release = models.ForeignKey(
         SoftwareRelease, on_delete=models.CASCADE, related_name="options"
     )
@@ -120,7 +143,7 @@ class SoftwareOption(models.Model):
         return f"{self.software_release} / {self.name}"
 
 
-class Configuration(models.Model):
+class Configuration(Approvable):
     """One shipped combination: a HW revision, a SW release and its selected options.
 
     Only configurations actually shipped are defined here, to avoid
