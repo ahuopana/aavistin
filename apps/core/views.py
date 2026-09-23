@@ -1,5 +1,17 @@
 from django.shortcuts import render
 
+from .services import dashboard_products, dashboard_tasks, product_tree
+
 
 def home(request):
-    return render(request, "core/home.html")
+    if not request.user.is_authenticated:
+        return render(request, "core/home.html")
+    return render(
+        request,
+        "core/dashboard.html",
+        {
+            "products": dashboard_products(request.user),
+            "tasks": dashboard_tasks(request.user),
+            "tree": product_tree(request.user),
+        },
+    )

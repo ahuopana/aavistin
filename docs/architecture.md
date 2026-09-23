@@ -109,6 +109,11 @@ Dashboards refresh per widget with HTMX polling (`hx-trigger="every 60s"`); no W
 - **Performance:** aggregate queries are cached with a short TTL via Django's cache framework, or precomputed by background jobs when heavy.
 - **Later option:** Server-Sent Events if push updates become necessary.
 
+**Welcome dashboard.** The signed-in landing page (`apps.core`), plain server-rendered on each load — no HTMX polling or charts yet; revisit if per-request cost becomes a problem at real data volume, per "Performance" above.
+
+- **Products widget:** up to three products the user holds any role on, newest first (a stand-in for "most recently updated" — nothing yet rolls up activity across a product's configurations, assessments, risk register and evidence into one timestamp). Each shows two labeled bars: *compliance* (in-scope requirements, across the product's configurations' current evaluation, with no unresolved action-required finding — a package-level proxy, since findings aren't tracked per requirement) and *risk* (baseline threat/hazard entries whose residual rating, under every method they're treated for, meets that method's acceptance threshold). No products yet: a prompt to add one.
+- **Tasks widget:** up to three pending-work suggestions the user can act on (holds Editor on), one per category where possible, oldest first within each — a stable worklist, not reshuffled per visit. Categories: start/complete/re-review an assessment, and provide evidence for a `Control` with none linked. A fourth category (mitigate an unacceptable risk entry) is intentionally left out until `apps.risk` has its own UI to link to.
+
 ## API, jobs, tooling and operations
 
 The system is API-first: everything a user can do in the browser should be scriptable.

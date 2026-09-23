@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard · Aavistin{% endblock %}
+
+{% block content %}
+  <h1>Welcome back</h1>
+
+  <div class="dashboard-widgets">
+    <section class="dashboard-widget">
+      <h2>Products with recent changes</h2>
+      {% if products %}
+        <ul class="dashboard-products">
+          {% for row in products %}
+            <li>
+              <a href="{% url 'products:product_detail' row.product.pk %}">{{ row.product.name }}</a>
+              <span class="dashboard-product-family">{{ row.product.product_family }}</span>
+
+              <div class="stat-bar-row">
+                <span class="stat-bar-label">Compliance</span>
+                {% with ok=row.compliance.0 total=row.compliance.1 %}
+                  {% if total %}
+                    <div class="stat-bar" role="img" aria-label="Compliance {{ ok }} of {{ total }}">
+                      <div class="stat-bar-fill stat-bar-fill-compliance" style="width: {% widthratio ok total 100 %}%"></div>
+                    </div>
+                    <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
+                  {% else %}
+                    <span class="stat-bar-value">no data yet</span>
+                  {% endif %}
+                {% endwith %}
+              </div>
+
+              <div class="stat-bar-row">
+                <span class="stat-bar-label">Risk</span>
+                {% with ok=row.risk.0 total=row.risk.1 %}
+                  {% if total %}
+                    <div class="stat-bar" role="img" aria-label="Risk {{ ok }} of {{ total }}">
+                      <div class="stat-bar-fill stat-bar-fill-risk" style="width: {% widthratio ok total 100 %}%"></div>
+                    </div>
+                    <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
+                  {% else %}
+                    <span class="stat-bar-value">no data yet</span>
+                  {% endif %}
+                {% endwith %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p><a href="{% url 'orgs:list' %}">No products yet — click here to add one.</a></p>
+      {% endif %}
+    </section>
+
+    <section class="dashboard-widget">
+      <h2>Continue working on</h2>
+      {% if tasks %}
+        <ul class="dashboard-tasks">
+          {% for task in tasks %}
+            <li><a href="{{ task.url }}">{{ task.label }}</a></li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>Nothing pending right now.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="dashboard-widget dashboard-tree">
+    <h2>Your products</h2>
+    {% if tree %}
+      {% for org_node in tree %}
+        <details open>
+          <summary>{{ org_node.organisation.name }}</summary>
+          {% for family_node in org_node.families %}
+            <details>
+              <summary>{{ family_node.family.name }}</summary>
+              <ul>
+                {% for row in family_node.products %}
+                  <li>
+                    <a href="{% url 'products:product_detail' row.product.pk %}">{{ row.product.name }}</a>
+                    {% if row.revisions %}
+                      <p class="tree-sublabel">Hardware revisions</p>
+                      <ul>
+                        {% for label in row.revisions %}<li>{{ label }}</li>{% endfor %}
+                      </ul>
+                    {% endif %}
+                    {% if row.releases %}
+                      <p class="tree-sublabel">Software releases</p>
+                      <ul>
+                        {% for label in row.releases %}<li>{{ label }}</li>{% endfor %}
+                      </ul>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            </details>
+          {% endfor %}
+        </details>
+      {% endfor %}
+    {% else %}
+      <p>Nothing to show yet.</p>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -238,6 +238,15 @@ class EditableScopeTests(ProductAuthoringFixture):
         self.assertEqual(editable_products(anon).count(), 0)
         self.assertEqual(editable_product_families(anon).count(), 0)
 
+    def test_role_none_matches_any_role(self):
+        # Roles aren't tiered -- an Editor grant is not also a Viewer
+        # grant -- so role=None (any role at all) must see the product
+        # via editor.editor, approver.approver AND viewer.viewer alike.
+        self.assertIn(self.product, editable_products(self.editor, role=None))
+        self.assertIn(self.product, editable_products(self.approver, role=None))
+        self.assertIn(self.product, editable_products(self.viewer, role=None))
+        self.assertIn(self.family, editable_product_families(self.editor, role=None))
+
 
 class ProductViewTests(ProductAuthoringFixture):
     def test_product_detail_requires_login(self):

@@ -62,14 +62,22 @@ def _grantee_filter(user):
     return grantee_filter
 
 
-def editable_product_families(user, role: str = Role.EDITOR):
-    """ProductFamily objects where ``user`` holds ``role``, inherited from its organisation."""
+def editable_product_families(user, role: str | None = Role.EDITOR):
+    """ProductFamily objects where ``user`` holds ``role``, inherited from its organisation.
+
+    ``role=None`` means any role at all -- roles aren't tiered (an
+    Editor grant doesn't imply Viewer; each is its own RoleAssignment),
+    so "can this user see it, under any role" needs the filter dropped
+    entirely, not swapped to Role.VIEWER.
+    """
     if not user.is_authenticated:
         return ProductFamily.objects.none()
     if user.is_superuser:
         return ProductFamily.objects.all()
 
-    role_filter = Q(role=role) & _grantee_filter(user)
+    role_filter = _grantee_filter(user)
+    if role is not None:
+        role_filter &= Q(role=role)
     org_ids = RoleAssignment.objects.filter(role_filter, organisation__isnull=False).values_list(
         "organisation_id", flat=True
     )
@@ -81,14 +89,19 @@ def editable_product_families(user, role: str = Role.EDITOR):
     ).distinct()
 
 
-def editable_products(user, role: str = Role.EDITOR):
-    """Product objects where ``user`` holds ``role``, at any scope in its hierarchy."""
+def editable_products(user, role: str | None = Role.EDITOR):
+    """Product objects where ``user`` holds ``role``, at any scope in its hierarchy.
+
+    ``role=None`` means any role at all (see `editable_product_families`).
+    """
     if not user.is_authenticated:
         return Product.objects.none()
     if user.is_superuser:
         return Product.objects.all()
 
-    role_filter = Q(role=role) & _grantee_filter(user)
+    role_filter = _grantee_filter(user)
+    if role is not None:
+        role_filter &= Q(role=role)
     product_ids = RoleAssignment.objects.filter(role_filter, product__isnull=False).values_list(
         "product_id", flat=True
     )

@@ -225,6 +225,129 @@ td {
   text-align: left;
 }
 
+.dashboard-widgets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-4);
+  align-items: stretch;
+  margin-bottom: var(--space-5);
+}
+
+.dashboard-widget {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.dashboard-widget h2 {
+  margin-top: 0;
+}
+
+.dashboard-products {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard-products li {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dashboard-products li:last-child {
+  border-bottom: none;
+}
+
+.dashboard-product-family {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+  margin-bottom: var(--space-1);
+}
+
+.stat-bar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.stat-bar-label {
+  flex: 0 0 5.5rem;
+  color: var(--color-text-muted);
+}
+
+.stat-bar {
+  flex: 1 1 auto;
+  height: 0.5rem;
+  background: var(--color-border);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.stat-bar-fill {
+  height: 100%;
+}
+
+.stat-bar-fill-compliance {
+  background: var(--color-brand);
+}
+
+.stat-bar-fill-risk {
+  background: var(--color-gold-fill);
+}
+
+.stat-bar-value {
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+}
+
+.dashboard-tasks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard-tasks li {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dashboard-tree summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: var(--space-1) 0;
+}
+
+.dashboard-tree details details {
+  margin-left: var(--space-4);
+}
+
+.dashboard-tree ul {
+  list-style: none;
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.dashboard-tree ul li {
+  padding: var(--space-1) 0;
+}
+
+.dashboard-tree ul ul {
+  color: var(--color-text-muted);
+  font-size: 0.9em;
+}
+
+.tree-sublabel {
+  margin: var(--space-1) 0 0 var(--space-4);
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 @media (max-width: 768px) {
   .app-body {
     flex-direction: column;
