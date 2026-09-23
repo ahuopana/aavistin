@@ -16,6 +16,7 @@ services:
       retries: 10
 
   web:
+    image: aavistin:dev
     build: .
     command: >
       sh -c "python manage.py migrate &&
@@ -40,6 +41,7 @@ services:
   # enqueues the periodic ones (e.g. staleness recompute) on an
   # interval. Neither needs its own service beyond Postgres.
   worker:
+    image: aavistin:dev
     build: .
     command: sh -c "python manage.py migrate && python manage.py db_worker"
     volumes:
@@ -55,6 +57,7 @@ services:
         condition: service_healthy
 
   scheduler:
+    image: aavistin:dev
     build: .
     command: python manage.py scheduler
     volumes:
@@ -74,5 +77,9 @@ volumes:
   # Named volume for /app/.venv on services that bind-mount the project
   # root: this keeps the image's build-time venv from being shadowed by
   # the host checkout (which has no .venv), instead of shipping uv into
-  # the runtime image just to rebuild it there.
+  # the runtime image just to rebuild it there. web/worker/scheduler all
+  # share this volume, which only gets copy-up-populated from whichever
+  # container mounts it first — safe here only because all three also
+  # share one `image:` tag (above), so Compose builds the image once and
+  # every container's /app/.venv is guaranteed identical.
   aavistin_venv:
