@@ -19,7 +19,12 @@ from apps.products.models import (
     TargetMarket,
 )
 
-from .approval import RiskAssessmentError, approve_risk_assessment, recompute_staleness
+from .approval import (
+    RiskAssessmentError,
+    approve_risk_assessment,
+    recompute_all_staleness,
+    recompute_staleness,
+)
 from .consistency import check_threat_hazard_consistency
 from .models import (
     AssetRating,
@@ -40,6 +45,7 @@ from .models import (
 from .rating import evaluate_entry_rating, evaluate_residual_rating, threat_severity
 from .resolution import register_for_configuration
 from .suggestions import accept_suggestion, dismiss_suggestion, pending_suggestions
+from .tasks import refresh_staleness_task
 
 PACKAGES_DIR = Path(settings.BASE_DIR) / "packages"
 
@@ -553,6 +559,40 @@ class ApprovalTests(RiskFixture):
         self._basic_hazard_scenario()
         risk_assessment = RiskAssessment.objects.create(configuration=self.configuration)
         self.assertFalse(recompute_staleness(risk_assessment))
+
+
+class BackgroundTaskTests(RiskFixture):
+    """The immediate task backend runs synchronously in tests (conftest.py),
+    so these call .enqueue() directly rather than needing a worker."""
+
+    def _basic_hazard_scenario(self):
+        hazard = self.make_hazard()
+        Rating.objects.create(entry=hazard, method=self.safety_method, severity=2, likelihood=2)
+        return hazard
+
+    def test_recompute_all_staleness_checks_only_approved(self):
+        self._basic_hazard_scenario()
+        RiskAssessment.objects.create(configuration=self.configuration)  # draft, not counted
+        approved = RiskAssessment.objects.create(configuration=self.configuration)
+        approve_risk_assessment(approved, actor=self.approver)
+
+        checked, newly_stale = recompute_all_staleness()
+        self.assertEqual(checked, 1)
+        self.assertEqual(newly_stale, 0)
+
+    def test_task_flips_stale_flag(self):
+        hazard = self._basic_hazard_scenario()
+        risk_assessment = RiskAssessment.objects.create(configuration=self.configuration)
+        approve_risk_assessment(risk_assessment, actor=self.approver)
+
+        rating = Rating.objects.get(entry=hazard, method=self.safety_method)
+        rating.likelihood = 5
+        rating.save()
+
+        result = refresh_staleness_task.enqueue()
+        self.assertEqual(result.status, "SUCCESSFUL")
+        risk_assessment.refresh_from_db()
+        self.assertTrue(risk_assessment.stale)
 
 
 class ControlModelTests(RiskFixture):
