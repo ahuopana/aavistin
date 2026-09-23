@@ -19,12 +19,12 @@ services:
     image: aavistin:dev
     build: .
     command: >
-      sh -c "python manage.py migrate &&
-             python manage.py seed_dev_users &&
-             python manage.py runserver 0.0.0.0:8000"
+      sh -c "uv run manage.py migrate &&
+             uv run manage.py seed_dev_users &&
+             uv run manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
-      - aavistin_venv:/app/.venv
+      - aavistin_uv_cache:/root/.cache/uv
     ports:
       - "8000:8000"
     environment:
@@ -43,10 +43,10 @@ services:
   worker:
     image: aavistin:dev
     build: .
-    command: sh -c "python manage.py migrate && python manage.py db_worker"
+    command: sh -c "uv run manage.py migrate && uv run manage.py db_worker"
     volumes:
       - .:/app
-      - aavistin_venv:/app/.venv
+      - aavistin_uv_cache:/root/.cache/uv
     environment:
       DEBUG: "True"
       DJANGO_SECRET_KEY: dev-secret-key-not-for-production
@@ -59,10 +59,10 @@ services:
   scheduler:
     image: aavistin:dev
     build: .
-    command: python manage.py scheduler
+    command: uv run manage.py scheduler
     volumes:
       - .:/app
-      - aavistin_venv:/app/.venv
+      - aavistin_uv_cache:/root/.cache/uv
     environment:
       DEBUG: "True"
       DJANGO_SECRET_KEY: dev-secret-key-not-for-production
@@ -74,12 +74,14 @@ services:
 
 volumes:
   aavistin_pgdata:
-  # Named volume for /app/.venv on services that bind-mount the project
-  # root: this keeps the image's build-time venv from being shadowed by
-  # the host checkout (which has no .venv), instead of shipping uv into
-  # the runtime image just to rebuild it there. web/worker/scheduler all
-  # share this volume, which only gets copy-up-populated from whichever
-  # container mounts it first — safe here only because all three also
-  # share one `image:` tag (above), so Compose builds the image once and
-  # every container's /app/.venv is guaranteed identical.
-  aavistin_venv:
+  # uv's package cache, shared across services that bind-mount the
+  # project root over /app: that mount shadows the image's baked-in
+  # /app/.venv, but `uv run` (see the compose commands above) re-syncs
+  # a correct venv from uv.lock on every container start regardless.
+  # This volume just makes repeat syncs fast — it never needs manual
+  # invalidation the way a venv-holding volume would after a dependency
+  # change, since it's an additive download cache, not the venv itself.
+  # All three services share one `image:` tag too, so they're always
+  # built from identical content regardless of which container starts
+  # first.
+  aavistin_uv_cache:
