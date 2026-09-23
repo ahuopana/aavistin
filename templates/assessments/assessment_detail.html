@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Assessment #{{ assessment.pk }} · Aavistin{% endblock %}
+
+{% block content %}
+  <h1>Assessment #{{ assessment.pk }}</h1>
+  <p>
+    {{ assessment.configuration }} — {{ assessment.get_status_display }}
+    {% if assessment.stale %}<span class="message message-warning">stale</span>{% endif %}
+    {% if assessment.sod_warning %}<span class="message message-warning">approved despite separation-of-duties warning</span>{% endif %}
+  </p>
+
+  {% if assessment.status == "draft" and can_approve %}
+    <form method="post" action="{% url 'assessments:assessment_approve' assessment.pk %}">
+      {% csrf_token %}
+      <button type="submit">Approve (freezes a snapshot)</button>
+    </form>
+  {% endif %}
+
+  <h2>Results</h2>
+  {% for result in evaluation.results %}
+    <h3>{{ result.source }}@{{ result.version }}</h3>
+    <p>
+      {% if result.in_scope %}In scope{% else %}Out of scope{% endif %}
+      {% if not result.creates_legal_obligations %}(non-binding){% endif %}
+    </p>
+    {% if result.classifications %}
+      <p>Classifications: {{ result.classifications|join:", " }}</p>
+    {% endif %}
+    {% if result.requirements %}
+      <p>Requirements: {{ result.requirements|join:", " }}</p>
+    {% endif %}
+    {% if result.assessment_routes %}
+      <p>Assessment routes: {{ result.assessment_routes|join:", " }}</p>
+    {% endif %}
+  {% empty %}
+    <p>No active packages for this configuration's target markets.</p>
+  {% endfor %}
+
+  <h2>Findings</h2>
+  {% if evaluation.findings %}
+    <table>
+      <thead><tr><th>Level</th><th>Message</th><th>Source</th></tr></thead>
+      <tbody>
+        {% for finding in evaluation.findings %}
+          <tr>
+            <td>{{ finding.level }}</td>
+            <td>{{ finding.message }}</td>
+            <td>{{ finding.source }}@{{ finding.version }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No findings.</p>
+  {% endif %}
+{% endblock %}

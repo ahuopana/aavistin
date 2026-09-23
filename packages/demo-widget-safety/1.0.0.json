@@ -1,0 +1,85 @@
+{
+  "source": "demo-widget-safety",
+  "type": "legislation",
+  "jurisdiction": "EU",
+  "version": "1.0.0",
+  "title": "Demo Widget Safety Directive (fictional, for tests only)",
+  "redistributable": true,
+  "questions": [
+    {
+      "id": "has_power_source",
+      "type": "boolean",
+      "level": "hardware",
+      "label": "Does the widget have a power source?"
+    },
+    {
+      "id": "rated_power_watts",
+      "type": "number",
+      "level": "hardware",
+      "label": "Rated power",
+      "unit": "W"
+    },
+    {
+      "id": "is_toy_widget",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the widget marketed as a toy?"
+    }
+  ],
+  "scope": {
+    "include": { "var": "has_power_source" },
+    "exclude": [
+      {
+        "id": "toy_widgets_excluded",
+        "when": { "var": "is_toy_widget" },
+        "ref": "Demo Art. 2(2)"
+      }
+    ]
+  },
+  "classifications": [
+    {
+      "id": "high_power",
+      "label": "High power widget",
+      "when": { ">": [{ "var": "rated_power_watts" }, 100] }
+    }
+  ],
+  "requirements": [
+    {
+      "id": "provide_widget_manual",
+      "label": "Provide a safety manual with the widget",
+      "roles": ["manufacturer"],
+      "ref": "Demo Art. 5"
+    }
+  ],
+  "finding_rules": [
+    {
+      "id": "high_power_caution",
+      "level": "caution",
+      "when": { ">": [{ "var": "rated_power_watts" }, 100] },
+      "message": "Rated power exceeds 100W; additional high-power safety requirements apply.",
+      "ref": "Demo Art. 6"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "low_power_widget",
+      "answers": { "has_power_source": true, "rated_power_watts": 20, "is_toy_widget": false },
+      "expected": { "in_scope": true, "findings": [] }
+    },
+    {
+      "id": "high_power_widget",
+      "answers": { "has_power_source": true, "rated_power_watts": 150, "is_toy_widget": false },
+      "expected": { "in_scope": true, "findings": ["high_power_caution"] }
+    },
+    {
+      "id": "toy_widget_excluded",
+      "answers": { "has_power_source": true, "rated_power_watts": 5, "is_toy_widget": true },
+      "expected": { "in_scope": false, "findings": [] }
+    },
+    {
+      "id": "no_power_source_out_of_scope",
+      "answers": { "has_power_source": false, "rated_power_watts": 0, "is_toy_widget": false },
+      "expected": { "in_scope": false, "findings": [] }
+    }
+  ]
+}

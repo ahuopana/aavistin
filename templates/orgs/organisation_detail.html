@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}{{ organisation.name }} · Aavistin{% endblock %}
+
+{% block content %}
+  <h1>{{ organisation.name }}</h1>
+  <p>Separation of duties: {{ organisation.get_sod_policy_display }}</p>
+
+  <h2>Product families</h2>
+  {% if product_families %}
+    {% for family in product_families %}
+      <h3>{{ family.name }} <small>({{ family.effective_sod_policy }})</small></h3>
+      {% with products=family.products.all %}
+        {% if products %}
+          <ul>
+            {% for product in products %}
+              <li>{{ product.name }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No products yet.</p>
+        {% endif %}
+      {% endwith %}
+    {% endfor %}
+  {% else %}
+    <p>No product families yet.</p>
+  {% endif %}
+{% endblock %}

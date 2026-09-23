@@ -235,6 +235,8 @@ The tool is an open-source team tool, single-tenant per deployment, but with org
 
 **Separation of duties** is an organisation policy: off, warn (default) or enforce. Families and products may only tighten it, never loosen it. "Same person" means anyone who edited any answer in the snapshot, not just the last editor. An approval made despite a warning is recorded in the audit trail and shown in the report.
 
+**Product-level authoring (deferred).** Product and everything beneath it (hardware variants/revisions, software releases/options, configurations) is Django-admin-only today; the Editor row above ("create releases and configurations") isn't yet enforced through any non-admin path. ADR 0008 records the intended fix — a dedicated authoring surface gated by role assignments, with add/modify/approve at product level and below, and delete blocked once approved. Organisation, product family, groups, requirement/method/catalog packages and user records stay admin-only by design, not as a gap.
+
 ## Risk assessment: methods and catalogs
 
 Risk assessment is package-driven like applicability: method packages define how risk is scored, catalog packages define what is analysed. The default method is CIA-based asset analysis with a 5 × 5 severity × likelihood matrix. Each regulation selects the method(s) it requires, so one product can use several methods.

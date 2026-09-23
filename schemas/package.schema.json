@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aavistin.example/schemas/package.schema.json",
+  "title": "Requirement package",
+  "description": "See docs/architecture.md, \"Requirement sources\", for the field semantics.",
+  "type": "object",
+  "required": ["source", "type", "jurisdiction", "version", "questions", "scope"],
+  "additionalProperties": false,
+  "properties": {
+    "source": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Namespaced package id, e.g. eu-cra, demo-widget-safety."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["legislation", "harmonised_standard", "qms", "customer", "guidance"]
+    },
+    "jurisdiction": {
+      "type": "string",
+      "description": "Matched against TargetMarket.code, e.g. EU, US, UK."
+    },
+    "version": {
+      "type": "string",
+      "description": "e.g. 2024-2847@2026-09"
+    },
+    "title": { "type": "string" },
+    "legal_sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "celex": { "type": "string" },
+          "eli": { "type": "string" },
+          "citation": { "type": "string" }
+        }
+      },
+      "default": []
+    },
+    "dates_of_application": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "from": { "type": "string", "format": "date" },
+        "until": { "type": "string", "format": "date" }
+      }
+    },
+    "supersedes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/packageRef" },
+      "default": []
+    },
+    "amends": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/packageRef" },
+      "default": []
+    },
+    "redistributable": {
+      "type": "boolean",
+      "default": true,
+      "description": "False for content (e.g. standards clause summaries) with restricted redistribution."
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/question" }
+    },
+    "scope": { "$ref": "#/$defs/scope" },
+    "classifications": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/classification" },
+      "default": []
+    },
+    "requirements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/requirement" },
+      "default": []
+    },
+    "assessment_routes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/assessmentRoute" },
+      "default": []
+    },
+    "finding_rules": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/findingRule" },
+      "default": []
+    },
+    "fixtures": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fixture" },
+      "default": []
+    }
+  },
+  "$defs": {
+    "packageRef": {
+      "type": "object",
+      "required": ["source", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string" },
+        "version": { "type": "string" }
+      }
+    },
+    "question": {
+      "type": "object",
+      "required": ["id", "type", "level"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "type": { "type": "string", "enum": ["boolean", "choice", "number"] },
+        "level": {
+          "type": "string",
+          "enum": ["product", "hardware", "software", "option"]
+        },
+        "label": { "type": "string" },
+        "unit": { "type": "string" },
+        "choices": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "condition": { "$ref": "#/$defs/expression" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "choice" } } },
+          "then": { "required": ["choices"] }
+        }
+      ]
+    },
+    "expression": {
+      "description": "A JSONLogic-subset expression; see apps/packages/ruleengine.py for the supported operators.",
+      "type": ["object", "boolean"]
+    },
+    "scope": {
+      "type": "object",
+      "required": ["include"],
+      "additionalProperties": false,
+      "properties": {
+        "include": { "$ref": "#/$defs/expression" },
+        "exclude": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/scopeExclusion" },
+          "default": []
+        }
+      }
+    },
+    "scopeExclusion": {
+      "type": "object",
+      "required": ["id", "when", "ref"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "when": { "$ref": "#/$defs/expression" },
+        "ref": { "type": "string", "description": "Legal reference, e.g. Art. 2(2)" }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "required": ["id", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "when": { "$ref": "#/$defs/expression" }
+      }
+    },
+    "requirement": {
+      "type": "object",
+      "required": ["id", "roles"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "roles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["manufacturer", "importer", "distributor"]
+          }
+        },
+        "applies_to_classes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "ref": { "type": "string" }
+      }
+    },
+    "assessmentRoute": {
+      "type": "object",
+      "required": ["id", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "allowed_when": { "$ref": "#/$defs/expression" }
+      }
+    },
+    "findingRule": {
+      "type": "object",
+      "required": ["id", "level", "when", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "level": { "type": "string", "enum": ["info", "caution", "action_required"] },
+        "when": { "$ref": "#/$defs/expression" },
+        "message": { "type": "string" },
+        "ref": { "type": "string" }
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "required": ["id", "answers", "expected"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "answers": { "type": "object" },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "in_scope": { "type": "boolean" },
+            "findings": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: aavistin
+      POSTGRES_PASSWORD: aavistin
+      POSTGRES_DB: aavistin
+    ports:
+      - "5432:5432"
+    volumes:
+      - aavistin_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aavistin"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DEBUG: "True"
+      DJANGO_SECRET_KEY: dev-secret-key-not-for-production
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      DATABASE_URL: postgres://aavistin:aavistin@db:5432/aavistin
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  aavistin_pgdata:

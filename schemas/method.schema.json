@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aavistin.example/schemas/method.schema.json",
+  "title": "Risk method package",
+  "description": "Defines how risk is scored. See docs/architecture.md, \"Risk assessment: methods and catalogs\".",
+  "type": "object",
+  "required": ["source", "kind", "version", "properties", "severity", "likelihood", "matrix", "acceptance"],
+  "additionalProperties": false,
+  "properties": {
+    "source": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "kind": { "const": "method" },
+    "version": { "type": "string" },
+    "title": { "type": "string" },
+    "properties": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "Security/safety properties this method rates, e.g. confidentiality, integrity, availability, or safety."
+    },
+    "severity": { "$ref": "#/$defs/scale" },
+    "likelihood": { "$ref": "#/$defs/scale" },
+    "matrix": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/matrixRule" },
+      "description": "Evaluated in order; the first matching rule (or the first with no 'when') wins."
+    },
+    "acceptance": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "string", "enum": ["accept", "justify", "must_treat"] },
+      "description": "Maps a matrix level (e.g. 'high') to what it requires."
+    },
+    "severity_mappings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/severityMapping" },
+      "default": []
+    },
+    "fixtures": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fixture" },
+      "default": []
+    }
+  },
+  "$defs": {
+    "scale": {
+      "type": "object",
+      "required": ["scale", "labels"],
+      "additionalProperties": false,
+      "properties": {
+        "scale": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[min, max], inclusive."
+        },
+        "labels": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2
+        }
+      }
+    },
+    "matrixRule": {
+      "type": "object",
+      "required": ["level"],
+      "additionalProperties": false,
+      "properties": {
+        "when": {
+          "description": "JSONLogic-subset expression over {s: severity, l: likelihood}. Omit for the catch-all rule.",
+          "type": ["object", "boolean"]
+        },
+        "level": { "type": "string" }
+      }
+    },
+    "severityMapping": {
+      "type": "object",
+      "required": ["to_method", "mapping"],
+      "additionalProperties": false,
+      "properties": {
+        "to_method": { "type": "string" },
+        "mapping": {
+          "type": "object",
+          "description": "This method's severity value (as a string key) -> the minimum severity value on to_method's scale."
+        }
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "required": ["id", "inputs", "expected"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "inputs": {
+          "type": "object",
+          "required": ["s", "l"],
+          "additionalProperties": false,
+          "properties": {
+            "s": { "type": "integer" },
+            "l": { "type": "integer" }
+          }
+        },
+        "expected": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "level": { "type": "string" },
+            "acceptance": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

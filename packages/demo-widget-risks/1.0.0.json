@@ -1,0 +1,59 @@
+{
+  "source": "demo-widget-risks",
+  "kind": "catalog",
+  "version": "1.0.0",
+  "title": "Demo widget risk catalog (fictional, for tests only)",
+  "applies_to_methods": ["default-cia-5x5", "demo-safety-5x5"],
+  "asset_types": [
+    {
+      "id": "widget_firmware",
+      "label": "Widget firmware",
+      "typical_cia": { "confidentiality": 2, "integrity": 4, "availability": 3 }
+    }
+  ],
+  "entries": [
+    {
+      "id": "wireless_eavesdropping",
+      "entry_type": "threat",
+      "label": "Wireless eavesdropping",
+      "description": "An attacker intercepts unencrypted wireless traffic.",
+      "violates": "confidentiality",
+      "trigger": { "var": "has_wireless" },
+      "suggested_controls": ["Encrypt wireless communication"]
+    },
+    {
+      "id": "unauthorized_wireless_access",
+      "entry_type": "threat",
+      "label": "Unauthorised access via wireless interface",
+      "description": "An attacker uses the wireless interface to tamper with the widget.",
+      "violates": "integrity",
+      "trigger": { "var": "has_wireless" },
+      "suggested_controls": ["Authenticate wireless clients", "Secure boot"]
+    },
+    {
+      "id": "overheating_fire",
+      "entry_type": "hazard",
+      "label": "Overheating leading to fire",
+      "description": "Excessive power draw overheats the widget, risking fire.",
+      "causes": ["hardware_failure", "cyberattack"],
+      "trigger": { ">": [{ "var": "rated_power_watts" }, 80] },
+      "suggested_controls": ["Thermal fuse", "Firmware power limiting"]
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "wireless_high_power_widget",
+      "context": { "has_wireless": true, "rated_power_watts": 100, "is_toy_widget": false },
+      "expected_triggered": [
+        "wireless_eavesdropping",
+        "unauthorized_wireless_access",
+        "overheating_fire"
+      ]
+    },
+    {
+      "id": "wired_low_power_widget",
+      "context": { "has_wireless": false, "rated_power_watts": 20, "is_toy_widget": false },
+      "expected_triggered": []
+    }
+  ]
+}

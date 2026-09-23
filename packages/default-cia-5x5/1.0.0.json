@@ -1,0 +1,32 @@
+{
+  "source": "default-cia-5x5",
+  "kind": "method",
+  "version": "1.0.0",
+  "title": "Default CIA-based method, 5x5 matrix",
+  "properties": ["confidentiality", "integrity", "availability"],
+  "severity": {
+    "scale": [1, 5],
+    "labels": ["negligible", "minor", "moderate", "major", "critical"]
+  },
+  "likelihood": {
+    "scale": [1, 5],
+    "labels": ["rare", "unlikely", "possible", "likely", "almost_certain"]
+  },
+  "matrix": [
+    { "when": { ">=": [{ "*": [{ "var": "s" }, { "var": "l" }] }, 15] }, "level": "high" },
+    { "when": { ">=": [{ "*": [{ "var": "s" }, { "var": "l" }] }, 6] }, "level": "medium" },
+    { "level": "low" }
+  ],
+  "acceptance": { "high": "must_treat", "medium": "justify", "low": "accept" },
+  "severity_mappings": [
+    {
+      "to_method": "demo-safety-5x5",
+      "mapping": { "1": 1, "2": 2, "3": 3, "4": 4, "5": 5 }
+    }
+  ],
+  "fixtures": [
+    { "id": "low", "inputs": { "s": 2, "l": 2 }, "expected": { "level": "low", "acceptance": "accept" } },
+    { "id": "medium", "inputs": { "s": 3, "l": 3 }, "expected": { "level": "medium", "acceptance": "justify" } },
+    { "id": "high", "inputs": { "s": 5, "l": 4 }, "expected": { "level": "high", "acceptance": "must_treat" } }
+  ]
+}
