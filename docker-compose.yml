@@ -40,9 +40,10 @@ services:
   # interval. Neither needs its own service beyond Postgres.
   worker:
     build: .
-    command: sh -c "uv run manage.py migrate && uv run manage.py db_worker"
+    command: sh -c "python manage.py migrate && python manage.py db_worker"
     volumes:
       - .:/app
+      - aavistin_venv:/app/.venv
     environment:
       DEBUG: "True"
       DJANGO_SECRET_KEY: dev-secret-key-not-for-production
@@ -54,9 +55,10 @@ services:
 
   scheduler:
     build: .
-    command: uv run manage.py scheduler
+    command: python manage.py scheduler
     volumes:
       - .:/app
+      - aavistin_venv:/app/.venv
     environment:
       DEBUG: "True"
       DJANGO_SECRET_KEY: dev-secret-key-not-for-production
