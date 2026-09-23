@@ -12,6 +12,8 @@ dependencies = [
     { name = "django-environ" },
     { name = "django-ninja" },
     { name = "django-simple-history" },
+    { name = "django-tasks" },
+    { name = "django-tasks-db" },
     { name = "gunicorn" },
     { name = "jsonschema" },
     { name = "nh3" },
@@ -32,6 +34,8 @@ requires-dist = [
     { name = "django-environ", specifier = ">=0.14.0" },
     { name = "django-ninja", specifier = ">=1.7.1" },
     { name = "django-simple-history", specifier = ">=3.13.0" },
+    { name = "django-tasks", specifier = ">=0.12.0" },
+    { name = "django-tasks-db", specifier = ">=0.13.0" },
     { name = "gunicorn", specifier = ">=26.2.0" },
     { name = "jsonschema", specifier = ">=4.26.0" },
     { name = "nh3", specifier = ">=0.3.7" },
@@ -140,6 +144,47 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/6b/1c/0689c13c0aa36df828947692f4e309f93c58e075219735c423edbbf6227d/django_simple_history-3.13.0.tar.gz", hash = "sha256:ca3c1e4ccd5f16f45fbbef6015ee2a246465fd9bd924100df8e9dfb368c4f26c", size = 236759, upload-time = "2026-07-22T13:41:29.588Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/65/60/41b2055db523b18a7ef67d0ce7c7c3204bf1b01e388628c8ce578daca7ec/django_simple_history-3.13.0-py3-none-any.whl", hash = "sha256:1cf1d83054479f64aee022023afc1671843aa0a99888799c5c4c3966b0252521", size = 82040, upload-time = "2026-07-22T13:41:28.083Z" },
+]
+
+[[package]]
+name = "django-stubs-ext"
+version = "6.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4c/70/5f80a3acf99d26dea89e892d4573f0e650904e573708b5fbf3bfc9cec72c/django_stubs_ext-6.1.1.tar.gz", hash = "sha256:c35263135558d4c5d12b69e1f4c98632bf59bc3ab5118f7d4882d12800e3a7dd", size = 7217, upload-time = "2026-09-14T08:45:52.44Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/99/c3/305a9f7611c0dc96d2a638bc3a67bdcde5a7faa5f4669188db018b8af6fc/django_stubs_ext-6.1.1-py3-none-any.whl", hash = "sha256:64aebb7ce2c327a4a2b75207d67034e879fd7edf027c93487be69da363dc79fa", size = 10853, upload-time = "2026-09-14T08:45:51.289Z" },
+]
+
+[[package]]
+name = "django-tasks"
+version = "0.12.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "django-stubs-ext" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1d/6e/34d4e77bb7951e5a5acbd846f43240f062c68bb04d9c246cb446a55d4cbc/django_tasks-0.12.0.tar.gz", hash = "sha256:58be66c1e487da32a3ce7320bd1949d0d1dc381b9004819f92591eb37fb2c1b8", size = 15445, upload-time = "2026-02-06T16:15:33.593Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/e7/40c45768e84efd77e3ae6ffdcd2b5540011036cbb00c6df6ef2a2ad69551/django_tasks-0.12.0-py3-none-any.whl", hash = "sha256:ffcc1d7bdfad3bc5ef9c2d498596c6546484c9ec6b182fb9709c691eb66a8709", size = 15758, upload-time = "2026-02-06T16:15:32.168Z" },
+]
+
+[[package]]
+name = "django-tasks-db"
+version = "0.13.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "django-stubs-ext" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6c/e9/fd12dc51bb25c52658bbf329a6f2454b215d063fca8c8342458a474dae16/django_tasks_db-0.13.0.tar.gz", hash = "sha256:09630d417cf722b07e1439b837403e18e86455908ba532fa6795b0d23dc3ff23", size = 29608, upload-time = "2026-08-28T15:05:32.098Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/30/d2/8b10117fca37a2d1f2e45f4878ffa07cf6c0c8df1920e250db30e2228b9e/django_tasks_db-0.13.0-py3-none-any.whl", hash = "sha256:a3a47250b09d40e9b289851d2a550d840d29e59ee3e7115129831e291bb35576", size = 31991, upload-time = "2026-08-28T15:05:30.767Z" },
 ]
 
 [[package]]

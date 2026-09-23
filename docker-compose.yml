@@ -33,5 +33,37 @@ services:
       db:
         condition: service_healthy
 
+  # Background jobs (docs/adr/0007-background-job-backend.md): worker
+  # processes tasks enqueued to the Postgres-backed queue; scheduler
+  # enqueues the periodic ones (e.g. staleness recompute) on an
+  # interval. Neither needs its own service beyond Postgres.
+  worker:
+    build: .
+    command: sh -c "uv run manage.py migrate && uv run manage.py db_worker"
+    volumes:
+      - .:/app
+    environment:
+      DEBUG: "True"
+      DJANGO_SECRET_KEY: dev-secret-key-not-for-production
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      DATABASE_URL: postgres://aavistin:aavistin@db:5432/aavistin
+    depends_on:
+      db:
+        condition: service_healthy
+
+  scheduler:
+    build: .
+    command: uv run manage.py scheduler
+    volumes:
+      - .:/app
+    environment:
+      DEBUG: "True"
+      DJANGO_SECRET_KEY: dev-secret-key-not-for-production
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      DATABASE_URL: postgres://aavistin:aavistin@db:5432/aavistin
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   aavistin_pgdata:

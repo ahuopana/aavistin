@@ -9,7 +9,7 @@ docs/architecture.md, "Treatment and approval").
 from django.utils import timezone
 
 from .consistency import check_threat_hazard_consistency
-from .models import EntryType, RiskAssessmentStatus
+from .models import EntryType, RiskAssessment, RiskAssessmentStatus
 from .rating import evaluate_entry_rating, evaluate_residual_rating
 from .resolution import register_for_configuration
 
@@ -87,6 +87,13 @@ def approve_risk_assessment(risk_assessment, *, actor=None):
 
 
 def recompute_staleness(risk_assessment) -> bool:
+    """Recomputes and persists RiskAssessment.stale; returns the new value.
+
+    Called explicitly — by `recompute_all_staleness` below (itself called
+    from the `refresh_risk_assessment_staleness` management command and
+    from `apps.risk.tasks.refresh_staleness_task`, see
+    docs/adr/0007-background-job-backend.md) — never from a signal.
+    """
     if risk_assessment.status != RiskAssessmentStatus.APPROVED or risk_assessment.snapshot is None:
         return False
 
@@ -95,3 +102,18 @@ def recompute_staleness(risk_assessment) -> bool:
         risk_assessment.stale = is_stale
         risk_assessment.save(update_fields=["stale"])
     return is_stale
+
+
+def recompute_all_staleness() -> tuple[int, int]:
+    """Recomputes staleness for every approved risk assessment.
+
+    Returns (checked, newly_stale). Shared by the manual management
+    command and the periodic task so there's one code path either way.
+    """
+    checked = 0
+    newly_stale = 0
+    for risk_assessment in RiskAssessment.objects.filter(status=RiskAssessmentStatus.APPROVED):
+        checked += 1
+        if recompute_staleness(risk_assessment):
+            newly_stale += 1
+    return checked, newly_stale
