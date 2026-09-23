@@ -18,10 +18,11 @@ services:
   web:
     build: .
     command: >
-      sh -c "uv run manage.py migrate &&
-             uv run manage.py runserver 0.0.0.0:8000"
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
+      - aavistin_venv:/app/.venv
     ports:
       - "8000:8000"
     environment:
@@ -67,3 +68,8 @@ services:
 
 volumes:
   aavistin_pgdata:
+  # Named volume for /app/.venv on services that bind-mount the project
+  # root: this keeps the image's build-time venv from being shadowed by
+  # the host checkout (which has no .venv), instead of shipping uv into
+  # the runtime image just to rebuild it there.
+  aavistin_venv:
