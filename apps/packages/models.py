@@ -2,6 +2,17 @@ from django.conf import settings
 from django.db import models
 
 
+class PackageKind(models.TextChoices):
+    """What a package IS, structurally. See docs/architecture.md,
+    "Risk assessment: methods and catalogs": method packages define how
+    risk is scored, catalog packages define what is analysed — a
+    different shape from a requirement (applicability) package."""
+
+    REQUIREMENT = "requirement", "Requirement (applicability)"
+    METHOD = "method", "Risk method"
+    CATALOG = "catalog", "Risk catalog"
+
+
 class PackageType(models.TextChoices):
     LEGISLATION = "legislation", "Legislation"
     HARMONISED_STANDARD = "harmonised_standard", "Harmonised standard"
@@ -31,8 +42,22 @@ class RequirementPackage(models.Model):
 
     source = models.CharField(max_length=100)
     version = models.CharField(max_length=100)
-    package_type = models.CharField(max_length=32, choices=PackageType.choices)
-    jurisdiction = models.CharField(max_length=16)
+    kind = models.CharField(
+        max_length=16, choices=PackageKind.choices, default=PackageKind.REQUIREMENT
+    )
+    package_type = models.CharField(
+        max_length=32,
+        choices=PackageType.choices,
+        blank=True,
+        default="",
+        help_text="Requirement packages only; meaningless for method/catalog kinds.",
+    )
+    jurisdiction = models.CharField(
+        max_length=16,
+        blank=True,
+        default="",
+        help_text="Requirement packages only; method/catalog packages aren't market-scoped.",
+    )
     title = models.CharField(max_length=200, blank=True, default="")
     content = models.JSONField()
     is_official = models.BooleanField(

@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.products",
     "apps.packages",
     "apps.assessments",
+    "apps.risk",
 ]
 
 MIDDLEWARE = [

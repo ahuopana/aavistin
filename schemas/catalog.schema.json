@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aavistin.example/schemas/catalog.schema.json",
+  "title": "Risk catalog package",
+  "description": "Defines what is analysed: candidate assets, threats and hazards. See docs/architecture.md, \"Risk assessment: methods and catalogs\".",
+  "type": "object",
+  "required": ["source", "kind", "version", "applies_to_methods", "entries"],
+  "additionalProperties": false,
+  "properties": {
+    "source": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+    "kind": { "const": "catalog" },
+    "version": { "type": "string" },
+    "title": { "type": "string" },
+    "applies_to_methods": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "Method package source id(s) this catalog's entries are rated with."
+    },
+    "asset_types": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/assetType" },
+      "default": []
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/entry" }
+    },
+    "fixtures": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/fixture" },
+      "default": []
+    }
+  },
+  "$defs": {
+    "assetType": {
+      "type": "object",
+      "required": ["id", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "typical_cia": {
+          "type": "object",
+          "additionalProperties": { "type": "integer" }
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "required": ["id", "entry_type", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "entry_type": { "type": "string", "enum": ["threat", "hazard"] },
+        "label": { "type": "string" },
+        "description": { "type": "string" },
+        "violates": {
+          "type": "string",
+          "description": "Threats only: the property (from the method's 'properties') this threat violates."
+        },
+        "causes": {
+          "type": "array",
+          "description": "Hazards only.",
+          "items": {
+            "type": "string",
+            "enum": ["hardware_failure", "software_fault", "foreseeable_misuse", "cyberattack"]
+          }
+        },
+        "trigger": {
+          "description": "JSONLogic-subset expression over applicability answers/finding ids; absent means manual-only.",
+          "type": ["object", "boolean"]
+        },
+        "suggested_controls": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "ref": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "entry_type": { "const": "threat" } } },
+          "then": { "required": ["violates"] }
+        },
+        {
+          "if": { "properties": { "entry_type": { "const": "hazard" } } },
+          "then": { "required": ["causes"] }
+        }
+      ]
+    },
+    "fixture": {
+      "type": "object",
+      "required": ["id", "context", "expected_triggered"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "context": { "type": "object" },
+        "expected_triggered": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

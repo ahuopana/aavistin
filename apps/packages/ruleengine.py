@@ -81,12 +81,31 @@ def _binary(op):
     return handler
 
 
-def _numeric_binary(op):
+def _arithmetic(op):
     def handler(args, data):
         values = _as_list(args)
         if len(values) != 2:
             raise RuleEngineError("arithmetic operators take exactly two arguments")
         a, b = (evaluate(v, data) for v in values)
+        for v in (a, b):
+            if not isinstance(v, Number) or isinstance(v, bool):
+                raise RuleEngineError(f"expected a number, got {v!r}")
+        return op(a, b)
+
+    return handler
+
+
+def _comparison(op):
+    def handler(args, data):
+        values = _as_list(args)
+        if len(values) != 2:
+            raise RuleEngineError("comparison operators take exactly two arguments")
+        a, b = (evaluate(v, data) for v in values)
+        # An unanswered question (None) fails a numeric threshold rather
+        # than raising: "rated_power_watts > 80" is simply not yet true
+        # when the question hasn't been answered.
+        if a is None or b is None:
+            return False
         for v in (a, b):
             if not isinstance(v, Number) or isinstance(v, bool):
                 raise RuleEngineError(f"expected a number, got {v!r}")
@@ -112,14 +131,14 @@ OPERATORS = {
     "in": _eval_in,
     "==": _binary(lambda a, b: a == b),
     "!=": _binary(lambda a, b: a != b),
-    "<": _numeric_binary(lambda a, b: a < b),
-    "<=": _numeric_binary(lambda a, b: a <= b),
-    ">": _numeric_binary(lambda a, b: a > b),
-    ">=": _numeric_binary(lambda a, b: a >= b),
-    "+": _numeric_binary(lambda a, b: a + b),
-    "-": _numeric_binary(lambda a, b: a - b),
-    "*": _numeric_binary(lambda a, b: a * b),
-    "/": _numeric_binary(lambda a, b: a / b),
+    "<": _comparison(lambda a, b: a < b),
+    "<=": _comparison(lambda a, b: a <= b),
+    ">": _comparison(lambda a, b: a > b),
+    ">=": _comparison(lambda a, b: a >= b),
+    "+": _arithmetic(lambda a, b: a + b),
+    "-": _arithmetic(lambda a, b: a - b),
+    "*": _arithmetic(lambda a, b: a * b),
+    "/": _arithmetic(lambda a, b: a / b),
 }
 
 

@@ -1,0 +1,26 @@
+{
+  "source": "demo-safety-5x5",
+  "kind": "method",
+  "version": "1.0.0",
+  "title": "Demo safety-hazard method, 5x5 matrix (fictional, for tests only)",
+  "properties": ["safety"],
+  "severity": {
+    "scale": [1, 5],
+    "labels": ["negligible", "minor", "moderate", "major", "critical"]
+  },
+  "likelihood": {
+    "scale": [1, 5],
+    "labels": ["rare", "unlikely", "possible", "likely", "almost_certain"]
+  },
+  "matrix": [
+    { "when": { ">=": [{ "*": [{ "var": "s" }, { "var": "l" }] }, 15] }, "level": "high" },
+    { "when": { ">=": [{ "*": [{ "var": "s" }, { "var": "l" }] }, 6] }, "level": "medium" },
+    { "level": "low" }
+  ],
+  "acceptance": { "high": "must_treat", "medium": "justify", "low": "accept" },
+  "fixtures": [
+    { "id": "low", "inputs": { "s": 1, "l": 3 }, "expected": { "level": "low", "acceptance": "accept" } },
+    { "id": "medium", "inputs": { "s": 3, "l": 2 }, "expected": { "level": "medium", "acceptance": "justify" } },
+    { "id": "high", "inputs": { "s": 4, "l": 4 }, "expected": { "level": "high", "acceptance": "must_treat" } }
+  ]
+}

@@ -3,20 +3,29 @@ from pathlib import Path
 
 from django.conf import settings
 from django.core.management import call_command
+from django.db import IntegrityError, transaction
 from django.test import TestCase
 
+from .catalog_engine import run_catalog_fixtures, triggered_entries
 from .diffing import diff_packages
 from .fixtures_runner import run_fixtures
 from .importer import PackageImportError, approve_package, import_package
-from .linting import lint_package
-from .models import PackageStatus, RequirementPackage
+from .linting import lint_catalog, lint_method, lint_package
+from .method_engine import evaluate_matrix, run_method_fixtures
+from .models import PackageKind, PackageStatus, RequirementPackage
 from .ruleengine import RuleEngineError, evaluate
 
 DEMO_DIR = Path(settings.BASE_DIR) / "packages" / "demo-widget-safety"
+PACKAGES_DIR = Path(settings.BASE_DIR) / "packages"
 
 
 def load_demo(version: str) -> dict:
     with (DEMO_DIR / f"{version}.json").open() as f:
+        return json.load(f)
+
+
+def load_package(dirname: str, version: str) -> dict:
+    with (PACKAGES_DIR / dirname / f"{version}.json").open() as f:
         return json.load(f)
 
 
@@ -45,6 +54,16 @@ class RuleEngineTests(TestCase):
     def test_numeric_operator_rejects_non_number(self):
         with self.assertRaises(RuleEngineError):
             evaluate({">": ["a", 3]}, {})
+
+    def test_comparison_with_unanswered_question_is_false_not_an_error(self):
+        # An unanswered question resolves to None; a numeric threshold
+        # against it is simply not yet true, not a type error.
+        self.assertFalse(evaluate({">": [{"var": "missing"}, 80]}, {}))
+        self.assertFalse(evaluate({"<": [{"var": "missing"}, 80]}, {}))
+
+    def test_arithmetic_with_none_still_raises(self):
+        with self.assertRaises(RuleEngineError):
+            evaluate({"+": [{"var": "missing"}, 1]}, {})
 
     def test_if(self):
         self.assertEqual(evaluate({"if": [True, "yes", "no"]}, {}), "yes")
@@ -259,3 +278,172 @@ class ManagementCommandTests(TestCase):
         call_command("approve_package", "demo-widget-safety", "1.0.0")
         package.refresh_from_db()
         self.assertEqual(package.status, PackageStatus.APPROVED)
+
+
+class MethodEngineTests(TestCase):
+    def test_matrix_thresholds(self):
+        content = load_package("default-cia-5x5", "1.0.0")
+        self.assertEqual(evaluate_matrix(content, 2, 2)["level"], "low")
+        self.assertEqual(evaluate_matrix(content, 3, 3)["level"], "medium")
+        self.assertEqual(evaluate_matrix(content, 5, 4)["level"], "high")
+
+    def test_acceptance_follows_level(self):
+        content = load_package("default-cia-5x5", "1.0.0")
+        result = evaluate_matrix(content, 5, 5)
+        self.assertEqual(result, {"level": "high", "acceptance": "must_treat"})
+
+    def test_default_cia_5x5_fixtures_pass(self):
+        content = load_package("default-cia-5x5", "1.0.0")
+        report = run_method_fixtures(content)
+        self.assertTrue(all(r["passed"] for r in report), report)
+
+
+class MethodLintTests(TestCase):
+    def test_matrix_level_missing_from_acceptance_is_error(self):
+        content = {
+            "source": "x",
+            "kind": "method",
+            "version": "1.0.0",
+            "properties": ["confidentiality"],
+            "severity": {"scale": [1, 5], "labels": ["a", "b", "c", "d", "e"]},
+            "likelihood": {"scale": [1, 5], "labels": ["a", "b", "c", "d", "e"]},
+            "matrix": [{"level": "extreme"}],
+            "acceptance": {"low": "accept"},
+        }
+        issues = lint_method(
+            content, is_official=False, existing_packages=RequirementPackage.objects.none()
+        )
+        self.assertTrue(any(i["code"] == "unmapped_matrix_level" for i in issues))
+
+    def test_matrix_referencing_unknown_variable_warns(self):
+        content = {
+            "source": "x",
+            "kind": "method",
+            "version": "1.0.0",
+            "properties": ["confidentiality"],
+            "severity": {"scale": [1, 5], "labels": ["a", "b", "c", "d", "e"]},
+            "likelihood": {"scale": [1, 5], "labels": ["a", "b", "c", "d", "e"]},
+            "matrix": [{"when": {"var": "mystery"}, "level": "low"}],
+            "acceptance": {"low": "accept"},
+        }
+        issues = lint_method(
+            content, is_official=False, existing_packages=RequirementPackage.objects.none()
+        )
+        matches = [i for i in issues if i["code"] == "unknown_matrix_variable"]
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]["severity"], "warning")
+
+
+class CatalogEngineTests(TestCase):
+    def test_triggers_fire_from_context(self):
+        content = load_package("demo-widget-risks", "1.0.0")
+        triggered = triggered_entries(content, {"has_wireless": True, "rated_power_watts": 20})
+        self.assertIn("wireless_eavesdropping", triggered)
+        self.assertIn("unauthorized_wireless_access", triggered)
+        self.assertNotIn("overheating_fire", triggered)
+
+    def test_no_triggers_when_context_is_negative(self):
+        content = load_package("demo-widget-risks", "1.0.0")
+        triggered = triggered_entries(content, {"has_wireless": False, "rated_power_watts": 5})
+        self.assertEqual(triggered, [])
+
+    def test_demo_catalog_fixtures_pass(self):
+        content = load_package("demo-widget-risks", "1.0.0")
+        report = run_catalog_fixtures(content)
+        self.assertTrue(all(r["passed"] for r in report), report)
+
+
+class CatalogLintTests(TestCase):
+    def test_unknown_trigger_question_is_warning_not_error(self):
+        content = {
+            "source": "x",
+            "kind": "catalog",
+            "version": "1.0.0",
+            "applies_to_methods": ["default-cia-5x5"],
+            "entries": [
+                {
+                    "id": "t1",
+                    "entry_type": "threat",
+                    "label": "Threat 1",
+                    "violates": "confidentiality",
+                    "trigger": {"var": "some_future_question"},
+                }
+            ],
+        }
+        issues = lint_catalog(
+            content,
+            is_official=False,
+            existing_packages=RequirementPackage.objects.none(),
+            known_question_ids=set(),
+        )
+        matches = [i for i in issues if i["code"] == "unknown_trigger_question"]
+        self.assertEqual(len(matches), 1)
+        self.assertEqual(matches[0]["severity"], "warning")
+
+    def test_known_trigger_question_is_clean(self):
+        content = {
+            "source": "x",
+            "kind": "catalog",
+            "version": "1.0.0",
+            "applies_to_methods": ["default-cia-5x5"],
+            "entries": [
+                {
+                    "id": "t1",
+                    "entry_type": "threat",
+                    "label": "Threat 1",
+                    "violates": "confidentiality",
+                    "trigger": {"var": "has_wireless"},
+                }
+            ],
+        }
+        issues = lint_catalog(
+            content,
+            is_official=False,
+            existing_packages=RequirementPackage.objects.none(),
+            known_question_ids={"has_wireless"},
+        )
+        self.assertEqual(issues, [])
+
+
+class MethodCatalogImportPipelineTests(TestCase):
+    def test_import_method_package(self):
+        package = import_package(
+            load_package("default-cia-5x5", "1.0.0"), kind=PackageKind.METHOD, is_official=True
+        )
+        self.assertEqual(package.kind, PackageKind.METHOD)
+        self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+        self.assertEqual(package.package_type, "")
+        self.assertEqual(package.jurisdiction, "")
+
+    def test_import_catalog_references_known_questions_cleanly(self):
+        import_package(load_demo("1.1.0"), is_official=True)
+        package = import_package(
+            load_package("demo-widget-risks", "1.0.0"),
+            kind=PackageKind.CATALOG,
+            is_official=True,
+        )
+        self.assertEqual(package.lint_report, [])
+        self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+
+    def test_import_catalog_before_its_questions_exist_only_warns(self):
+        package = import_package(
+            load_package("demo-widget-risks", "1.0.0"),
+            kind=PackageKind.CATALOG,
+            is_official=True,
+        )
+        # Still reaches fixtures_passed: unknown_trigger_question is a
+        # warning, not an error, and doesn't block linted -> fixtures.
+        self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+        self.assertTrue(any(i["code"] == "unknown_trigger_question" for i in package.lint_report))
+
+    def test_method_and_requirement_packages_share_the_source_namespace(self):
+        import_package(
+            load_package("default-cia-5x5", "1.0.0"), kind=PackageKind.METHOD, is_official=True
+        )
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            RequirementPackage.objects.create(
+                source="default-cia-5x5",
+                version="1.0.0",
+                kind=PackageKind.METHOD,
+                content={},
+            )
