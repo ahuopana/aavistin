@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} · Aavistin{% endblock %}
+
+{% block content %}
+  <h1>
+    {{ product.name }}
+    {% if product.is_approved %}<span class="message message-info">approved</span>{% endif %}
+  </h1>
+  <p>{{ product.product_family }}</p>
+  {% if product.description %}<p>{{ product.description }}</p>{% endif %}
+
+  {% if can_edit %}
+    <details>
+      <summary>Edit product</summary>
+      <form method="post" action="{% url 'products:product_edit' product.pk %}">
+        {% csrf_token %}
+        <input type="text" name="name" value="{{ product.name }}" required>
+        <input type="text" name="slug" value="{{ product.slug }}" required>
+        <textarea name="description" placeholder="description">{{ product.description }}</textarea>
+        <button type="submit">Save</button>
+      </form>
+    </details>
+  {% endif %}
+  <p>
+    {% if can_approve and not product.is_approved %}
+      <form method="post" action="{% url 'products:entity_approve' 'product' product.pk %}" style="display:inline">
+        {% csrf_token %}
+        <button type="submit">Approve product</button>
+      </form>
+    {% endif %}
+    {% if can_edit and not product.is_approved %}
+      <form method="post" action="{% url 'products:entity_delete' 'product' product.pk %}" style="display:inline">
+        {% csrf_token %}
+        <button type="submit">Delete product</button>
+      </form>
+    {% endif %}
+  </p>
+
+  <h2>Hardware variants</h2>
+  {% for variant in product.hw_variants.all %}
+    <h3>
+      {{ variant.name }}
+      {% if variant.is_approved %}<span class="message message-info">approved</span>{% endif %}
+    </h3>
+    <p>Target markets: {% for tm in variant.target_markets.all %}{{ tm.code }}{% if not forloop.last %}, {% endif %}{% empty %}none{% endfor %}</p>
+    {% if can_edit %}
+      <details>
+        <summary>Edit</summary>
+        <form method="post" action="{% url 'products:hardware_variant_edit' variant.pk %}">
+          {% csrf_token %}
+          <input type="text" name="name" value="{{ variant.name }}" required>
+          <input type="text" name="slug" value="{{ variant.slug }}" required>
+          <label>Target markets:
+            <select name="target_markets" multiple>
+              {% for tm in target_markets %}
+                <option value="{{ tm.id }}" {% if tm in variant.target_markets.all %}selected{% endif %}>{{ tm.code }} — {{ tm.name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <button type="submit">Save</button>
+        </form>
+      </details>
+    {% endif %}
+    <p>
+      {% if can_approve and not variant.is_approved %}
+        <form method="post" action="{% url 'products:entity_approve' 'hardware-variant' variant.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit">Approve</button>
+        </form>
+      {% endif %}
+      {% if can_edit and not variant.is_approved %}
+        <form method="post" action="{% url 'products:entity_delete' 'hardware-variant' variant.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit">Delete</button>
+        </form>
+      {% endif %}
+    </p>
+
+    <h4>Revisions</h4>
+    <ul>
+      {% for revision in variant.revisions.all %}
+        <li>
+          Rev {{ revision.label }} ({{ revision.released_at|default:"unreleased" }})
+          {% if revision.is_approved %}<span class="message message-info">approved</span>{% endif %}
+          {% if can_approve and not revision.is_approved %}
+            <form method="post" action="{% url 'products:entity_approve' 'hardware-revision' revision.pk %}" style="display:inline">
+              {% csrf_token %}
+              <button type="submit">Approve</button>
+            </form>
+          {% endif %}
+          {% if can_edit and not revision.is_approved %}
+            <form method="post" action="{% url 'products:entity_delete' 'hardware-revision' revision.pk %}" style="display:inline">
+              {% csrf_token %}
+              <button type="submit">Delete</button>
+            </form>
+          {% endif %}
+        </li>
+      {% empty %}
+        <li>No revisions yet.</li>
+      {% endfor %}
+    </ul>
+    {% if can_edit %}
+      <form method="post" action="{% url 'products:hardware_revision_create' variant.pk %}">
+        {% csrf_token %}
+        <input type="text" name="label" placeholder="Rev label (e.g. A)" required>
+        <input type="date" name="released_at">
+        <button type="submit">+ Add revision</button>
+      </form>
+    {% endif %}
+  {% empty %}
+    <p>No hardware variants yet.</p>
+  {% endfor %}
+  {% if can_edit %}
+    <form method="post" action="{% url 'products:hardware_variant_create' product.pk %}">
+      {% csrf_token %}
+      <input type="text" name="name" placeholder="Variant name" required>
+      <input type="text" name="slug" placeholder="slug" required>
+      <button type="submit">+ Add hardware variant</button>
+    </form>
+  {% endif %}
+
+  <h2>Software releases</h2>
+  {% for release in product.sw_releases.all %}
+    <h3>
+      {{ release.version }}
+      {% if release.is_approved %}<span class="message message-info">approved</span>{% endif %}
+    </h3>
+    {% if can_edit %}
+      <details>
+        <summary>Edit</summary>
+        <form method="post" action="{% url 'products:software_release_edit' release.pk %}">
+          {% csrf_token %}
+          <input type="text" name="version" value="{{ release.version }}" required>
+          <input type="date" name="released_at" value="{{ release.released_at|date:'Y-m-d' }}">
+          <button type="submit">Save</button>
+        </form>
+      </details>
+    {% endif %}
+    <p>
+      {% if can_approve and not release.is_approved %}
+        <form method="post" action="{% url 'products:entity_approve' 'software-release' release.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit">Approve</button>
+        </form>
+      {% endif %}
+      {% if can_edit and not release.is_approved %}
+        <form method="post" action="{% url 'products:entity_delete' 'software-release' release.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit">Delete</button>
+        </form>
+      {% endif %}
+    </p>
+
+    <h4>Options</h4>
+    <ul>
+      {% for option in release.options.all %}
+        <li>
+          {{ option.name }}
+          {% if option.is_approved %}<span class="message message-info">approved</span>{% endif %}
+          {% if can_approve and not option.is_approved %}
+            <form method="post" action="{% url 'products:entity_approve' 'software-option' option.pk %}" style="display:inline">
+              {% csrf_token %}
+              <button type="submit">Approve</button>
+            </form>
+          {% endif %}
+          {% if can_edit and not option.is_approved %}
+            <form method="post" action="{% url 'products:entity_delete' 'software-option' option.pk %}" style="display:inline">
+              {% csrf_token %}
+              <button type="submit">Delete</button>
+            </form>
+          {% endif %}
+        </li>
+      {% empty %}
+        <li>No options yet.</li>
+      {% endfor %}
+    </ul>
+    {% if can_edit %}
+      <form method="post" action="{% url 'products:software_option_create' release.pk %}">
+        {% csrf_token %}
+        <input type="text" name="name" placeholder="Option name" required>
+        <input type="text" name="slug" placeholder="slug" required>
+        <button type="submit">+ Add option</button>
+      </form>
+    {% endif %}
+  {% empty %}
+    <p>No software releases yet.</p>
+  {% endfor %}
+  {% if can_edit %}
+    <form method="post" action="{% url 'products:software_release_create' product.pk %}">
+      {% csrf_token %}
+      <input type="text" name="version" placeholder="Version (e.g. 1.0.0)" required>
+      <input type="date" name="released_at">
+      <button type="submit">+ Add software release</button>
+    </form>
+  {% endif %}
+
+  <h2>Configurations</h2>
+  {% for configuration in configurations %}
+    <h3>
+      <a href="{% url 'assessments:configuration_detail' configuration.pk %}">{{ configuration.name }}</a>
+      {% if configuration.is_approved %}<span class="message message-info">approved</span>{% endif %}
+    </h3>
+    <p>
+      {{ configuration.hardware_revision }} / {{ configuration.software_release }}
+      {% with options=configuration.software_options.all %}
+        {% if options %} + {% for o in options %}{{ o.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
+      {% endwith %}
+    </p>
+    {% if can_edit %}
+      <details>
+        <summary>Edit</summary>
+        <form method="post" action="{% url 'products:configuration_edit' configuration.pk %}">
+          {% csrf_token %}
+          <input type="text" name="name" value="{{ configuration.name }}" required>
+          <select name="hardware_revision" required>
+            {% for rev in hardware_revisions %}
+              <option value="{{ rev.id }}" {% if rev == configuration.hardware_revision %}selected{% endif %}>{{ rev }}</option>
+            {% endfor %}
+          </select>
+          <select name="software_release" required>
+            {% for rel in software_releases %}
+              <option value="{{ rel.id }}" {% if rel == configuration.software_release %}selected{% endif %}>{{ rel }}</option>
+            {% endfor %}
+          </select>
+          <select name="software_options" multiple>
+            {% for rel in software_releases %}
+              {% for opt in rel.options.all %}
+                <option value="{{ opt.id }}" {% if opt in configuration.software_options.all %}selected{% endif %}>{{ opt }}</option>
+              {% endfor %}
+            {% endfor %}
+          </select>
+          <button type="submit">Save</button>
+        </form>
+      </details>
+    {% endif %}
+    <p>
+      {% if can_approve and not configuration.is_approved %}
+        <form method="post" action="{% url 'products:entity_approve' 'configuration' configuration.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit">Approve</button>
+        </form>
+      {% endif %}
+      {% if can_edit and not configuration.is_approved %}
+        <form method="post" action="{% url 'products:entity_delete' 'configuration' configuration.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit">Delete</button>
+        </form>
+      {% endif %}
+    </p>
+  {% empty %}
+    <p>No configurations yet.</p>
+  {% endfor %}
+  {% if can_edit %}
+    <form method="post" action="{% url 'products:configuration_create' product.pk %}">
+      {% csrf_token %}
+      <input type="text" name="name" placeholder="Configuration name" required>
+      <select name="hardware_revision" required>
+        <option value="">— HW revision —</option>
+        {% for rev in hardware_revisions %}
+          <option value="{{ rev.id }}">{{ rev }}</option>
+        {% endfor %}
+      </select>
+      <select name="software_release" required>
+        <option value="">— SW release —</option>
+        {% for rel in software_releases %}
+          <option value="{{ rel.id }}">{{ rel }}</option>
+        {% endfor %}
+      </select>
+      <select name="software_options" multiple>
+        {% for rel in software_releases %}
+          {% for opt in rel.options.all %}
+            <option value="{{ opt.id }}">{{ opt }}</option>
+          {% endfor %}
+        {% endfor %}
+      </select>
+      <button type="submit">+ Add configuration</button>
+    </form>
+  {% endif %}
+{% endblock %}

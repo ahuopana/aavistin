@@ -40,6 +40,28 @@ only — the command is idempotent (safe to re-run, resets the passwords
 each time) and must never be run against a non-dev database. Nothing
 seeds these accounts outside of `docker-compose.yml`'s dev commands.
 
+## Default groups, organisation and roles
+
+`python manage.py seed_dev_roles`
+(`apps/orgs/management/commands/seed_dev_roles.py`), also run automatically
+by the `web` service on startup right after `seed_dev_users`, seeds:
+
+- One `django.contrib.auth.Group` per role in `apps.orgs.models.Role`
+  (Viewer, Editor, Approver, Content curator, Organisation admin) —
+  scaffolding for granting roles in bulk via Django admin, whatever the
+  organisation.
+- A **Default Organisation** / **Default Family** (`apps.orgs.models`),
+  so there's somewhere to actually create a product.
+- The `aavistin` dev user is added to the Editor and Approver groups,
+  both granted at Default Organisation scope — enough to add, edit,
+  approve and (while unapproved) delete a product and everything beneath
+  it (hardware variants/revisions, software releases/options,
+  configurations) from `/products/`, without needing Django admin at
+  all. See `docs/adr/0008-product-level-authoring-and-approval-deferred.md`.
+
+Same caveats as `seed_dev_users`: local development only, idempotent,
+never run against a non-dev database.
+
 ## Running tests and lint
 
 ```bash
