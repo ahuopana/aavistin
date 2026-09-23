@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard · Aavistin{% endblock %}
+
+{% block content %}
+  <h1>Welcome back</h1>
+
+  <h2>Products</h2>
+  {% if products %}
+    <div class="dashboard-products">
+      {% for row in products %}
+        <div class="dashboard-card">
+          <h3><a href="{% url 'products:product_detail' row.product.pk %}">{{ row.product.name }}</a></h3>
+          <p>{{ row.product.product_family }}</p>
+
+          <div class="stat-bar-row">
+            <span class="stat-bar-label">Compliance</span>
+            {% with ok=row.compliance.0 total=row.compliance.1 %}
+              {% if total %}
+                <div class="stat-bar" role="img" aria-label="Compliance {{ ok }} of {{ total }}">
+                  <div class="stat-bar-fill stat-bar-fill-compliance" style="width: {% widthratio ok total 100 %}%"></div>
+                </div>
+                <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
+              {% else %}
+                <span class="stat-bar-value">no data yet</span>
+              {% endif %}
+            {% endwith %}
+          </div>
+
+          <div class="stat-bar-row">
+            <span class="stat-bar-label">Risk</span>
+            {% with ok=row.risk.0 total=row.risk.1 %}
+              {% if total %}
+                <div class="stat-bar" role="img" aria-label="Risk {{ ok }} of {{ total }}">
+                  <div class="stat-bar-fill stat-bar-fill-risk" style="width: {% widthratio ok total 100 %}%"></div>
+                </div>
+                <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
+              {% else %}
+                <span class="stat-bar-value">no data yet</span>
+              {% endif %}
+            {% endwith %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p><a href="{% url 'orgs:list' %}">No products yet — click here to add one.</a></p>
+  {% endif %}
+
+  <h2>Continue working on</h2>
+  {% if tasks %}
+    <ul class="dashboard-tasks">
+      {% for task in tasks %}
+        <li><a href="{{ task.url }}">{{ task.label }}</a></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>Nothing pending right now.</p>
+  {% endif %}
+{% endblock %}
