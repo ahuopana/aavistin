@@ -1,6 +1,7 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
-from .services import dashboard_products, dashboard_tasks, product_tree
+from .services import compliance_overview, dashboard_products, dashboard_tasks, product_tree
 
 
 def home(request):
@@ -15,3 +16,9 @@ def home(request):
             "tree": product_tree(request.user),
         },
     )
+
+
+@login_required
+def compliance(request):
+    overview = compliance_overview(request.user)
+    return render(request, "core/compliance.html", overview)

@@ -11,11 +11,10 @@ from apps.accounts.models import User
 from apps.assessments.models import Answer, Assessment, AssessmentStatus
 from apps.core.management.commands.scheduler import SCHEDULE
 from apps.core.services import (
-    compliance_ratio,
+    compliance_overview,
     dashboard_products,
     dashboard_tasks,
     product_tree,
-    risk_ratio,
 )
 from apps.evidence.models import Evidence, EvidenceKind
 from apps.evidence.services import link_evidence
@@ -30,7 +29,7 @@ from apps.products.models import (
     SoftwareRelease,
     TargetMarket,
 )
-from apps.risk.models import Control, EntryType, RiskEntry, Treatment
+from apps.risk.models import Control
 
 PACKAGES_DIR = Path(settings.BASE_DIR) / "packages"
 
@@ -97,74 +96,35 @@ class DashboardFixture(TestCase):
         )
 
 
-class ComplianceRatioTests(DashboardFixture):
-    def test_no_configurations_returns_zero_over_zero(self):
-        empty_product = Product.objects.create(
-            product_family=self.family, name="Empty", slug="empty"
-        )
-        self.assertEqual(compliance_ratio(empty_product), (0, 0))
+class ComplianceOverviewTests(DashboardFixture):
+    def test_outsider_sees_no_rows(self):
+        overview = compliance_overview(self.outsider)
+        self.assertEqual(overview["rows"], [])
+        self.assertEqual(overview["totals"], {"compliance": (0, 0), "risk": (0, 0)})
 
-    def test_no_action_required_finding_is_fully_compliant(self):
+    def test_viewer_sees_product_with_ratios_and_totals(self):
         self._ready_answers(has_wireless=False)
-        self.assertEqual(compliance_ratio(self.product), (2, 2))
+        overview = compliance_overview(self.viewer)
+        self.assertEqual(len(overview["rows"]), 1)
+        row = overview["rows"][0]
+        self.assertEqual(row["product"], self.product)
+        self.assertEqual(row["organisation"], self.org)
+        self.assertEqual(row["family"], self.family)
+        self.assertEqual(row["compliance"], (2, 2))
+        self.assertEqual(overview["totals"]["compliance"], (2, 2))
 
-    def test_action_required_finding_marks_its_package_requirements_bad(self):
-        self._ready_answers(has_wireless=True)
-        self.assertEqual(compliance_ratio(self.product), (0, 2))
-
-
-class RiskRatioTests(DashboardFixture):
-    def _make_threat(self, **kwargs):
-        asset = RiskEntry.objects.create(
-            product=self.product, entry_type=EntryType.ASSET, label="Firmware"
+    def test_worst_compliance_sorts_first(self):
+        self._ready_answers(has_wireless=True)  # (0, 2) -- fails compliance
+        clean_product = Product.objects.create(
+            product_family=self.family, name="CleanWidget", slug="clean-widget"
         )
-        return RiskEntry.objects.create(
-            product=self.product,
-            entry_type=EntryType.THREAT,
-            label="Eavesdropping",
-            asset=asset,
-            violates="confidentiality",
-            **kwargs,
-        )
+        RoleAssignment.objects.create(role=Role.VIEWER, user=self.viewer, product=clean_product)
 
-    def test_no_entries_returns_zero_over_zero(self):
-        self.assertEqual(risk_ratio(self.product), (0, 0))
-
-    def test_untreated_entry_is_not_acceptable(self):
-        self._make_threat()
-        self.assertEqual(risk_ratio(self.product), (0, 1))
-
-    def test_accepted_residual_is_acceptable(self):
-        threat = self._make_threat()
-        Treatment.objects.create(
-            entry=threat,
-            method=self.method,
-            treatment_type="mitigate",
-            residual_severity=1,
-            residual_likelihood=1,
-        )
-        self.assertEqual(risk_ratio(self.product), (1, 1))
-
-    def test_must_treat_residual_is_not_acceptable(self):
-        threat = self._make_threat()
-        Treatment.objects.create(
-            entry=threat,
-            method=self.method,
-            treatment_type="mitigate",
-            residual_severity=5,
-            residual_likelihood=5,
-        )
-        self.assertEqual(risk_ratio(self.product), (0, 1))
-
-    def test_scoped_entry_excluded_from_baseline_count(self):
-        self._make_threat(scope_software_release=self.release)
-        self.assertEqual(risk_ratio(self.product), (0, 0))
-
-    def test_asset_entries_excluded(self):
-        RiskEntry.objects.create(
-            product=self.product, entry_type=EntryType.ASSET, label="Firmware only"
-        )
-        self.assertEqual(risk_ratio(self.product), (0, 0))
+        overview = compliance_overview(self.viewer)
+        # The product with no data yet sorts as fully clean (fraction 1.0),
+        # so the failing product (0/2) must come first.
+        self.assertEqual(overview["rows"][0]["product"], self.product)
+        self.assertEqual(overview["rows"][1]["product"], clean_product)
 
 
 class DashboardProductsTests(DashboardFixture):
@@ -307,6 +267,24 @@ class DashboardViewTests(DashboardFixture):
     def test_outsider_sees_empty_state_cta(self):
         self.client.force_login(self.outsider)
         response = self.client.get(reverse("core:home"))
+        self.assertContains(response, "add one")
+
+
+class ComplianceViewTests(DashboardFixture):
+    def test_requires_login(self):
+        response = self.client.get(reverse("core:compliance"))
+        self.assertEqual(response.status_code, 302)
+
+    def test_viewer_sees_compliance_template_and_product(self):
+        self.client.force_login(self.viewer)
+        response = self.client.get(reverse("core:compliance"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "core/compliance.html")
+        self.assertContains(response, self.product.name)
+
+    def test_outsider_sees_empty_state_cta(self):
+        self.client.force_login(self.outsider)
+        response = self.client.get(reverse("core:compliance"))
         self.assertContains(response, "add one")
 
 

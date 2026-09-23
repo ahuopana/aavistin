@@ -11,6 +11,33 @@
   {% if product.description %}<p>{{ product.description }}</p>{% endif %}
   <p><a href="{% url 'evidence:product_list' product.pk %}">Evidence</a></p>
 
+  <div class="stat-bar-row">
+    <span class="stat-bar-label">Compliance</span>
+    {% with ok=compliance.0 total=compliance.1 %}
+      {% if total %}
+        <div class="stat-bar" role="img" aria-label="Compliance {{ ok }} of {{ total }}">
+          <div class="stat-bar-fill stat-bar-fill-compliance" style="width: {% widthratio ok total 100 %}%"></div>
+        </div>
+        <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
+      {% else %}
+        <span class="stat-bar-value">no data yet</span>
+      {% endif %}
+    {% endwith %}
+  </div>
+  <div class="stat-bar-row">
+    <span class="stat-bar-label">Risk</span>
+    {% with ok=risk.0 total=risk.1 %}
+      {% if total %}
+        <div class="stat-bar" role="img" aria-label="Risk {{ ok }} of {{ total }}">
+          <div class="stat-bar-fill stat-bar-fill-risk" style="width: {% widthratio ok total 100 %}%"></div>
+        </div>
+        <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
+      {% else %}
+        <span class="stat-bar-value">no data yet</span>
+      {% endif %}
+    {% endwith %}
+  </div>
+
   {% if can_edit %}
     <details>
       <summary>Edit product</summary>

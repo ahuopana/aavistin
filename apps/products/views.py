@@ -16,7 +16,14 @@ from .models import (
     SoftwareRelease,
     TargetMarket,
 )
-from .services import ApprovedEntityError, approve, delete_entity, product_of
+from .services import (
+    ApprovedEntityError,
+    approve,
+    compliance_ratio,
+    delete_entity,
+    product_of,
+    risk_ratio,
+)
 
 ENTITY_MODELS = {
     "product": Product,
@@ -61,6 +68,8 @@ def product_detail(request, pk):
             "configurations": configurations,
             "hardware_revisions": hardware_revisions,
             "software_releases": software_releases,
+            "compliance": compliance_ratio(product),
+            "risk": risk_ratio(product),
             "can_edit": has_role(request.user, Role.EDITOR, product=product),
             "can_approve": has_role(request.user, Role.APPROVER, product=product),
         },

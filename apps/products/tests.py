@@ -1,3 +1,7 @@
+import json
+from pathlib import Path
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
@@ -5,7 +9,11 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
+from apps.assessments.models import Answer
 from apps.orgs.models import Organisation, ProductFamily, Role, RoleAssignment
+from apps.packages.importer import approve_package, import_package
+from apps.packages.models import PackageKind
+from apps.risk.models import EntryType, RiskEntry, Treatment
 
 from .models import (
     Configuration,
@@ -19,13 +27,21 @@ from .models import (
 from .services import (
     ApprovedEntityError,
     approve,
+    compliance_ratio,
     delete_entity,
     editable_product_families,
     editable_products,
     product_of,
+    risk_ratio,
 )
 
 User = get_user_model()
+PACKAGES_DIR = Path(settings.BASE_DIR) / "packages"
+
+
+def load_package(dirname: str, version: str) -> dict:
+    with (PACKAGES_DIR / dirname / f"{version}.json").open() as f:
+        return json.load(f)
 
 
 class ProductHierarchyTests(TestCase):
@@ -58,6 +74,125 @@ class ProductHierarchyTests(TestCase):
         # Same slug on a different product is fine.
         HardwareVariant.objects.create(product=other_product, name="V1", slug="v1")
         self.assertEqual(HardwareVariant.objects.filter(slug="v1").count(), 2)
+
+
+class RatioFixture(TestCase):
+    """A product with an approved configuration and method package, for
+    exercising compliance_ratio/risk_ratio -- mirrors apps.core.tests's
+    DashboardFixture, which needs the same setup for the same ratios as
+    consumed by the welcome dashboard and Compliance Overview.
+    """
+
+    def setUp(self):
+        self.org = Organisation.objects.create(name="Acme", slug="acme")
+        self.family = ProductFamily.objects.create(
+            organisation=self.org, name="Sensors", slug="sensors"
+        )
+        self.product = Product.objects.create(
+            product_family=self.family, name="TempSense", slug="tempsense"
+        )
+        self.variant = HardwareVariant.objects.create(
+            product=self.product, name="EU variant", slug="eu-variant"
+        )
+        self.variant.target_markets.add(TargetMarket.objects.get(code="EU"))
+        self.revision = HardwareRevision.objects.create(hardware_variant=self.variant, label="A")
+        self.release = SoftwareRelease.objects.create(product=self.product, version="1.0")
+        self.configuration = Configuration.objects.create(
+            name="TempSense EU 1.0",
+            hardware_revision=self.revision,
+            software_release=self.release,
+        )
+
+        self.package = import_package(
+            load_package("demo-widget-safety", "1.1.0"), is_official=True
+        )
+        approve_package(self.package)
+        self.method = import_package(
+            load_package("demo-safety-5x5", "1.0.0"), kind=PackageKind.METHOD, is_official=True
+        )
+        approve_package(self.method)
+
+    def _ready_answers(self, has_wireless=False):
+        Answer.objects.create(
+            question_id="has_power_source", value=True, hardware_revision=self.revision
+        )
+        Answer.objects.create(
+            question_id="rated_power_watts", value=20, hardware_revision=self.revision
+        )
+        Answer.objects.create(question_id="is_toy_widget", value=False, product=self.product)
+        Answer.objects.create(
+            question_id="has_wireless", value=has_wireless, hardware_revision=self.revision
+        )
+
+
+class ComplianceRatioTests(RatioFixture):
+    def test_no_configurations_returns_zero_over_zero(self):
+        empty_product = Product.objects.create(
+            product_family=self.family, name="Empty", slug="empty"
+        )
+        self.assertEqual(compliance_ratio(empty_product), (0, 0))
+
+    def test_no_action_required_finding_is_fully_compliant(self):
+        self._ready_answers(has_wireless=False)
+        self.assertEqual(compliance_ratio(self.product), (2, 2))
+
+    def test_action_required_finding_marks_its_package_requirements_bad(self):
+        self._ready_answers(has_wireless=True)
+        self.assertEqual(compliance_ratio(self.product), (0, 2))
+
+
+class RiskRatioTests(RatioFixture):
+    def _make_threat(self, **kwargs):
+        asset = RiskEntry.objects.create(
+            product=self.product, entry_type=EntryType.ASSET, label="Firmware"
+        )
+        return RiskEntry.objects.create(
+            product=self.product,
+            entry_type=EntryType.THREAT,
+            label="Eavesdropping",
+            asset=asset,
+            violates="confidentiality",
+            **kwargs,
+        )
+
+    def test_no_entries_returns_zero_over_zero(self):
+        self.assertEqual(risk_ratio(self.product), (0, 0))
+
+    def test_untreated_entry_is_not_acceptable(self):
+        self._make_threat()
+        self.assertEqual(risk_ratio(self.product), (0, 1))
+
+    def test_accepted_residual_is_acceptable(self):
+        threat = self._make_threat()
+        Treatment.objects.create(
+            entry=threat,
+            method=self.method,
+            treatment_type="mitigate",
+            residual_severity=1,
+            residual_likelihood=1,
+        )
+        self.assertEqual(risk_ratio(self.product), (1, 1))
+
+    def test_must_treat_residual_is_not_acceptable(self):
+        threat = self._make_threat()
+        Treatment.objects.create(
+            entry=threat,
+            method=self.method,
+            treatment_type="mitigate",
+            residual_severity=5,
+            residual_likelihood=5,
+        )
+        self.assertEqual(risk_ratio(self.product), (0, 1))
+
+    def test_scoped_entry_excluded_from_baseline_count(self):
+        self._make_threat(scope_software_release=self.release)
+        self.assertEqual(risk_ratio(self.product), (0, 0))
+
+    def test_asset_entries_excluded(self):
+        RiskEntry.objects.create(
+            product=self.product, entry_type=EntryType.ASSET, label="Firmware only"
+        )
+        self.assertEqual(risk_ratio(self.product), (0, 0))
 
 
 class ConfigurationTests(TestCase):
@@ -259,6 +394,14 @@ class ProductViewTests(ProductAuthoringFixture):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["can_edit"])
         self.assertFalse(response.context["can_approve"])
+
+    def test_product_detail_shows_compliance_and_risk_status(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("products:product_detail", args=[self.product.pk]))
+        self.assertEqual(response.context["compliance"], (0, 0))
+        self.assertEqual(response.context["risk"], (0, 0))
+        self.assertContains(response, "Compliance")
+        self.assertContains(response, "Risk")
 
     def test_editor_can_create_product(self):
         self.client.force_login(self.editor)
