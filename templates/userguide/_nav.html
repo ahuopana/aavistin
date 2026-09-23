@@ -1,0 +1,7 @@
+<nav aria-label="User Guide pages">
+  <ul>
+    {% for p in pages %}
+      <li><a href="{% url 'userguide:page' p.slug %}" {% if page and p.slug == page.slug %}class="active" aria-current="page"{% endif %}>{{ p.title }}</a></li>
+    {% endfor %}
+  </ul>
+</nav>

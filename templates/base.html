@@ -24,6 +24,7 @@
         {% if user.is_authenticated %}
           <a href="{% url 'orgs:portfolio' %}">Portfolio</a>
         {% endif %}
+        <a href="{% url 'userguide:index' %}">User Guide</a>
         {% block nav %}{% endblock %}
       </nav>
       <div class="app-header-actions">
