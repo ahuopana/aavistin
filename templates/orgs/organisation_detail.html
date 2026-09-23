@@ -14,13 +14,24 @@
         {% if products %}
           <ul>
             {% for product in products %}
-              <li>{{ product.name }}</li>
+              <li>
+                <a href="{% url 'products:product_detail' product.pk %}">{{ product.name }}</a>
+                {% if product.is_approved %}<span class="message message-info">approved</span>{% endif %}
+              </li>
             {% endfor %}
           </ul>
         {% else %}
           <p>No products yet.</p>
         {% endif %}
       {% endwith %}
+      {% if family.id in editable_family_ids %}
+        <form method="post" action="{% url 'products:product_create' family.id %}">
+          {% csrf_token %}
+          <input type="text" name="name" placeholder="Product name" required>
+          <input type="text" name="slug" placeholder="slug" required>
+          <button type="submit">+ Add product</button>
+        </form>
+      {% endif %}
     {% endfor %}
   {% else %}
     <p>No product families yet.</p>
