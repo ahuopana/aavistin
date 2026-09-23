@@ -225,11 +225,29 @@ td {
   text-align: left;
 }
 
+.dashboard-widgets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+  margin-bottom: var(--space-5);
+}
+
+.dashboard-widget {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.dashboard-widget h2 {
+  margin-top: 0;
+}
+
 .dashboard-products {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--space-4);
-  margin-bottom: var(--space-5);
 }
 
 .dashboard-card {
