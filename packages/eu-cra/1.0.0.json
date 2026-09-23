@@ -1,0 +1,192 @@
+{
+  "source": "eu-cra",
+  "type": "legislation",
+  "jurisdiction": "EU",
+  "version": "2024-2847@2026-09",
+  "title": "EU Cyber Resilience Act",
+  "legal_sources": [{ "celex": "32024R2847" }],
+  "dates_of_application": { "from": "2027-12-11" },
+  "redistributable": true,
+  "questions": [
+    {
+      "id": "is_free_and_open_source",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product free and open-source software?"
+    },
+    {
+      "id": "is_commercial_activity",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product supplied in the course of a commercial activity (e.g. paid support, hosting, or other monetisation)?"
+    },
+    {
+      "id": "is_annex_iii_important_product",
+      "type": "boolean",
+      "level": "product",
+      "label": "Does the product fall into one of the 'important' product categories listed in Annex III? Assess this yourself against Annex III -- this package does not reproduce that list."
+    },
+    {
+      "id": "is_annex_iii_critical_product",
+      "type": "boolean",
+      "level": "product",
+      "label": "Does the product fall into one of the 'critical' product categories listed in Annex III/IV? Assess this yourself -- this package does not reproduce that list."
+    }
+  ],
+  "scope": {
+    "include": true,
+    "exclude": [
+      {
+        "id": "foss_non_commercial_excluded",
+        "when": {
+          "and": [
+            { "var": "is_free_and_open_source" },
+            { "!": { "var": "is_commercial_activity" } }
+          ]
+        },
+        "ref": "Recital 18 / Art. 2(4) -- verify citation before relying on it"
+      }
+    ]
+  },
+  "classifications": [
+    {
+      "id": "critical",
+      "label": "Critical",
+      "when": { "var": "is_annex_iii_critical_product" }
+    },
+    {
+      "id": "important",
+      "label": "Important (Class I or II)",
+      "when": {
+        "and": [
+          { "var": "is_annex_iii_important_product" },
+          { "!": { "var": "is_annex_iii_critical_product" } }
+        ]
+      }
+    },
+    {
+      "id": "default",
+      "label": "Default",
+      "when": {
+        "and": [
+          { "!": { "var": "is_annex_iii_important_product" } },
+          { "!": { "var": "is_annex_iii_critical_product" } }
+        ]
+      }
+    }
+  ],
+  "requirements": [
+    {
+      "id": "secure_by_default",
+      "label": "Design, develop and produce the product to ensure an appropriate level of cybersecurity, with a secure-by-default configuration",
+      "roles": ["manufacturer"],
+      "ref": "Annex I Part I"
+    },
+    {
+      "id": "no_known_exploitable_vulnerabilities",
+      "label": "Ensure the product is placed on the market without known exploitable vulnerabilities",
+      "roles": ["manufacturer"],
+      "ref": "Annex I Part I"
+    },
+    {
+      "id": "vulnerability_handling_process",
+      "label": "Establish and apply a vulnerability handling process, including a coordinated vulnerability disclosure policy",
+      "roles": ["manufacturer"],
+      "ref": "Annex I Part II"
+    },
+    {
+      "id": "sbom",
+      "label": "Maintain a software bill of materials covering at least top-level dependencies",
+      "roles": ["manufacturer"],
+      "ref": "Annex I Part II"
+    },
+    {
+      "id": "security_updates",
+      "label": "Address and remediate vulnerabilities without undue delay, including free security updates, for the duration of the support period",
+      "roles": ["manufacturer"],
+      "ref": "Annex I Part I / Part II"
+    },
+    {
+      "id": "cra_reporting",
+      "label": "Report actively exploited vulnerabilities and severe incidents without undue delay",
+      "roles": ["manufacturer"],
+      "ref": "Art. 14"
+    }
+  ],
+  "assessment_routes": [
+    {
+      "id": "internal_control",
+      "label": "Internal control",
+      "allowed_when": { "var": "class__default" }
+    },
+    {
+      "id": "third_party_assessment",
+      "label": "Third-party conformity assessment (exact module depends on category -- verify against Annex VIII)",
+      "allowed_when": {
+        "or": [{ "var": "class__important" }, { "var": "class__critical" }]
+      }
+    }
+  ],
+  "finding_rules": [
+    {
+      "id": "monetisation_changes_scope",
+      "level": "caution",
+      "when": {
+        "and": [
+          { "var": "is_free_and_open_source" },
+          { "!": { "var": "is_commercial_activity" } }
+        ]
+      },
+      "message": "Offering paid support or other monetisation changes CRA scope and requires re-assessment.",
+      "ref": "Recital 18 / Art. 2(4)"
+    },
+    {
+      "id": "important_or_critical_needs_third_party",
+      "level": "action_required",
+      "when": {
+        "or": [
+          { "var": "is_annex_iii_important_product" },
+          { "var": "is_annex_iii_critical_product" }
+        ]
+      },
+      "message": "Products in an Annex III 'important' or 'critical' category need third-party conformity assessment, not internal control alone.",
+      "ref": "Annex VIII"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "community_release_out_of_scope",
+      "answers": {
+        "is_free_and_open_source": true,
+        "is_commercial_activity": false
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": ["monetisation_changes_scope"]
+      }
+    },
+    {
+      "id": "paid_support_in_scope_default_category",
+      "answers": {
+        "is_free_and_open_source": true,
+        "is_commercial_activity": true
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": []
+      }
+    },
+    {
+      "id": "important_category_flags_third_party_needed",
+      "answers": {
+        "is_free_and_open_source": false,
+        "is_commercial_activity": true,
+        "is_annex_iii_important_product": true
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": ["important_or_critical_needs_third_party"]
+      }
+    }
+  ]
+}
