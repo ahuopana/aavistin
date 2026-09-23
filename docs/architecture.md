@@ -312,6 +312,23 @@ The link is visible from both sides: the safety view lists all causes of a hazar
 
 **Candidate package:** the EU Machinery Regulation (2023/1230), applying from January 2027, requires protection of safety functions against corruption, including malicious attempts. This model covers it without changes.
 
+## Evidence
+
+A document (an SBOM, a test report, a policy, a certificate) is rarely proof of just one thing: the same SBOM can fulfil a CRA Annex I Part II obligation and back a risk control at once. Evidence is modelled so it is provided once per product and reused everywhere it applies, rather than re-uploaded per finding.
+
+**The blob is not the record.** An uploaded file's bytes (`EvidenceFile`: file, sha256 checksum, content type, size, uploader) are stored separately from the product-facing record (`Evidence`: title, description, who last audited it and when). Storing content once, keyed by checksum, means the same document used as evidence in two different products is written to storage once, and an upload that exactly matches an existing file reuses it instead of duplicating it. An `Evidence` record can be a file, an external link, or a plain text reference (e.g. "see the QMS wiki") — exactly one of the three, never a mix.
+
+**Reuse over re-upload.** Evidence is scoped to a product, and adding it to a new control or requirement first offers the product's existing evidence to link, before falling through to "upload, link or note something new" — so the SBOM provided for one obligation is the same record offered when another obligation needs it, not a second copy.
+
+**Attaches to two kinds of target**, both by reference, never by copying the target's own identity into Evidence:
+
+- **A `Control`** (`apps.risk.Control`), an entity already reserved for this.
+- **A requirement**, identified by the source package's `source` + `version` and the requirement's own `id` inside that package's content — never a database row, since individual requirements are entries in versioned package JSON, not application-owned records (see "Requirement sources"). Evidence never encodes what a requirement means, only that a given piece of evidence claims to satisfy it.
+
+**Versioning and staleness.** An `Evidence` record can supersede an earlier one (a new SBOM replaces last year's), the same way a `RequirementPackage` supersedes a previous version — the old record isn't silently swapped out under existing links; someone reviews and relinks. Evidence also carries its own expiry (`valid_until`). Both are read by the same staleness recomputation job that already exists for assessments and risk approvals (see "Background jobs"): a third trigger, alongside a new answer or a new package version, is *the evidence linked at approval time has since expired or been superseded and never relinked*.
+
+**Deletion.** An `Evidence` record referenced by any approved (frozen) assessment or risk snapshot can't be deleted — matching how an approved product-level entity can't be deleted (ADR 0010) — but can still be edited. Deleting an unreferenced record also checks whether any other `Evidence` record (in this product or another) still points at the same `EvidenceFile`; the stored blob is only removed once nothing references it.
+
 ## Demo seed: Aavistin assesses itself
 
 The tool ships with a demo dataset in which Aavistin is the product under assessment. It shows every main feature on a product people already understand, and it runs in CI as an end-to-end test.

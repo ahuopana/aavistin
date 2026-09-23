@@ -6,10 +6,41 @@ before a snapshot is ever taken (see docs/architecture.md, "Products and
 assessments", "Findings" and "Results").
 """
 
+from apps.evidence.models import EvidenceLink, EvidenceTargetType
 from apps.packages.fixtures_runner import evaluate_scope
 from apps.packages.ruleengine import evaluate
 
 from .resolution import resolve_answers
+
+
+def _requirement_evidence_fingerprint(
+    source: str, version: str, requirement_id: str
+) -> list[dict]:
+    """Which evidence currently backs a requirement, and whether each is
+    still current -- feeds each result's `requirement_evidence`, frozen
+    into Assessment.snapshot on approval like everything else `evaluate_
+    configuration` returns, so `recompute_staleness` also picks up
+    evidence that's expired or been superseded and never relinked (see
+    docs/architecture.md, "Evidence", and apps.risk.approval's matching
+    `_control_evidence_fingerprint`).
+    """
+    links = (
+        EvidenceLink.objects.filter(
+            target_type=EvidenceTargetType.REQUIREMENT,
+            requirement_source=source,
+            requirement_version=version,
+            requirement_id=requirement_id,
+        )
+        .select_related("evidence")
+        .order_by("evidence_id")
+    )
+    return [
+        {
+            "evidence_id": link.evidence_id,
+            "current": not (link.evidence.is_superseded or link.evidence.is_expired),
+        }
+        for link in links
+    ]
 
 
 def evaluate_configuration(configuration, resolved=None, packages=None) -> dict:
@@ -60,6 +91,16 @@ def evaluate_configuration(configuration, resolved=None, packages=None) -> dict:
             if evaluate(route.get("allowed_when", True), extended_data)
         ]
 
+        requirement_evidence = {
+            requirement_id: fingerprint
+            for requirement_id in requirements
+            if (
+                fingerprint := _requirement_evidence_fingerprint(
+                    package.source, package.version, requirement_id
+                )
+            )
+        }
+
         results.append(
             {
                 "source": package.source,
@@ -71,6 +112,7 @@ def evaluate_configuration(configuration, resolved=None, packages=None) -> dict:
                 "classifications": classification_ids,
                 "requirements": requirements,
                 "assessment_routes": routes,
+                "requirement_evidence": requirement_evidence,
             }
         )
 

@@ -9,13 +9,33 @@ docs/architecture.md, "Treatment and approval").
 from django.utils import timezone
 
 from .consistency import check_threat_hazard_consistency
-from .models import EntryType, RiskAssessment, RiskAssessmentStatus
+from .models import Control, EntryType, RiskAssessment, RiskAssessmentStatus
 from .rating import evaluate_entry_rating, evaluate_residual_rating
 from .resolution import register_for_configuration
 
 
 class RiskAssessmentError(Exception):
     pass
+
+
+def _control_evidence_fingerprint(control: Control) -> list[dict]:
+    """Which evidence a control currently relies on, and whether each is
+    still current -- read via Control's reverse `evidence_links`
+    relation so apps.risk never imports apps.evidence directly. Feeds
+    `build_snapshot`, so a control losing evidence, gaining it, or its
+    evidence expiring/being superseded all change the snapshot and are
+    picked up by the existing `recompute_staleness` diff below (see
+    docs/architecture.md, "Evidence": "the evidence linked at approval
+    time has since expired or been superseded and never relinked").
+    """
+    links = control.evidence_links.select_related("evidence").order_by("evidence_id")
+    return [
+        {
+            "evidence_id": link.evidence_id,
+            "current": not (link.evidence.is_superseded or link.evidence.is_expired),
+        }
+        for link in links
+    ]
 
 
 def build_snapshot(configuration) -> dict:
@@ -63,6 +83,17 @@ def build_snapshot(configuration) -> dict:
 
         entries_data.append(entry_data)
 
+    product = configuration.hardware_revision.hardware_variant.product
+    controls_data = [
+        {
+            "id": control.id,
+            "name": control.name,
+            "status": control.status,
+            "evidence": _control_evidence_fingerprint(control),
+        }
+        for control in Control.objects.filter(product=product).order_by("id")
+    ]
+
     return {
         # Lists, not tuples: JSONField round-trips through the DB as
         # lists, so building tuples here would make a freshly-built
@@ -70,6 +101,7 @@ def build_snapshot(configuration) -> dict:
         "entries": entries_data,
         "methods": [list(m) for m in sorted(methods_used)],
         "catalogs": [list(c) for c in sorted(catalogs_used)],
+        "controls": controls_data,
     }
 
 

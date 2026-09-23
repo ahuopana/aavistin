@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Evidence · {{ product.name }} · Aavistin{% endblock %}
+
+{% block content %}
+  <p><a href="{% url 'products:product_detail' product.pk %}">{{ product.name }}</a></p>
+  <h1>Evidence — {{ product.name }}</h1>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Kind</th>
+        <th>Last audit</th>
+        <th>Valid until</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for evidence in evidence_list %}
+        <tr>
+          <td><a href="{% url 'evidence:detail' evidence.pk %}">{{ evidence.title }}</a></td>
+          <td>{{ evidence.get_kind_display }}</td>
+          <td>{{ evidence.last_audit_date|default:"—" }}</td>
+          <td>{{ evidence.valid_until|default:"—" }}</td>
+          <td>
+            {% if evidence.is_expired %}<span class="message message-warning">expired</span>{% endif %}
+            {% if evidence.is_superseded %}<span class="message message-warning">superseded</span>{% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">No evidence yet for this product.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if can_edit %}
+    <h2>Add evidence</h2>
+    <p>Reuse an existing record above where it applies, rather than adding a duplicate.</p>
+    <form method="post" action="{% url 'evidence:create' product.pk %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <p><label>Title <input type="text" name="title" required></label></p>
+      <p><label>Description <textarea name="description"></textarea></label></p>
+      <p>
+        <label>Kind
+          <select name="kind">
+            <option value="file">Uploaded file</option>
+            <option value="link">External link</option>
+            <option value="text">Reference note</option>
+          </select>
+        </label>
+      </p>
+      <p><label>File (if kind is "Uploaded file") <input type="file" name="file"></label></p>
+      <p><label>URL (if kind is "External link") <input type="url" name="external_url"></label></p>
+      <p><label>Reference note (if kind is "Reference note") <textarea name="reference_text"></textarea></label></p>
+      <button type="submit">Add evidence</button>
+    </form>
+  {% endif %}
+{% endblock %}

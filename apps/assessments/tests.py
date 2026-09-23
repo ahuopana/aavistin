@@ -8,6 +8,8 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.accounts.models import User
+from apps.evidence.models import Evidence, EvidenceKind
+from apps.evidence.services import link_evidence
 from apps.orgs.models import Organisation, ProductFamily, Role, RoleAssignment, SoDPolicy
 from apps.packages.importer import approve_package, import_package
 from apps.products.models import (
@@ -345,6 +347,79 @@ class StalenessTests(ConfigurationFixture):
         self._ready_answers()
         assessment = Assessment.objects.create(configuration=self.configuration)
         self.assertFalse(recompute_staleness(assessment))
+
+
+class EvidenceStalenessTests(ConfigurationFixture):
+    """apps.evidence linked to a requirement feeds evaluate_configuration's
+    results, so it's picked up by the same recompute_staleness diff (see
+    docs/architecture.md, "Evidence")."""
+
+    def _ready_answers(self):
+        Answer.objects.create(
+            question_id="has_power_source", value=True, hardware_revision=self.revision
+        )
+        Answer.objects.create(
+            question_id="rated_power_watts", value=20, hardware_revision=self.revision
+        )
+        Answer.objects.create(question_id="is_toy_widget", value=False, product=self.product)
+
+    def _make_evidence(self, **kwargs):
+        return Evidence.objects.create(
+            product=self.product,
+            title=kwargs.pop("title", "Safety manual"),
+            kind=EvidenceKind.TEXT,
+            reference_text=kwargs.pop("reference_text", "See QMS wiki"),
+            **kwargs,
+        )
+
+    def _link_to_manual_requirement(self, evidence):
+        return link_evidence(
+            evidence, requirement=("demo-widget-safety", "1.0.0", "provide_widget_manual")
+        )
+
+    def test_new_requirement_evidence_link_makes_it_stale(self):
+        self._ready_answers()
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        approve_assessment(assessment, actor=self.approver)
+
+        self._link_to_manual_requirement(self._make_evidence())
+        self.assertTrue(recompute_staleness(assessment))
+
+    def test_unchanged_evidence_stays_fresh(self):
+        self._ready_answers()
+        self._link_to_manual_requirement(self._make_evidence())
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        approve_assessment(assessment, actor=self.approver)
+        self.assertFalse(recompute_staleness(assessment))
+
+    def test_expired_evidence_makes_it_stale(self):
+        from datetime import date, timedelta
+
+        self._ready_answers()
+        evidence = self._make_evidence(valid_until=date.today() + timedelta(days=1))
+        self._link_to_manual_requirement(evidence)
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        approve_assessment(assessment, actor=self.approver)
+
+        evidence.valid_until = date.today() - timedelta(days=1)
+        evidence.save()
+        self.assertTrue(recompute_staleness(assessment))
+
+    def test_superseded_evidence_makes_it_stale(self):
+        self._ready_answers()
+        evidence = self._make_evidence()
+        self._link_to_manual_requirement(evidence)
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        approve_assessment(assessment, actor=self.approver)
+
+        Evidence.objects.create(
+            product=self.product,
+            title="Safety manual v2",
+            kind=EvidenceKind.TEXT,
+            reference_text="see wiki v2",
+            supersedes=evidence,
+        )
+        self.assertTrue(recompute_staleness(assessment))
 
 
 class BackgroundTaskTests(ConfigurationFixture):

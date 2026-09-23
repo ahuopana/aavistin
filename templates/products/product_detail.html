@@ -9,6 +9,7 @@
   </h1>
   <p>{{ product.product_family }}</p>
   {% if product.description %}<p>{{ product.description }}</p>{% endif %}
+  <p><a href="{% url 'evidence:product_list' product.pk %}">Evidence</a></p>
 
   {% if can_edit %}
     <details>
