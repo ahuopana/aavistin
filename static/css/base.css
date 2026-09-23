@@ -245,20 +245,25 @@ td {
 }
 
 .dashboard-products {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: var(--space-4);
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.dashboard-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
+.dashboard-products li {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.dashboard-card h3 {
-  margin-top: 0;
+.dashboard-products li:last-child {
+  border-bottom: none;
+}
+
+.dashboard-product-family {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+  margin-bottom: var(--space-1);
 }
 
 .stat-bar-row {
@@ -308,6 +313,31 @@ td {
 .dashboard-tasks li {
   padding: var(--space-2) 0;
   border-bottom: 1px solid var(--color-border);
+}
+
+.dashboard-tree summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: var(--space-1) 0;
+}
+
+.dashboard-tree details details {
+  margin-left: var(--space-4);
+}
+
+.dashboard-tree ul {
+  list-style: none;
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.dashboard-tree ul li {
+  padding: var(--space-1) 0;
+}
+
+.dashboard-tree ul ul {
+  color: var(--color-text-muted);
+  font-size: 0.9em;
 }
 
 @media (max-width: 768px) {

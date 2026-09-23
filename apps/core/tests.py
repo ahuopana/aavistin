@@ -10,7 +10,13 @@ from django.urls import reverse
 from apps.accounts.models import User
 from apps.assessments.models import Answer, Assessment, AssessmentStatus
 from apps.core.management.commands.scheduler import SCHEDULE
-from apps.core.services import compliance_ratio, dashboard_products, dashboard_tasks, risk_ratio
+from apps.core.services import (
+    compliance_ratio,
+    dashboard_products,
+    dashboard_tasks,
+    product_tree,
+    risk_ratio,
+)
 from apps.evidence.models import Evidence, EvidenceKind
 from apps.evidence.services import link_evidence
 from apps.orgs.models import Organisation, ProductFamily, Role, RoleAssignment
@@ -261,6 +267,34 @@ class DashboardTasksTests(DashboardFixture):
         kinds = {t["kind"] for t in tasks}
         self.assertIn("start_assessment", kinds)
         self.assertIn("provide_evidence", kinds)
+
+
+class ProductTreeTests(DashboardFixture):
+    def test_outsider_sees_empty_tree(self):
+        self.assertEqual(product_tree(self.outsider), [])
+
+    def test_tree_has_organisation_family_product_and_revision(self):
+        tree = product_tree(self.viewer)
+        self.assertEqual(len(tree), 1)
+        org_node = tree[0]
+        self.assertEqual(org_node["organisation"], self.org)
+        self.assertEqual(len(org_node["families"]), 1)
+        family_node = org_node["families"][0]
+        self.assertEqual(family_node["family"], self.family)
+        self.assertEqual(len(family_node["products"]), 1)
+        row = family_node["products"][0]
+        self.assertEqual(row["product"], self.product)
+        self.assertEqual(row["revisions"], ["EU variant rev A"])
+        self.assertEqual(row["releases"], ["1.0"])
+
+    def test_multiple_products_grouped_under_same_family(self):
+        other_product = Product.objects.create(
+            product_family=self.family, name="OtherWidget", slug="other-widget"
+        )
+        RoleAssignment.objects.create(role=Role.VIEWER, user=self.viewer, product=other_product)
+        tree = product_tree(self.viewer)
+        family_node = tree[0]["families"][0]
+        self.assertEqual(len(family_node["products"]), 2)
 
 
 class DashboardViewTests(DashboardFixture):

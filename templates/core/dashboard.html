@@ -9,11 +9,11 @@
     <section class="dashboard-widget">
       <h2>Products</h2>
       {% if products %}
-        <div class="dashboard-products">
+        <ul class="dashboard-products">
           {% for row in products %}
-            <div class="dashboard-card">
-              <h3><a href="{% url 'products:product_detail' row.product.pk %}">{{ row.product.name }}</a></h3>
-              <p>{{ row.product.product_family }}</p>
+            <li>
+              <a href="{% url 'products:product_detail' row.product.pk %}">{{ row.product.name }}</a>
+              <span class="dashboard-product-family">{{ row.product.product_family }}</span>
 
               <div class="stat-bar-row">
                 <span class="stat-bar-label">Compliance</span>
@@ -42,9 +42,9 @@
                   {% endif %}
                 {% endwith %}
               </div>
-            </div>
+            </li>
           {% endfor %}
-        </div>
+        </ul>
       {% else %}
         <p><a href="{% url 'orgs:list' %}">No products yet — click here to add one.</a></p>
       {% endif %}
@@ -63,4 +63,35 @@
       {% endif %}
     </section>
   </div>
+
+  <section class="dashboard-widget dashboard-tree">
+    <h2>Your products</h2>
+    {% if tree %}
+      {% for org_node in tree %}
+        <details open>
+          <summary>{{ org_node.organisation.name }}</summary>
+          {% for family_node in org_node.families %}
+            <details>
+              <summary>{{ family_node.family.name }}</summary>
+              <ul>
+                {% for row in family_node.products %}
+                  <li>
+                    <a href="{% url 'products:product_detail' row.product.pk %}">{{ row.product.name }}</a>
+                    {% if row.revisions or row.releases %}
+                      <ul>
+                        {% for label in row.revisions %}<li>{{ label }}</li>{% endfor %}
+                        {% for label in row.releases %}<li>{{ label }}</li>{% endfor %}
+                      </ul>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            </details>
+          {% endfor %}
+        </details>
+      {% endfor %}
+    {% else %}
+      <p>Nothing to show yet.</p>
+    {% endif %}
+  </section>
 {% endblock %}

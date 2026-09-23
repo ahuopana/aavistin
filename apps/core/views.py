@@ -1,6 +1,6 @@
 from django.shortcuts import render
 
-from .services import dashboard_products, dashboard_tasks
+from .services import dashboard_products, dashboard_tasks, product_tree
 
 
 def home(request):
@@ -12,5 +12,6 @@ def home(request):
         {
             "products": dashboard_products(request.user),
             "tasks": dashboard_tasks(request.user),
+            "tree": product_tree(request.user),
         },
     )

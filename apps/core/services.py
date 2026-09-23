@@ -178,3 +178,41 @@ def dashboard_tasks(user, limit=3):
             selected.append(by_kind[kind].pop(0))
         i += 1
     return selected
+
+
+def product_tree(user):
+    """Organisation > product family > product > (HW revision / SW
+    release), for everything the user holds any role on -- unlike
+    dashboard_products, not capped to 3.
+    """
+    products = (
+        editable_products(user, role=None)
+        .select_related("product_family__organisation")
+        .prefetch_related("hw_variants__revisions", "sw_releases")
+        .order_by("product_family__organisation__name", "product_family__name", "name")
+    )
+
+    organisations = {}
+    for product in products:
+        family = product.product_family
+        organisation = family.organisation
+        org_node = organisations.setdefault(
+            organisation.id, {"organisation": organisation, "families": {}}
+        )
+        family_node = org_node["families"].setdefault(
+            family.id, {"family": family, "products": []}
+        )
+        revisions = [
+            f"{variant.name} rev {revision.label}"
+            for variant in product.hw_variants.all()
+            for revision in variant.revisions.all()
+        ]
+        releases = [release.version for release in product.sw_releases.all()]
+        family_node["products"].append(
+            {"product": product, "revisions": revisions, "releases": releases}
+        )
+
+    return [
+        {"organisation": node["organisation"], "families": list(node["families"].values())}
+        for node in organisations.values()
+    ]
