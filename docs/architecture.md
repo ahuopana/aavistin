@@ -235,7 +235,7 @@ The tool is an open-source team tool, single-tenant per deployment, but with org
 
 **Separation of duties** is an organisation policy: off, warn (default) or enforce. Families and products may only tighten it, never loosen it. "Same person" means anyone who edited any answer in the snapshot, not just the last editor. An approval made despite a warning is recorded in the audit trail and shown in the report.
 
-**Product-level authoring.** Product and everything beneath it (hardware variants/revisions, software releases/options, configurations) has a non-admin authoring surface at `/products/`, gated by role assignments: Editor to add/modify/delete (while unapproved), Approver to approve. Once approved, an entity can't be deleted, but can still be modified. Organisation, product family, groups, requirement/method/catalog packages and user records stay admin-only by design, not as a gap. See ADR 0008 (scope) and ADR 0009 (implementation).
+**Product-level authoring.** Product and everything beneath it (hardware variants/revisions, software releases/options, configurations) has a non-admin authoring surface at `/products/`, gated by role assignments: Editor to add/modify/delete (while unapproved), Approver to approve. Once approved, an entity can't be deleted, but can still be modified. Organisation, product family, groups, requirement/method/catalog packages and user records stay admin-only by design, not as a gap. See ADR 0008 (scope) and ADR 0010 (implementation).
 
 ## Risk assessment: methods and catalogs
 
