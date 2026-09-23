@@ -31,4 +31,13 @@ Open-source compliance tool for product manufacturers: users assess which regula
 3. **Product model:** Product, HW variant and revision (with target markets), SW release, SW option, Configuration.
 4. **Requirement packages:** JSON Schema for packages, importer, semantic linter, fixture runner, diff against previous version, approval before publish. Use a small made-up demo package for tests; real regulation packages are authored separately.
 5. **Assessments:** questionnaire filtered by target markets and conditions, layered answers with provenance and override justification, carry-forward as "needs confirmation", rule evaluation into results and findings, approval with frozen snapshot, stale detection.
-6. **Risk assessment:** not yet designed; wait for the design to arrive in `docs/ARCHITECTURE.md`.
+6. **Risk assessment:** per `docs/ARCHITECTURE.md` sections "Risk assessment: methods and catalogs" and "Risk register".
+    - Method and catalog package schemas, extending the importer, linter and fixture runner from milestone 4; ship `default-cia-5x5` and a small demo catalog.
+    - Product-level register with typed entries (asset, threat, hazard), threat consequences by impact category, hazard causes, and threat ↔ hazard links.
+    - One rating per applicable method per entry; cross-method consistency rules; optional severity mappings.
+    - Entry scoping to HW variant, SW release or option, with justified overrides; configuration views as baseline plus deltas.
+    - Suggestions from applicability answers and findings via catalog triggers (accept, or dismiss with a reason).
+    - Treatment and residual rating against acceptance thresholds; Control as its own entity linked to threats and hazard causes. Evidence is out of scope for this milestone.
+    - Approval snapshot per configuration view, recording method and catalog versions; stale detection.
+    - Extend the demo seed with Aavistin's risk register (see "Demo seed").
+7. **Evidence:** not yet designed.
