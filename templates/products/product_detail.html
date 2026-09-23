@@ -17,6 +17,33 @@
     <p class="message message-info">Archived — hidden from the portfolio and dashboard until restored.</p>
   {% endif %}
 
+  <div class="stat-bar-row">
+    <span class="stat-bar-label">Compliance</span>
+    {% with ok=compliance.0 total=compliance.1 %}
+      {% if total %}
+        <div class="stat-bar" role="img" aria-label="Compliance {{ ok }} of {{ total }}">
+          <div class="stat-bar-fill stat-bar-fill-compliance" style="width: {% widthratio ok total 100 %}%"></div>
+        </div>
+        <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
+      {% else %}
+        <span class="stat-bar-value">no data yet</span>
+      {% endif %}
+    {% endwith %}
+  </div>
+  <div class="stat-bar-row">
+    <span class="stat-bar-label">Risk</span>
+    {% with ok=risk.0 total=risk.1 %}
+      {% if total %}
+        <div class="stat-bar" role="img" aria-label="Risk {{ ok }} of {{ total }}">
+          <div class="stat-bar-fill stat-bar-fill-risk" style="width: {% widthratio ok total 100 %}%"></div>
+        </div>
+        <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
+      {% else %}
+        <span class="stat-bar-value">no data yet</span>
+      {% endif %}
+    {% endwith %}
+  </div>
+
   {% if can_edit %}
     <form method="post" action="{% url 'products:product_edit' product.pk %}" class="form-vertical">
       {% csrf_token %}
