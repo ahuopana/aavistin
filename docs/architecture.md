@@ -235,9 +235,132 @@ The tool is an open-source team tool, single-tenant per deployment, but with org
 
 **Separation of duties** is an organisation policy: off, warn (default) or enforce. Families and products may only tighten it, never loosen it. "Same person" means anyone who edited any answer in the snapshot, not just the last editor. An approval made despite a warning is recorded in the audit trail and shown in the report.
 
+## Risk assessment: methods and catalogs
+
+Risk assessment is package-driven like applicability: method packages define how risk is scored, catalog packages define what is analysed. The default method is CIA-based asset analysis with a 5 × 5 severity × likelihood matrix. Each regulation selects the method(s) it requires, so one product can use several methods.
+
+| Package kind | Defines | Examples |
+| --- | --- | --- |
+| Method | Security properties, severity and likelihood scales, matrix, acceptance thresholds, optional factor-based likelihood, optional severity mapping to other methods | `default-cia-5x5`, attack-potential method, safety hazard method |
+| Catalog | Asset types with typical CIA needs, threats tagged with violated properties, hazards, suggested controls, triggers | Generic IoT threats, LVD hazards, CRA Annex I threat categories |
+
+Regulation packages may contribute catalog entries and declare which method applies to which entry type, so the regulation that requires the analysis also seeds it.
+
+```yaml
+method: default-cia-5x5
+properties: [confidentiality, integrity, availability]
+severity:  {scale: 1-5, labels: [negligible, minor, moderate, major, critical]}
+likelihood: {scale: 1-5, labels: [rare, unlikely, possible, likely, almost_certain]}
+matrix:
+  - {when: {">=": [{"*": [{var: s}, {var: l}]}, 15]}, level: high}
+  - {when: {">=": [{"*": [{var: s}, {var: l}]}, 6]},  level: medium}
+  - {level: low}
+acceptance: {high: must_treat, medium: justify, low: accept}
+```
+
+**Suggestions from applicability.** Catalog entries carry triggers in the same expression language as scope rules, so answers and findings pre-populate the register:
+
+- Wi-Fi present → wireless threats (eavesdropping, rogue access points).
+- Dormant-radio caution → "unauthorised enablement of a disabled interface".
+- Mains powered above 50 V AC → electric shock and fire hazards.
+
+Suggestions are proposals: the user accepts them, or dismisses them with a reason. Custom assets, threats and hazards can always be added.
+
+## Risk register
+
+One register per product holds typed entries: assets, threats and hazards. Cause and consequence are kept separate: CIA says how an asset is compromised, impact categories say what happens as a result, including harm to people and property.
+
+**Assets and threats.**
+
+1. Each asset is rated for confidentiality, integrity and availability on the method's severity scale.
+2. Each threat targets one asset and names the property it violates.
+3. Each threat has one or more consequences, each in an impact category with its own severity. The threat's severity is the worst consequence; by default a consequence inherits the asset's rating for that property, and overrides need a justification.
+4. Likelihood is rated per threat, or computed from factors if the method defines them. The matrix gives the risk level.
+
+| Impact category | Example | Links to |
+| --- | --- | --- |
+| Safety (people) | Overheating causes burns | A hazard entry |
+| Property damage | Fire damages premises or equipment | A hazard entry |
+| Operational | Device or connected systems unavailable | — |
+| Financial | Fraud, recall costs | — |
+| Privacy | Personal data exposed | GDPR |
+
+**Hazards and causes.** Hazards (LVD and other safety regulations) harm people or property and are scored with the safety method. A hazard lists its causes: hardware failure, software fault, foreseeable misuse, or cyberattack. Software bugs that cause harm are safety causes, not security threats; only intentional manipulation is a threat.
+
+```mermaid
+flowchart LR
+  T[Threat: firmware tampering<br/>Integrity] -- safety consequence --> H[Hazard: overheating<br/>fire]
+  C1[Thermal fuse failure] --> H
+  C2[Control software fault] --> H
+  T -- cyber cause --> H
+```
+
+The link is visible from both sides: the safety view lists all causes of a hazard, the security view shows why a threat matters beyond data.
+
+**Cross-method rules.** Threat and hazard keep their own methods and scales; the link carries consistency rules instead of merged numbers.
+
+1. A threat with a safety or property consequence is flagged safety-relevant and cannot be accepted while its linked hazard is unacceptable.
+2. A method package may declare a severity mapping to another method; the threat's safety consequence then cannot be rated below the hazard's mapped severity. Without a mapping, both ratings are shown side by side.
+3. A control on the threat (e.g. secure boot) may lower the likelihood of the hazard's cyber cause, confirmed by the reviewer.
+4. An entry relevant to several regulations keeps one identity and gets one rating per applicable method.
+
+**Product baseline and configuration deltas.** The register lives at product level. Each entry is scoped to all configurations or to a specific HW variant, SW release or option; an option enabling Wi-Fi brings its wireless threats. A delta may override a base entry (e.g. lower likelihood in a release adding secure boot) with a justification. A configuration's view is the baseline plus its deltas.
+
+**Treatment and approval.** Treatment is mitigate, accept, transfer or avoid, giving a residual severity × likelihood checked against the method's acceptance thresholds. Controls are entities from the start (name, description, status, linked threats and hazard causes), so one control can mitigate several entries and evidence attaches in a later milestone without migration. Approval freezes a snapshot per configuration view with method and catalog package versions; a new method version marks approved assessments stale and never rescores them.
+
+**Candidate package:** the EU Machinery Regulation (2023/1230), applying from January 2027, requires protection of safety functions against corruption, including malicious attempts. This model covers it without changes.
+
+## Demo seed: Aavistin assesses itself
+
+The tool ships with a demo dataset in which Aavistin is the product under assessment. It shows every main feature on a product people already understand, and it runs in CI as an end-to-end test.
+
+**What is seeded.** One demo organisation, one family and the product Aavistin, modelled like any other product:
+
+| Level | Seeded as | What it demonstrates |
+| --- | --- | --- |
+| Product | Aavistin, intended use: compliance and risk management for product teams | Product-level answers |
+| HW variant | None: software only, target market EU | The software-only path (see open questions) |
+| SW release | The current Aavistin release, plus the previous one | Answers copied forward as "needs confirmation" |
+| Option | Community release (non-monetised) and Paid support | Options as deltas that change scope |
+| Users | Local accounts: one editor, one approver, one curator | Roles and the separation-of-duties warning |
+
+**Expected results.** These are the seed's fixtures; CI fails if the evaluated results differ.
+
+| Source | Community release | Paid support |
+| --- | --- | --- |
+| CRA | Out of scope: free and open-source software outside a commercial activity | In scope, default category, internal control |
+| RED | Out of scope: no radio equipment | Out of scope |
+| LVD | Out of scope: no electrical equipment | Out of scope |
+| GDPR | Info finding: the deploying organisation is controller for user, LDAP and audit data | Same |
+
+The CRA interpretation of monetised support sits in the eu-cra package with its legal reference, not in the seed; the seed only states the expected outcome.
+
+**Findings.** A caution on the Community release: "Offering paid support or other monetisation changes CRA scope and requires re-assessment." Selecting the Paid support option triggers that re-assessment, as for any flagged option.
+
+**Evidence reuse.** The seed includes an SBOM and a vulnerability handling policy. Each is provided once and shown as fulfilling both CRA Annex I Part II and a fictional demo customer security spec.
+
+**Risk register.** Once the register design lands, the seed adds Aavistin's own assets and risks, each mitigated by a decision in this document:
+
+| Asset | Risk | Mitigation |
+| --- | --- | --- |
+| Rendered Markdown | Stored XSS | Server-side rendering sanitised with nh3 |
+| User-imported packages | Malicious rule expressions | Declarative rules, safe evaluation, never Python eval |
+| LDAP bind credentials | Credential exposure in transit or repo | LDAPS or StartTLS only; secrets from environment variables |
+| API tokens | Token theft | Personal, revocable tokens |
+| Assessment documents | Lost updates | Optimistic locking and revision history |
+| Audit trail | Tampering or gaps | History recorded from the start |
+
+**Loading.**
+
+- A management command (`manage.py seed_demo`) creates the data idempotently; a matching reset command removes it.
+- Demo data lives in its own organisation and is flagged as demo, so reports label it and it never mixes with real products.
+- It loads automatically only when an environment variable enables demo mode; production deployments must opt in.
+- The seed is versioned with the application: each Aavistin release adds a SW release to the seed, so the demo also dogfoods the copy-forward flow.
+
 ## Open questions
 
 - [ ] Background jobs: Django tasks, Celery with Redis, or a PostgreSQL-backed queue?
 - [ ] API framework: django-ninja or DRF?
 - [ ] Which identity provider will SSO target first?
-- [ ] Risk assessment design: LVD hazards and CRA cybersecurity risks in one register (in progress).
+- [ ] Severity mappings between methods: which method pairs need one first (e.g. CIA 5×5 ↔ LVD safety)?
+- [ ] Software-only products: target markets are set on the HW variant, so where do they live for a product with no hardware, such as Aavistin itself?
