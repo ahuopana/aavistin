@@ -100,35 +100,51 @@ def unlink_evidence(link: EvidenceLink) -> None:
     link.delete()
 
 
-def _referenced_by_approved_work(evidence: Evidence) -> bool:
-    """Conservative: blocks deletion if the product has ANY approved
-    work of the kind evidence is linked to, not only work that
-    references this exact link. Precise per-snapshot tracking (which
-    approved assessment actually used this evidence) is deferred; see
-    docs/adr/0011-evidence-model.md.
-    """
-    has_control_link = evidence.links.filter(target_type=EvidenceTargetType.CONTROL).exists()
-    has_requirement_link = evidence.links.filter(
-        target_type=EvidenceTargetType.REQUIREMENT
-    ).exists()
-    if not (has_control_link or has_requirement_link):
+def _evidence_id_in_risk_snapshot(snapshot: dict | None, evidence_id: int) -> bool:
+    if not snapshot:
         return False
+    for control in snapshot.get("controls", []):
+        for fingerprint in control.get("evidence", []):
+            if fingerprint.get("evidence_id") == evidence_id:
+                return True
+    return False
 
+
+def _evidence_id_in_assessment_snapshot(snapshot: dict | None, evidence_id: int) -> bool:
+    if not snapshot:
+        return False
+    for result in snapshot.get("results", []):
+        for fingerprints in result.get("requirement_evidence", {}).values():
+            for fingerprint in fingerprints:
+                if fingerprint.get("evidence_id") == evidence_id:
+                    return True
+    return False
+
+
+def _referenced_by_approved_work(evidence: Evidence) -> bool:
+    """Precise: blocks deletion only if this evidence's id actually
+    appears inside an approved (frozen) snapshot -- apps.risk.approval's
+    `_control_evidence_fingerprint` and apps.assessments.evaluation's
+    `_requirement_evidence_fingerprint` both embed `evidence_id`, so a
+    live link that was never captured in an approved snapshot (added
+    after approval, or never approved at all) doesn't block deletion.
+    """
     product_filter = {
         "configuration__hardware_revision__hardware_variant__product": evidence.product,
     }
-    if (
-        has_control_link
-        and RiskAssessment.objects.filter(
+
+    if evidence.links.filter(target_type=EvidenceTargetType.CONTROL).exists():
+        risk_assessments = RiskAssessment.objects.filter(
             status=RiskAssessmentStatus.APPROVED, **product_filter
-        ).exists()
-    ):
-        return True
-    if (
-        has_requirement_link
-        and Assessment.objects.filter(status=AssessmentStatus.APPROVED, **product_filter).exists()
-    ):
-        return True
+        )
+        if any(_evidence_id_in_risk_snapshot(ra.snapshot, evidence.id) for ra in risk_assessments):
+            return True
+
+    if evidence.links.filter(target_type=EvidenceTargetType.REQUIREMENT).exists():
+        assessments = Assessment.objects.filter(status=AssessmentStatus.APPROVED, **product_filter)
+        if any(_evidence_id_in_assessment_snapshot(a.snapshot, evidence.id) for a in assessments):
+            return True
+
     return False
 
 

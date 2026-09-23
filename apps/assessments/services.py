@@ -80,6 +80,16 @@ def approve_assessment(assessment: Assessment, *, actor) -> Assessment:
     return assessment
 
 
+def _requirement_evidence_snapshot(results) -> dict:
+    """(source, version) -> requirement_evidence, for the staleness diff
+    below. Narrower than comparing `results` wholesale (which also
+    carries in_scope/classifications/routes, already implied by
+    resolved_answers and package-version changes) -- only the evidence
+    fingerprint apps.evidence needs to detect expiry or supersession.
+    """
+    return {(r["source"], r["version"]): r.get("requirement_evidence", {}) for r in results}
+
+
 def recompute_staleness(assessment: Assessment) -> bool:
     """Recomputes and persists Assessment.stale; returns the new value.
 
@@ -102,6 +112,8 @@ def recompute_staleness(assessment: Assessment) -> bool:
     is_stale = (
         current["resolved_answers"] != assessment.snapshot.get("resolved_answers", {})
         or current_packages != snapshot_packages
+        or _requirement_evidence_snapshot(current["results"])
+        != _requirement_evidence_snapshot(assessment.snapshot.get("results", []))
     )
     if is_stale != assessment.stale:
         assessment.stale = is_stale

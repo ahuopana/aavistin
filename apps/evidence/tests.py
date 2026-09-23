@@ -2,9 +2,10 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from django.urls import reverse
 
 from apps.assessments.models import Assessment, AssessmentStatus
-from apps.orgs.models import Organisation, ProductFamily
+from apps.orgs.models import Organisation, ProductFamily, Role, RoleAssignment
 from apps.products.models import (
     Configuration,
     HardwareRevision,
@@ -267,7 +268,9 @@ class DeleteEvidenceTests(EvidenceFixture):
         evidence = self.make_text_evidence()
         link_evidence(evidence, control=self.control)
         RiskAssessment.objects.create(
-            configuration=self.configuration, status=RiskAssessmentStatus.APPROVED
+            configuration=self.configuration,
+            status=RiskAssessmentStatus.APPROVED,
+            snapshot=build_snapshot(self.configuration),
         )
         with self.assertRaises(EvidenceInUseError):
             delete_evidence(evidence)
@@ -277,10 +280,35 @@ class DeleteEvidenceTests(EvidenceFixture):
         evidence = self.make_text_evidence()
         link_evidence(evidence, requirement=("eu-cra", "1.0", "annex-1-part-2"))
         Assessment.objects.create(
-            configuration=self.configuration, status=AssessmentStatus.APPROVED
+            configuration=self.configuration,
+            status=AssessmentStatus.APPROVED,
+            snapshot={
+                "results": [
+                    {
+                        "source": "eu-cra",
+                        "version": "1.0",
+                        "requirement_evidence": {
+                            "annex-1-part-2": [{"evidence_id": evidence.id, "current": True}]
+                        },
+                    }
+                ]
+            },
         )
         with self.assertRaises(EvidenceInUseError):
             delete_evidence(evidence)
+
+    def test_does_not_block_when_link_postdates_approval(self):
+        """A live link the approved snapshot never captured -- nothing
+        approved actually depends on it yet, so deletion is allowed."""
+        evidence = self.make_text_evidence()
+        RiskAssessment.objects.create(
+            configuration=self.configuration,
+            status=RiskAssessmentStatus.APPROVED,
+            snapshot=build_snapshot(self.configuration),
+        )
+        link_evidence(evidence, control=self.control)
+        delete_evidence(evidence)
+        self.assertFalse(Evidence.objects.filter(pk=evidence.pk).exists())
 
     def test_does_not_block_when_no_approved_work(self):
         evidence = self.make_text_evidence()
@@ -335,3 +363,90 @@ class StalenessIntegrationTests(EvidenceFixture):
             supersedes=evidence,
         )
         self.assertTrue(recompute_staleness(risk_assessment))
+
+
+class ViewTests(EvidenceFixture):
+    def setUp(self):
+        super().setUp()
+        self.editor = User.objects.create_user(username="edith", password="x")
+        RoleAssignment.objects.create(role=Role.EDITOR, user=self.editor, product=self.product)
+        self.viewer = User.objects.create_user(username="vera", password="x")
+        RoleAssignment.objects.create(role=Role.VIEWER, user=self.viewer, product=self.product)
+
+    def test_product_list_requires_login(self):
+        response = self.client.get(reverse("evidence:product_list", args=[self.product.pk]))
+        self.assertEqual(response.status_code, 302)
+
+    def test_editor_can_add_text_evidence(self):
+        self.client.force_login(self.editor)
+        response = self.client.post(
+            reverse("evidence:create", args=[self.product.pk]),
+            {"title": "Vuln policy", "kind": "text", "reference_text": "see wiki"},
+        )
+        self.assertEqual(response.status_code, 302)
+        evidence = Evidence.objects.get(title="Vuln policy")
+        self.assertEqual(evidence.product, self.product)
+
+    def test_viewer_cannot_add_evidence(self):
+        self.client.force_login(self.viewer)
+        self.client.post(
+            reverse("evidence:create", args=[self.product.pk]),
+            {"title": "Vuln policy", "kind": "text", "reference_text": "see wiki"},
+        )
+        self.assertFalse(Evidence.objects.filter(title="Vuln policy").exists())
+
+    def test_editor_can_upload_file_evidence(self):
+        self.client.force_login(self.editor)
+        upload = SimpleUploadedFile("sbom.json", b"sbom bytes")
+        response = self.client.post(
+            reverse("evidence:create", args=[self.product.pk]),
+            {"title": "SBOM", "kind": "file", "file": upload},
+        )
+        self.assertEqual(response.status_code, 302)
+        evidence = Evidence.objects.get(title="SBOM")
+        self.assertIsNotNone(evidence.file)
+
+    def test_editor_can_link_and_unlink_control(self):
+        self.client.force_login(self.editor)
+        evidence = self.make_text_evidence()
+        response = self.client.post(
+            reverse("evidence:link_control", args=[evidence.pk]),
+            {"control_id": self.control.pk},
+        )
+        self.assertEqual(response.status_code, 302)
+        link = EvidenceLink.objects.get(evidence=evidence, control=self.control)
+
+        self.client.post(reverse("evidence:unlink", args=[link.pk]))
+        self.assertFalse(EvidenceLink.objects.filter(pk=link.pk).exists())
+
+    def test_editor_can_link_requirement(self):
+        self.client.force_login(self.editor)
+        evidence = self.make_text_evidence()
+        response = self.client.post(
+            reverse("evidence:link_requirement", args=[evidence.pk]),
+            {
+                "requirement_source": "eu-cra",
+                "requirement_version": "1.0",
+                "requirement_id": "annex-1-part-2",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            EvidenceLink.objects.filter(
+                evidence=evidence, target_type=EvidenceTargetType.REQUIREMENT
+            ).exists()
+        )
+
+    def test_editor_can_delete_unreferenced_evidence(self):
+        self.client.force_login(self.editor)
+        evidence = self.make_text_evidence()
+        response = self.client.post(reverse("evidence:delete", args=[evidence.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Evidence.objects.filter(pk=evidence.pk).exists())
+
+    def test_detail_view_renders(self):
+        self.client.force_login(self.editor)
+        evidence = self.make_text_evidence()
+        response = self.client.get(reverse("evidence:detail", args=[evidence.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, evidence.title)
