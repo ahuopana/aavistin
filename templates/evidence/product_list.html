@@ -3,6 +3,7 @@
 {% block title %}Evidence · {{ product.name }} · Aavistin{% endblock %}
 
 {% block content %}
+  <p><a href="{% url 'products:product_detail' product.pk %}">{{ product.name }}</a></p>
   <h1>Evidence — {{ product.name }}</h1>
 
   <table>
