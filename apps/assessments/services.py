@@ -83,10 +83,12 @@ def approve_assessment(assessment: Assessment, *, actor) -> Assessment:
 def recompute_staleness(assessment: Assessment) -> bool:
     """Recomputes and persists Assessment.stale; returns the new value.
 
-    Not wired to fire automatically on every relevant change (that's
-    background-job territory, and docs/architecture.md leaves the
-    background job backend as an open question) — call this explicitly,
-    e.g. from the `refresh_assessment_staleness` management command.
+    Called explicitly — by `recompute_all_staleness` below (itself called
+    from the `refresh_assessment_staleness` management command and from
+    `apps.assessments.tasks.refresh_staleness_task`, see
+    docs/adr/0007-background-job-backend.md) — never from a signal, so a
+    single answer edit doesn't trigger a recompute storm across every
+    assessment that might reference it.
     """
     if assessment.status != AssessmentStatus.APPROVED or assessment.snapshot is None:
         return False
@@ -105,3 +107,18 @@ def recompute_staleness(assessment: Assessment) -> bool:
         assessment.stale = is_stale
         assessment.save(update_fields=["stale"])
     return is_stale
+
+
+def recompute_all_staleness() -> tuple[int, int]:
+    """Recomputes staleness for every approved assessment.
+
+    Returns (checked, newly_stale). Shared by the manual management
+    command and the periodic task so there's one code path either way.
+    """
+    checked = 0
+    newly_stale = 0
+    for assessment in Assessment.objects.filter(status=AssessmentStatus.APPROVED):
+        checked += 1
+        if recompute_staleness(assessment):
+            newly_stale += 1
+    return checked, newly_stale

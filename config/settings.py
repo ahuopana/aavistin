@@ -34,6 +34,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "simple_history",
     "ninja",
+    "django_tasks",
+    "django_tasks_db",
     "apps.accounts",
     "apps.core",
     "apps.orgs",
@@ -193,3 +195,17 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Security: honour X-Forwarded-Proto from the reverse proxy in production.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+
+# Background jobs
+# https://docs.djangoproject.com/en/5.2/topics/tasks/ (docs/adr/0007-background-job-backend.md)
+#
+# Postgres-backed in every environment, same as DATABASES — no separate
+# broker service. Consumed by `manage.py db_worker`. Tests force the
+# immediate (synchronous, in-process) backend via conftest.py.
+
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks_db.backend.DatabaseBackend",
+    },
+}

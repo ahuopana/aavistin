@@ -16,7 +16,7 @@ The system is a server-rendered Django application on PostgreSQL, with HTMX for 
 | Markdown rendering | `markdown-it-py` or `mistune` + `nh3` sanitizing | Rendered server-side, cached per revision |
 | Charts | Apache ECharts (or Chart.js) | JSON from Django views |
 | API | django-ninja or DRF + `drf-spectacular` | Token auth, OpenAPI schema |
-| Background jobs | Django tasks with a worker backend, or Celery | Decide by ops preference |
+| Background jobs | `django-tasks` + `django-tasks-db` (Postgres-backed) | No Redis; see docs/adr/0007-background-job-backend.md |
 | Tooling | `uv`, `ruff`, `pytest-django` | Env-var config via `django-environ` |
 | Deployment | Containers, gunicorn behind a reverse proxy | nginx or existing proxy |
 
@@ -114,7 +114,7 @@ Dashboards refresh per widget with HTMX polling (`hx-trigger="every 60s"`); no W
 The system is API-first: everything a user can do in the browser should be scriptable.
 
 - **API:** django-ninja, or DRF with `drf-spectacular`, publishing an OpenAPI schema. Token authentication; a CLI can follow.
-- **Background jobs:** LDAP sync, notifications, imports, dashboard precomputation. Options are Django's built-in tasks framework with a production worker backend, Celery with Redis, or a PostgreSQL-backed queue to avoid running Redis.
+- **Background jobs:** `django-tasks` + `django-tasks-db`, Postgres-backed like everything else — no Redis. See docs/adr/0007-background-job-backend.md. LDAP sync, notifications, imports and dashboard precomputation are anticipated job types; only staleness recomputation (assessments and risk assessments) is built so far.
 - **Configuration:** environment variables via `django-environ`, one settings module, no secrets in the repository.
 - **Tooling:** `uv` for dependencies, `ruff` for linting and formatting, `pytest-django` for tests, CI against PostgreSQL.
 - **Deployment:** containers running gunicorn (uvicorn if async is needed) behind nginx or the existing reverse proxy.
@@ -361,7 +361,6 @@ The CRA interpretation of monetised support sits in the eu-cra package with its 
 
 ## Open questions
 
-- [ ] Background jobs: Django tasks, Celery with Redis, or a PostgreSQL-backed queue?
 - [ ] API framework: django-ninja or DRF?
 - [ ] Which identity provider will SSO target first?
 - [ ] Severity mappings between methods: which method pairs need one first (e.g. CIA 5×5 ↔ LVD safety)?

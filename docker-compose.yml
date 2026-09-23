@@ -16,14 +16,50 @@ services:
       retries: 10
 
   web:
+    image: aavistin:dev
     build: .
     command: >
       sh -c "python manage.py migrate &&
+             python manage.py seed_dev_users &&
              python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
     ports:
       - "8000:8000"
+    environment:
+      DEBUG: "True"
+      DJANGO_SECRET_KEY: dev-secret-key-not-for-production
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      DATABASE_URL: postgres://aavistin:aavistin@db:5432/aavistin
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Background jobs (docs/adr/0007-background-job-backend.md): worker
+  # processes tasks enqueued to the Postgres-backed queue; scheduler
+  # enqueues the periodic ones (e.g. staleness recompute) on an
+  # interval. Neither needs its own service beyond Postgres.
+  worker:
+    image: aavistin:dev
+    build: .
+    command: sh -c "python manage.py migrate && python manage.py db_worker"
+    volumes:
+      - .:/app
+    environment:
+      DEBUG: "True"
+      DJANGO_SECRET_KEY: dev-secret-key-not-for-production
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      DATABASE_URL: postgres://aavistin:aavistin@db:5432/aavistin
+    depends_on:
+      db:
+        condition: service_healthy
+
+  scheduler:
+    image: aavistin:dev
+    build: .
+    command: python manage.py scheduler
+    volumes:
+      - .:/app
     environment:
       DEBUG: "True"
       DJANGO_SECRET_KEY: dev-secret-key-not-for-production

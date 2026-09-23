@@ -23,7 +23,14 @@ from .carryforward import confirm_answers, copy_answers_forward
 from .evaluation import evaluate_configuration
 from .models import Answer, Assessment, AssessmentStatus
 from .resolution import resolve_answer, resolve_answers
-from .services import AssessmentError, SoDViolation, approve_assessment, recompute_staleness
+from .services import (
+    AssessmentError,
+    SoDViolation,
+    approve_assessment,
+    recompute_all_staleness,
+    recompute_staleness,
+)
+from .tasks import refresh_staleness_task
 
 DEMO_DIR = Path(settings.BASE_DIR) / "packages" / "demo-widget-safety"
 
@@ -338,6 +345,45 @@ class StalenessTests(ConfigurationFixture):
         self._ready_answers()
         assessment = Assessment.objects.create(configuration=self.configuration)
         self.assertFalse(recompute_staleness(assessment))
+
+
+class BackgroundTaskTests(ConfigurationFixture):
+    """The immediate task backend runs synchronously in tests (conftest.py),
+    so these call .enqueue() directly rather than needing a worker."""
+
+    def _ready_answers(self):
+        Answer.objects.create(
+            question_id="has_power_source", value=True, hardware_revision=self.revision
+        )
+        Answer.objects.create(
+            question_id="rated_power_watts", value=20, hardware_revision=self.revision
+        )
+        Answer.objects.create(question_id="is_toy_widget", value=False, product=self.product)
+
+    def test_recompute_all_staleness_checks_only_approved(self):
+        self._ready_answers()
+        Assessment.objects.create(configuration=self.configuration)  # draft, not counted
+        approved = Assessment.objects.create(configuration=self.configuration)
+        approve_assessment(approved, actor=self.approver)
+
+        checked, newly_stale = recompute_all_staleness()
+        self.assertEqual(checked, 1)
+        self.assertEqual(newly_stale, 0)
+
+    def test_task_flips_stale_flag(self):
+        self._ready_answers()
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        approve_assessment(assessment, actor=self.approver)
+
+        answer = Answer.objects.get(question_id="rated_power_watts")
+        answer.value = 150
+        answer.override_justification = "changed after approval"
+        answer.save()
+
+        result = refresh_staleness_task.enqueue()
+        self.assertEqual(result.status, "SUCCESSFUL")
+        assessment.refresh_from_db()
+        self.assertTrue(assessment.stale)
 
 
 class ViewTests(ConfigurationFixture):
