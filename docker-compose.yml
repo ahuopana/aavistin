@@ -18,11 +18,11 @@ services:
   web:
     build: .
     command: >
-      sh -c "python manage.py migrate &&
-             python manage.py runserver 0.0.0.0:8000"
+      sh -c "uv run manage.py migrate &&
+             uv run manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
-      - aavistin_venv:/app/.venv
+      - aavistin_uv_cache:/root/.cache/uv
     ports:
       - "8000:8000"
     environment:
@@ -36,8 +36,11 @@ services:
 
 volumes:
   aavistin_pgdata:
-  # Named volume for /app/.venv on services that bind-mount the project
-  # root: this keeps the image's build-time venv from being shadowed by
-  # the host checkout (which has no .venv), instead of shipping uv into
-  # the runtime image just to rebuild it there.
-  aavistin_venv:
+  # uv's package cache, shared across services that bind-mount the
+  # project root over /app: that mount shadows the image's baked-in
+  # /app/.venv, but `uv run` (see the compose commands above) re-syncs
+  # a correct venv from uv.lock on every container start regardless.
+  # This volume just makes repeat syncs fast — it never needs manual
+  # invalidation the way a venv-holding volume would after a dependency
+  # change, since it's an additive download cache, not the venv itself.
+  aavistin_uv_cache:
