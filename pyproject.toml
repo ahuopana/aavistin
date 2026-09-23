@@ -13,6 +13,7 @@ dependencies = [
     "django-tasks-db>=0.13.0",
     "gunicorn>=26.2.0",
     "jsonschema>=4.26.0",
+    "mistune>=3.1.4",
     "nh3>=0.3.7",
     "psycopg[binary]>=3.3.6",
 ]

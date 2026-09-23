@@ -334,6 +334,15 @@ A document (an SBOM, a test report, a policy, a certificate) is rarely proof of 
 
 **Deletion.** An `Evidence` record referenced by any approved (frozen) assessment or risk snapshot can't be deleted — matching how an approved product-level entity can't be deleted (ADR 0010) — but can still be edited. Deleting an unreferenced record also checks whether any other `Evidence` record (in this product or another) still points at the same `EvidenceFile`; the stored blob is only removed once nothing references it.
 
+## User Guide
+
+Aavistin's own product documentation — not the "Documents" system above (that's for user-authored content with locking and revision history), and not a per-organisation wiki (a distinct, separate feature; see "Open questions"). It is maintainer-authored, single-sourced, and ships with the codebase.
+
+- **Source:** Markdown files under `docs/userguide/`, named `NN-slug.md` (the number sets reading order, the slug is the URL and cross-link target). A page's title is its leading `# H1`, not a separate config field — one place to change it, not two.
+- **Rendering:** `mistune` to HTML, always sanitized with `nh3` (CLAUDE.md hard rule — the guide's content is maintainer-authored, but nothing exempts it from the rule, and a contributor could still paste in something unsafe unnoticed). A link whose target is exactly another page's slug (`[text](other-page)`) is rewritten to that page's real URL at render time; anything else (external URLs, `mailto:`, anchors) renders unchanged — this is what lets the same Markdown source work both in-app and in the static export below, without hand-maintaining two sets of links.
+- **In-app:** `apps.userguide`, at `/guide/`, linked from the main nav. No login required — someone evaluating the product before creating an account can still read it.
+- **GitHub Pages:** `manage.py export_userguide` renders the same pages (via the same rendering path, with internal links rewritten to relative `../<slug>/` paths instead of in-app URLs) to a static site, reusing the app's own CSS and logos so it looks the same without a Django server behind it. `.github/workflows/pages.yml` builds and publishes it via `actions/deploy-pages` on a push to `main` that touches the guide; GitHub Pages itself (Settings → Pages → Source: GitHub Actions) is a one-time manual step for a repository admin, outside what a workflow file can turn on.
+
 ## Demo seed: Aavistin assesses itself
 
 The tool ships with a demo dataset in which Aavistin is the product under assessment. It shows every main feature on a product people already understand, and it runs in CI as an end-to-end test.
@@ -387,3 +396,4 @@ The CRA interpretation of monetised support sits in the eu-cra package with its 
 - [ ] Which identity provider will SSO target first?
 - [ ] Severity mappings between methods: which method pairs need one first (e.g. CIA 5×5 ↔ LVD safety)?
 - [ ] Software-only products: target markets are set on the HW variant, so where do they live for a product with no hardware, such as Aavistin itself?
+- [ ] Organisation wiki: a separate, per-organisation, user-authored Markdown wiki (likely built on the "Documents and concurrent editing" system above) — not yet designed. Not to be confused with the User Guide, which is maintainer-authored and the same for everyone.

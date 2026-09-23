@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}User Guide · Aavistin{% endblock %}
+
+{% block sidebar %}
+  <div class="app-sidebar">
+    {% include "userguide/_nav.html" %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <h1>User Guide</h1>
+  <p>Pick a page to get started:</p>
+  <ul>
+    {% for p in pages %}
+      <li><a href="{% url 'userguide:page' p.slug %}">{{ p.title }}</a></li>
+    {% endfor %}
+  </ul>
+{% endblock %}
