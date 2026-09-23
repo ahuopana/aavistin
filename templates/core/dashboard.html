@@ -7,7 +7,7 @@
 
   <div class="dashboard-widgets">
     <section class="dashboard-widget">
-      <h2>Products</h2>
+      <h2>Products with recent changes</h2>
       {% if products %}
         <ul class="dashboard-products">
           {% for row in products %}
@@ -77,9 +77,15 @@
                 {% for row in family_node.products %}
                   <li>
                     <a href="{% url 'products:product_detail' row.product.pk %}">{{ row.product.name }}</a>
-                    {% if row.revisions or row.releases %}
+                    {% if row.revisions %}
+                      <p class="tree-sublabel">Hardware revisions</p>
                       <ul>
                         {% for label in row.revisions %}<li>{{ label }}</li>{% endfor %}
+                      </ul>
+                    {% endif %}
+                    {% if row.releases %}
+                      <p class="tree-sublabel">Software releases</p>
+                      <ul>
                         {% for label in row.releases %}<li>{{ label }}</li>{% endfor %}
                       </ul>
                     {% endif %}

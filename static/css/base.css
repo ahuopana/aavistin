@@ -229,7 +229,7 @@ td {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: var(--space-4);
-  align-items: start;
+  align-items: stretch;
   margin-bottom: var(--space-5);
 }
 
@@ -338,6 +338,14 @@ td {
 .dashboard-tree ul ul {
   color: var(--color-text-muted);
   font-size: 0.9em;
+}
+
+.tree-sublabel {
+  margin: var(--space-1) 0 0 var(--space-4);
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 @media (max-width: 768px) {
