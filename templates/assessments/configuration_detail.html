@@ -28,8 +28,30 @@
                   <input type="hidden" name="question_id" value="{{ row.question.id }}">
                   <input type="hidden" name="owner_type" value="{{ row.owner_type }}">
                   <input type="hidden" name="owner_id" value="{{ row.owner_id }}">
-                  <input type="text" name="value" value="{{ row.value|default_if_none:'' }}" placeholder="value">
-                  <input type="text" name="justification" placeholder="justification (if overriding)">
+                  <input type="hidden" name="question_type" value="{{ row.question.type }}">
+                  {% if row.question.type == "boolean" %}
+                    <select name="value">
+                      <option value="" {% if row.value is None %}selected{% endif %}>—</option>
+                      <option value="true" {% if row.value == True %}selected{% endif %}>Yes</option>
+                      <option value="false" {% if row.value == False %}selected{% endif %}>No</option>
+                    </select>
+                  {% elif row.question.type == "choice" %}
+                    <select name="value">
+                      <option value="" {% if row.value is None %}selected{% endif %}>—</option>
+                      {% for choice in row.question.choices %}
+                        <option value="{{ choice }}" {% if row.value == choice %}selected{% endif %}>{{ choice }}</option>
+                      {% endfor %}
+                    </select>
+                  {% elif row.question.type == "number" %}
+                    <input type="number" step="any" name="value" value="{{ row.value|default_if_none:'' }}">
+                    {% if row.question.unit %}<span class="field-hint">{{ row.question.unit }}</span>{% endif %}
+                  {% else %}
+                    <input type="text" name="value" value="{{ row.value|default_if_none:'' }}" placeholder="value">
+                  {% endif %}
+                  <label>
+                    <input type="text" name="justification" placeholder="justification (if overriding)">
+                    <span class="field-hint">{{ justification_help }}</span>
+                  </label>
                   <button type="submit">Save</button>
                 </form>
               {% endif %}

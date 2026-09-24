@@ -33,6 +33,7 @@ from .services import (
     recompute_staleness,
 )
 from .tasks import refresh_staleness_task
+from .views import _coerce_value
 
 DEMO_DIR = Path(settings.BASE_DIR) / "packages" / "demo-widget-safety"
 
@@ -524,3 +525,46 @@ class ViewTests(ConfigurationFixture):
         self.client.post(reverse("assessments:assessment_approve", args=[assessment.pk]))
         assessment.refresh_from_db()
         self.assertEqual(assessment.status, AssessmentStatus.DRAFT)
+
+    def test_answer_form_declares_question_type_per_row(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, '<input type="hidden" name="question_type" value="boolean">')
+        self.assertContains(response, '<input type="hidden" name="question_type" value="number">')
+
+    def test_justification_help_text_is_rendered(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        help_text = Answer._meta.get_field("override_justification").help_text
+        self.assertContains(response, help_text)
+
+
+class CoerceValueTests(TestCase):
+    def test_boolean_true_and_false(self):
+        self.assertIs(_coerce_value("true", "boolean"), True)
+        self.assertIs(_coerce_value("false", "boolean"), False)
+
+    def test_choice_value_is_not_mistaken_for_boolean_or_number(self):
+        # A choice option that happens to spell "true" or a digit must stay
+        # a plain string, unlike the untyped best-effort guess below.
+        self.assertEqual(_coerce_value("true", "choice"), "true")
+        self.assertEqual(_coerce_value("10", "choice"), "10")
+
+    def test_number_value(self):
+        self.assertEqual(_coerce_value("7", "number"), 7)
+        self.assertEqual(_coerce_value("3.5", "number"), 3.5)
+
+    def test_blank_value_stays_blank_regardless_of_type(self):
+        self.assertEqual(_coerce_value("", "boolean"), "")
+        self.assertEqual(_coerce_value("", "number"), "")
+        self.assertEqual(_coerce_value("", "choice"), "")
+
+    def test_unknown_type_falls_back_to_guessing(self):
+        self.assertIs(_coerce_value("true"), True)
+        self.assertIs(_coerce_value("false"), False)
+        self.assertEqual(_coerce_value("7"), 7)
+        self.assertEqual(_coerce_value("other"), "other")
