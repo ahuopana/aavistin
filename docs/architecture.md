@@ -68,9 +68,10 @@ Design principles for software professionals on wide screens:
 - **Use the full width.** No fixed 1200 px column. Master–detail and multi-pane layouts: list left, detail right, optional context panel.
 - **Dense, scannable data.** Compact tables with sorting, filtering, column selection and resizable panes.
 - **Keyboard first.** Shortcuts for navigation and search; a command palette (Ctrl/Cmd+K) as the app grows.
-- **Deep links for every state.** Filters, selected items and tabs live in the URL so links can be pasted into tickets and chat.
+- **Deep links for every state.** Filters, selected items and tabs live in the URL so links can be pasted into tickets and chat. In practice: an Alpine `x-data` tab widget reads its initial tab from a `?tab=` query param and updates it with `history.replaceState` on click (no full reload) — see `templates/products/product_detail.html` for the pattern to reuse.
 - **Dark mode from the start**, built on CSS variables.
 - **Mobile: usable, not designed for.** Panes collapse into stacked views on narrow screens.
+- **Tabs degrade to "show everything," never to "show nothing."** A tab panel's default (first) tab must not carry `x-cloak` — only non-default panels should, so a page whose primary content depends on tab state still shows *all* of it if Alpine fails to load (CDN blocked, ad blocker, offline), rather than rendering an empty page below the tab bar.
 
 ## Documents and concurrent editing
 
