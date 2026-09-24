@@ -3,429 +3,483 @@
 {% block title %}{{ product.name }} · Aavistin{% endblock %}
 
 {% block content %}
-  <h1>
-    {{ product.name }}
-    <span class="badge badge-{{ product.status }}">{{ product.get_status_display }}</span>
-  </h1>
-  <p>{{ product.product_family }}</p>
-  {% if product.description %}<p>{{ product.description }}</p>{% endif %}
-  <p><a href="{% url 'evidence:product_list' product.pk %}">Evidence</a></p>
+  <nav class="breadcrumb" aria-label="Breadcrumb">
+    <a href="{% url 'orgs:portfolio' %}">Portfolio</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="{% url 'orgs:detail' product.product_family.organisation.slug %}">{{ product.product_family.organisation.name }}</a>
+    <span class="breadcrumb-sep">/</span>
+    <span>{{ product.product_family.name }}</span>
+    <span class="breadcrumb-sep">/</span>
+    <span class="breadcrumb-current">{{ product.name }}</span>
+  </nav>
 
-  {% if product.status == "deleted" %}
-    <p class="message message-warning">Deleted — hidden from the portfolio and dashboard, but not removed. Restore it below to bring it back.</p>
-  {% elif product.status == "archived" %}
-    <p class="message message-info">Archived — hidden from the portfolio and dashboard until restored.</p>
-  {% endif %}
+  <div x-data="{ editingProduct: false }">
+    <div class="page-header">
+      <div>
+        <h1>
+          {{ product.name }}
+          <span class="badge badge-{{ product.status }}">{{ product.get_status_display }}</span>
+        </h1>
+        <p class="page-header-meta"><a href="{% url 'evidence:product_list' product.pk %}">Evidence</a></p>
+        {% if product.description %}<p>{{ product.description }}</p>{% endif %}
+      </div>
 
-  {% if can_edit %}
-    <form method="post" action="{% url 'products:product_edit' product.pk %}" class="form-vertical">
-      {% csrf_token %}
-      <h4>Edit product: {{ product.name }}</h4>
-      <div class="field"><label>Name<input type="text" name="name" value="{{ product.name }}" required></label></div>
-      <div class="field"><label>Slug<input type="text" name="slug" value="{{ product.slug }}" required></label></div>
-      <div class="field"><label>Description<textarea name="description">{{ product.description }}</textarea></label></div>
-      <button type="submit">Save</button>
-    </form>
-  {% endif %}
+      {% if can_edit or can_approve %}
+        <div class="page-header-actions">
+          <div class="row-actions">
+            {% if can_edit %}<button type="button" @click="editingProduct = !editingProduct">Edit product</button>{% endif %}
+            {% if can_approve and product.status == "draft" %}
+              <form method="post" action="{% url 'products:entity_approve' 'product' product.pk %}">
+                {% csrf_token %}
+                <button type="submit">Approve product</button>
+              </form>
+            {% endif %}
+            {% if can_close %}
+              <form method="post" action="{% url 'products:product_close' product.pk %}">
+                {% csrf_token %}
+                <button type="submit">Close product</button>
+              </form>
+            {% endif %}
+            {% if can_archive %}
+              <form method="post" action="{% url 'products:product_archive' product.pk %}">
+                {% csrf_token %}
+                <button type="submit">Archive product</button>
+              </form>
+            {% endif %}
+            {% if can_restore %}
+              <form method="post" action="{% url 'products:product_restore' product.pk %}">
+                {% csrf_token %}
+                <button type="submit">Restore product</button>
+              </form>
+            {% endif %}
+            {% if can_soft_delete %}
+              <form method="post" action="{% url 'products:entity_delete' 'product' product.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="button-danger">Delete product</button>
+              </form>
+            {% endif %}
+          </div>
+          <details class="lifecycle-help">
+            <summary>What do these actions do?</summary>
+            <p class="tree-sublabel">Approve</p>
+            <p>Locks the product against deletion and marks it "Approved". It does not require any compliance package or risk assessment to be complete — it just says this record itself is settled.</p>
+            <p class="tree-sublabel">Close</p>
+            <p>For once compliance and risk assessment work is done, e.g. at CE marking. Post-market monitoring can continue on a closed product.</p>
+            <p class="tree-sublabel">Archive</p>
+            <p>Hides the product from the portfolio and dashboard without deleting anything. Reversible via Restore.</p>
+            <p class="tree-sublabel">Delete</p>
+            <p>A soft delete: hides the product the same way Archive does, but marks it deleted. Nothing is removed from the database, and it can be restored.</p>
+          </details>
+        </div>
+      {% endif %}
+    </div>
 
-  <details>
-    <summary>What do these actions do?</summary>
-    <p class="tree-sublabel">Approve</p>
-    <p>Locks the product against deletion and marks it "Approved". It does not require any compliance package or risk assessment to be complete — it just says this record itself is settled.</p>
-    <p class="tree-sublabel">Close</p>
-    <p>For once compliance and risk assessment work is done, e.g. at CE marking. Post-market monitoring can continue on a closed product.</p>
-    <p class="tree-sublabel">Archive</p>
-    <p>Hides the product from the portfolio and dashboard without deleting anything. Reversible via Restore.</p>
-    <p class="tree-sublabel">Delete</p>
-    <p>A soft delete: hides the product the same way Archive does, but marks it deleted. Nothing is removed from the database, and it can be restored.</p>
-  </details>
-
-  <p class="row-actions">
-    {% if can_approve and product.status == "draft" %}
-      <form method="post" action="{% url 'products:entity_approve' 'product' product.pk %}">
-        {% csrf_token %}
-        <button type="submit">Approve product</button>
-      </form>
+    {% if product.status == "deleted" %}
+      <p class="message message-warning">Deleted — hidden from the portfolio and dashboard, but not removed. Restore it above to bring it back.</p>
+    {% elif product.status == "archived" %}
+      <p class="message message-info">Archived — hidden from the portfolio and dashboard until restored.</p>
     {% endif %}
-    {% if can_close %}
-      <form method="post" action="{% url 'products:product_close' product.pk %}">
-        {% csrf_token %}
-        <button type="submit">Close product</button>
-      </form>
-    {% endif %}
-    {% if can_archive %}
-      <form method="post" action="{% url 'products:product_archive' product.pk %}">
-        {% csrf_token %}
-        <button type="submit">Archive product</button>
-      </form>
-    {% endif %}
-    {% if can_restore %}
-      <form method="post" action="{% url 'products:product_restore' product.pk %}">
-        {% csrf_token %}
-        <button type="submit">Restore product</button>
-      </form>
-    {% endif %}
-    {% if can_soft_delete %}
-      <form method="post" action="{% url 'products:entity_delete' 'product' product.pk %}">
-        {% csrf_token %}
-        <button type="submit" class="button-danger">Delete product</button>
-      </form>
-    {% endif %}
-  </p>
 
-  <h2>Hardware variants</h2>
-  <table class="entity-table">
-    <thead>
-      <tr><th>Name</th><th>Target markets / release</th><th>Status</th><th>Actions</th></tr>
-    </thead>
-    {% for variant in product.hw_variants.all %}
-      <tbody x-data="{ editingVariant: false, editingRevision: null }">
-        <tr>
-          <td>{{ variant.name }}</td>
-          <td>{% for tm in variant.target_markets.all %}{{ tm.code }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
-          <td>
-            {% if variant.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
-          </td>
-          <td class="row-actions">
-            {% if can_edit %}<button type="button" @click="editingVariant = !editingVariant">Edit</button>{% endif %}
-            {% if can_edit %}
-              <form method="post" action="{% url 'products:hardware_variant_clone' variant.pk %}">
-                {% csrf_token %}
-                <button type="submit">Clone</button>
-              </form>
-            {% endif %}
-            {% if can_approve and not variant.is_approved %}
-              <form method="post" action="{% url 'products:entity_approve' 'hardware-variant' variant.pk %}">
-                {% csrf_token %}
-                <button type="submit">Approve</button>
-              </form>
-            {% endif %}
-            {% if can_edit and not variant.is_approved %}
-              <form method="post" action="{% url 'products:entity_delete' 'hardware-variant' variant.pk %}">
-                {% csrf_token %}
-                <button type="submit" class="button-danger">Delete</button>
-              </form>
-            {% endif %}
-          </td>
-        </tr>
-        {% if can_edit %}
-          <tr x-show="editingVariant" x-cloak>
-            <td colspan="4">
-              <form method="post" action="{% url 'products:hardware_variant_edit' variant.pk %}" class="form-vertical">
-                {% csrf_token %}
-                <h4>Edit hardware variant: {{ variant.name }}</h4>
-                <div class="field"><label>Name<input type="text" name="name" value="{{ variant.name }}" required></label></div>
-                <div class="field"><label>Slug<input type="text" name="slug" value="{{ variant.slug }}" required></label></div>
-                <div class="field">
-                  <label for="id_variant_{{ variant.pk }}_target_markets">Target markets</label>
-                  <select id="id_variant_{{ variant.pk }}_target_markets" name="target_markets" multiple size="{{ target_markets|length }}">
-                    {% for tm in target_markets %}
-                      <option value="{{ tm.id }}" {% if tm in variant.target_markets.all %}selected{% endif %}>{{ tm.code }} — {{ tm.name }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <button type="submit">Save</button>
-              </form>
-            </td>
-          </tr>
-        {% endif %}
-
-        {% for revision in variant.revisions.all %}
-          <tr class="row-child">
-            <td>↳ Rev {{ revision.label }}</td>
-            <td>{{ revision.released_at|default:"unreleased" }}</td>
-            <td>
-              {% if revision.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
-            </td>
-            <td class="row-actions">
-              {% if can_edit %}<button type="button" @click="editingRevision = editingRevision === {{ revision.pk }} ? null : {{ revision.pk }}">Edit</button>{% endif %}
-              {% if can_edit %}
-                <form method="post" action="{% url 'products:hardware_revision_clone' revision.pk %}">
-                  {% csrf_token %}
-                  <button type="submit">Clone</button>
-                </form>
-              {% endif %}
-              {% if can_approve and not revision.is_approved %}
-                <form method="post" action="{% url 'products:entity_approve' 'hardware-revision' revision.pk %}">
-                  {% csrf_token %}
-                  <button type="submit">Approve</button>
-                </form>
-              {% endif %}
-              {% if can_edit and not revision.is_approved %}
-                <form method="post" action="{% url 'products:entity_delete' 'hardware-revision' revision.pk %}">
-                  {% csrf_token %}
-                  <button type="submit" class="button-danger">Delete</button>
-                </form>
-              {% endif %}
-            </td>
-          </tr>
-          {% if can_edit %}
-            <tr x-show="editingRevision === {{ revision.pk }}" x-cloak>
-              <td colspan="4">
-                <form method="post" action="{% url 'products:hardware_revision_edit' revision.pk %}" class="form-vertical">
-                  {% csrf_token %}
-                  <h4>Edit revision: {{ variant.name }} rev {{ revision.label }}</h4>
-                  <div class="field"><label>Label<input type="text" name="label" value="{{ revision.label }}" required></label></div>
-                  <div class="field"><label>Released<input type="date" name="released_at" value="{{ revision.released_at|date:'Y-m-d' }}"></label></div>
-                  <button type="submit">Save</button>
-                </form>
-              </td>
-            </tr>
-          {% endif %}
-        {% empty %}
-          <tr class="row-child"><td colspan="4">No revisions yet.</td></tr>
-        {% endfor %}
-
-        {% if can_edit %}
-          <tr>
-            <td colspan="4">
-              <form method="post" action="{% url 'products:hardware_revision_create' variant.pk %}" class="inline-form">
-                {% csrf_token %}
-                <input type="text" name="label" placeholder="Rev label (e.g. A)" required>
-                <input type="date" name="released_at">
-                <button type="submit">+ Add revision</button>
-              </form>
-            </td>
-          </tr>
-        {% endif %}
-      </tbody>
-    {% empty %}
-      <tbody><tr><td colspan="4">No hardware variants yet.</td></tr></tbody>
-    {% endfor %}
-  </table>
-  {% if can_edit %}
-    <form method="post" action="{% url 'products:hardware_variant_create' product.pk %}" class="inline-form">
-      {% csrf_token %}
-      <input type="text" name="name" placeholder="Variant name" required>
-      <input type="text" name="slug" placeholder="slug" required>
-      <button type="submit">+ Add hardware variant</button>
-    </form>
-  {% endif %}
-
-  <h2>Software releases</h2>
-  <table class="entity-table">
-    <thead>
-      <tr><th>Name / version</th><th>Released</th><th>Status</th><th>Actions</th></tr>
-    </thead>
-    {% for release in product.sw_releases.all %}
-      <tbody x-data="{ editingRelease: false, editingOption: null }">
-        <tr>
-          <td>{{ release.name }} {{ release.version }}</td>
-          <td>{{ release.released_at|default:"unreleased" }}</td>
-          <td>
-            {% if release.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
-          </td>
-          <td class="row-actions">
-            {% if can_edit %}<button type="button" @click="editingRelease = !editingRelease">Edit</button>{% endif %}
-            {% if can_edit %}
-              <form method="post" action="{% url 'products:software_release_clone' release.pk %}">
-                {% csrf_token %}
-                <button type="submit">Clone</button>
-              </form>
-            {% endif %}
-            {% if can_approve and not release.is_approved %}
-              <form method="post" action="{% url 'products:entity_approve' 'software-release' release.pk %}">
-                {% csrf_token %}
-                <button type="submit">Approve</button>
-              </form>
-            {% endif %}
-            {% if can_edit and not release.is_approved %}
-              <form method="post" action="{% url 'products:entity_delete' 'software-release' release.pk %}">
-                {% csrf_token %}
-                <button type="submit" class="button-danger">Delete</button>
-              </form>
-            {% endif %}
-          </td>
-        </tr>
-        {% if can_edit %}
-          <tr x-show="editingRelease" x-cloak>
-            <td colspan="4">
-              <form method="post" action="{% url 'products:software_release_edit' release.pk %}" class="form-vertical">
-                {% csrf_token %}
-                <h4>Edit software release: {{ release.name }} {{ release.version }}</h4>
-                <div class="field"><label>Name<input type="text" name="name" value="{{ release.name }}" required></label></div>
-                <div class="field"><label>Version<input type="text" name="version" value="{{ release.version }}" required></label></div>
-                <div class="field"><label>Released<input type="date" name="released_at" value="{{ release.released_at|date:'Y-m-d' }}"></label></div>
-                <button type="submit">Save</button>
-              </form>
-            </td>
-          </tr>
-        {% endif %}
-
-        {% for option in release.options.all %}
-          <tr class="row-child">
-            <td>↳ {{ option.name }}</td>
-            <td></td>
-            <td>
-              {% if option.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
-            </td>
-            <td class="row-actions">
-              {% if can_edit %}<button type="button" @click="editingOption = editingOption === {{ option.pk }} ? null : {{ option.pk }}">Edit</button>{% endif %}
-              {% if can_edit %}
-                <form method="post" action="{% url 'products:software_option_clone' option.pk %}">
-                  {% csrf_token %}
-                  <button type="submit">Clone</button>
-                </form>
-              {% endif %}
-              {% if can_approve and not option.is_approved %}
-                <form method="post" action="{% url 'products:entity_approve' 'software-option' option.pk %}">
-                  {% csrf_token %}
-                  <button type="submit">Approve</button>
-                </form>
-              {% endif %}
-              {% if can_edit and not option.is_approved %}
-                <form method="post" action="{% url 'products:entity_delete' 'software-option' option.pk %}">
-                  {% csrf_token %}
-                  <button type="submit" class="button-danger">Delete</button>
-                </form>
-              {% endif %}
-            </td>
-          </tr>
-          {% if can_edit %}
-            <tr x-show="editingOption === {{ option.pk }}" x-cloak>
-              <td colspan="4">
-                <form method="post" action="{% url 'products:software_option_edit' option.pk %}" class="form-vertical">
-                  {% csrf_token %}
-                  <h4>Edit software option: {{ option.name }}</h4>
-                  <div class="field"><label>Name<input type="text" name="name" value="{{ option.name }}" required></label></div>
-                  <div class="field"><label>Slug<input type="text" name="slug" value="{{ option.slug }}" required></label></div>
-                  <div class="field"><label>Description<textarea name="description">{{ option.description }}</textarea></label></div>
-                  <button type="submit">Save</button>
-                </form>
-              </td>
-            </tr>
-          {% endif %}
-        {% empty %}
-          <tr class="row-child"><td colspan="4">No options yet.</td></tr>
-        {% endfor %}
-
-        {% if can_edit %}
-          <tr>
-            <td colspan="4">
-              <form method="post" action="{% url 'products:software_option_create' release.pk %}" class="inline-form">
-                {% csrf_token %}
-                <input type="text" name="name" placeholder="Option name" required>
-                <input type="text" name="slug" placeholder="slug" required>
-                <button type="submit">+ Add option</button>
-              </form>
-            </td>
-          </tr>
-        {% endif %}
-      </tbody>
-    {% empty %}
-      <tbody><tr><td colspan="4">No software releases yet.</td></tr></tbody>
-    {% endfor %}
-  </table>
-  {% if can_edit %}
-    <form method="post" action="{% url 'products:software_release_create' product.pk %}" class="inline-form">
-      {% csrf_token %}
-      <input type="text" name="name" placeholder="Name (e.g. Firmware)" required>
-      <input type="text" name="version" placeholder="Version (e.g. 1.0.0)" required>
-      <input type="date" name="released_at">
-      <button type="submit">+ Add software release</button>
-    </form>
-  {% endif %}
-
-  <h2>Configurations</h2>
-  {% for configuration in configurations %}
-    <h3>
-      <a href="{% url 'assessments:configuration_detail' configuration.pk %}">{{ configuration.name }}</a>
-      {% if configuration.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
-    </h3>
-    <p>
-      {{ configuration.hardware_revision }} / {{ configuration.software_release }}
-      {% with options=configuration.software_options.all %}
-        {% if options %} + {% for o in options %}{{ o.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
-      {% endwith %}
-    </p>
     {% if can_edit %}
-      <details>
-        <summary>Edit</summary>
-        <form method="post" action="{% url 'products:configuration_edit' configuration.pk %}" class="form-vertical">
+      <div x-show="editingProduct" x-cloak>
+        <form method="post" action="{% url 'products:product_edit' product.pk %}" class="form-vertical">
           {% csrf_token %}
-          <h4>Edit configuration: {{ configuration.name }}</h4>
-          <div class="field"><label>Name<input type="text" name="name" value="{{ configuration.name }}" required></label></div>
-          <div class="field">
-            <label for="id_config_{{ configuration.pk }}_hardware_revision">Hardware revision</label>
-            <select id="id_config_{{ configuration.pk }}_hardware_revision" name="hardware_revision" required>
-              {% for rev in hardware_revisions %}
-                <option value="{{ rev.id }}" {% if rev == configuration.hardware_revision %}selected{% endif %}>{{ rev }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="field">
-            <label for="id_config_{{ configuration.pk }}_software_release">Software release</label>
-            <select id="id_config_{{ configuration.pk }}_software_release" name="software_release" required>
-              {% for rel in software_releases %}
-                <option value="{{ rel.id }}" {% if rel == configuration.software_release %}selected{% endif %}>{{ rel }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="field">
-            <label for="id_config_{{ configuration.pk }}_software_options">Software options</label>
-            <select id="id_config_{{ configuration.pk }}_software_options" name="software_options" multiple>
-              {% for rel in software_releases %}
-                {% for opt in rel.options.all %}
-                  <option value="{{ opt.id }}" {% if opt in configuration.software_options.all %}selected{% endif %}>{{ opt }}</option>
-                {% endfor %}
-              {% endfor %}
-            </select>
-          </div>
+          <h4>Edit product: {{ product.name }}</h4>
+          <div class="field"><label>Name<input type="text" name="name" value="{{ product.name }}" required></label></div>
+          <div class="field"><label>Slug<input type="text" name="slug" value="{{ product.slug }}" required></label></div>
+          <div class="field"><label>Description<textarea name="description">{{ product.description }}</textarea></label></div>
           <button type="submit">Save</button>
         </form>
-      </details>
+      </div>
     {% endif %}
-    <p class="row-actions">
-      {% if can_approve and not configuration.is_approved %}
-        <form method="post" action="{% url 'products:entity_approve' 'configuration' configuration.pk %}">
-          {% csrf_token %}
-          <button type="submit">Approve</button>
-        </form>
-      {% endif %}
-      {% if can_edit and not configuration.is_approved %}
-        <form method="post" action="{% url 'products:entity_delete' 'configuration' configuration.pk %}">
-          {% csrf_token %}
-          <button type="submit" class="button-danger">Delete</button>
-        </form>
-      {% endif %}
-    </p>
-  {% empty %}
-    <p>No configurations yet.</p>
-  {% endfor %}
-  {% if can_edit %}
-    <form method="post" action="{% url 'products:configuration_create' product.pk %}" class="form-vertical">
-      {% csrf_token %}
-      <h4>Add configuration</h4>
-      <div class="field"><label>Name<input type="text" name="name" placeholder="Configuration name" required></label></div>
-      <div class="field">
-        <label for="id_new_config_hardware_revision">Hardware revision</label>
-        <select id="id_new_config_hardware_revision" name="hardware_revision" required>
-          <option value="">— HW revision —</option>
-          {% for rev in hardware_revisions %}
-            <option value="{{ rev.id }}">{{ rev }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="field">
-        <label for="id_new_config_software_release">Software release</label>
-        <select id="id_new_config_software_release" name="software_release" required>
-          <option value="">— SW release —</option>
-          {% for rel in software_releases %}
-            <option value="{{ rel.id }}">{{ rel }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="field">
-        <label for="id_new_config_software_options">Software options</label>
-        <select id="id_new_config_software_options" name="software_options" multiple>
-          {% for rel in software_releases %}
-            {% for opt in rel.options.all %}
-              <option value="{{ opt.id }}">{{ opt }}</option>
+  </div>
+
+  <div x-data="{
+    tab: new URLSearchParams(window.location.search).get('tab') || 'hardware',
+    setTab(t) { this.tab = t; history.replaceState(null, '', '?tab=' + t); },
+  }">
+    <div class="tab-list" role="tablist">
+      <button type="button" role="tab" :class="{ active: tab === 'hardware' }" @click="setTab('hardware')">
+        Hardware variants <span class="tab-count">{{ product.hw_variants.count }}</span>
+      </button>
+      <button type="button" role="tab" :class="{ active: tab === 'software' }" @click="setTab('software')">
+        Software releases <span class="tab-count">{{ product.sw_releases.count }}</span>
+      </button>
+      <button type="button" role="tab" :class="{ active: tab === 'configurations' }" @click="setTab('configurations')">
+        Configurations <span class="tab-count">{{ configurations|length }}</span>
+      </button>
+    </div>
+
+    <div class="tab-panel" x-show="tab === 'hardware'">
+      <table class="entity-table">
+        <thead>
+          <tr><th>Name</th><th>Target markets / release</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        {% for variant in product.hw_variants.all %}
+          <tbody x-data="{ editingVariant: false, editingRevision: null }">
+            <tr>
+              <td>{{ variant.name }}</td>
+              <td>{% for tm in variant.target_markets.all %}{{ tm.code }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
+              <td>
+                {% if variant.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
+              </td>
+              <td class="row-actions">
+                {% if can_edit %}<button type="button" @click="editingVariant = !editingVariant">Edit</button>{% endif %}
+                {% if can_edit %}
+                  <form method="post" action="{% url 'products:hardware_variant_clone' variant.pk %}">
+                    {% csrf_token %}
+                    <button type="submit">Clone</button>
+                  </form>
+                {% endif %}
+                {% if can_approve and not variant.is_approved %}
+                  <form method="post" action="{% url 'products:entity_approve' 'hardware-variant' variant.pk %}">
+                    {% csrf_token %}
+                    <button type="submit">Approve</button>
+                  </form>
+                {% endif %}
+                {% if can_edit and not variant.is_approved %}
+                  <form method="post" action="{% url 'products:entity_delete' 'hardware-variant' variant.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="button-danger">Delete</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% if can_edit %}
+              <tr x-show="editingVariant" x-cloak>
+                <td colspan="4">
+                  <form method="post" action="{% url 'products:hardware_variant_edit' variant.pk %}" class="form-vertical">
+                    {% csrf_token %}
+                    <h4>Edit hardware variant: {{ variant.name }}</h4>
+                    <div class="field"><label>Name<input type="text" name="name" value="{{ variant.name }}" required></label></div>
+                    <div class="field"><label>Slug<input type="text" name="slug" value="{{ variant.slug }}" required></label></div>
+                    <div class="field">
+                      <label for="id_variant_{{ variant.pk }}_target_markets">Target markets</label>
+                      <select id="id_variant_{{ variant.pk }}_target_markets" name="target_markets" multiple size="{{ target_markets|length }}">
+                        {% for tm in target_markets %}
+                          <option value="{{ tm.id }}" {% if tm in variant.target_markets.all %}selected{% endif %}>{{ tm.code }} — {{ tm.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <button type="submit">Save</button>
+                  </form>
+                </td>
+              </tr>
+            {% endif %}
+
+            {% for revision in variant.revisions.all %}
+              <tr class="row-child">
+                <td>↳ Rev {{ revision.label }}</td>
+                <td>{{ revision.released_at|default:"unreleased" }}</td>
+                <td>
+                  {% if revision.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
+                </td>
+                <td class="row-actions">
+                  {% if can_edit %}<button type="button" @click="editingRevision = editingRevision === {{ revision.pk }} ? null : {{ revision.pk }}">Edit</button>{% endif %}
+                  {% if can_edit %}
+                    <form method="post" action="{% url 'products:hardware_revision_clone' revision.pk %}">
+                      {% csrf_token %}
+                      <button type="submit">Clone</button>
+                    </form>
+                  {% endif %}
+                  {% if can_approve and not revision.is_approved %}
+                    <form method="post" action="{% url 'products:entity_approve' 'hardware-revision' revision.pk %}">
+                      {% csrf_token %}
+                      <button type="submit">Approve</button>
+                    </form>
+                  {% endif %}
+                  {% if can_edit and not revision.is_approved %}
+                    <form method="post" action="{% url 'products:entity_delete' 'hardware-revision' revision.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="button-danger">Delete</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% if can_edit %}
+                <tr x-show="editingRevision === {{ revision.pk }}" x-cloak>
+                  <td colspan="4">
+                    <form method="post" action="{% url 'products:hardware_revision_edit' revision.pk %}" class="form-vertical">
+                      {% csrf_token %}
+                      <h4>Edit revision: {{ variant.name }} rev {{ revision.label }}</h4>
+                      <div class="field"><label>Label<input type="text" name="label" value="{{ revision.label }}" required></label></div>
+                      <div class="field"><label>Released<input type="date" name="released_at" value="{{ revision.released_at|date:'Y-m-d' }}"></label></div>
+                      <button type="submit">Save</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endif %}
+            {% empty %}
+              <tr class="row-child"><td colspan="4">No revisions yet.</td></tr>
             {% endfor %}
-          {% endfor %}
-        </select>
-      </div>
-      <button type="submit">+ Add configuration</button>
-    </form>
-  {% endif %}
+
+            {% if can_edit %}
+              <tr>
+                <td colspan="4">
+                  <form method="post" action="{% url 'products:hardware_revision_create' variant.pk %}" class="inline-form">
+                    {% csrf_token %}
+                    <input type="text" name="label" placeholder="Rev label (e.g. A)" required>
+                    <input type="date" name="released_at">
+                    <button type="submit">+ Add revision</button>
+                  </form>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        {% empty %}
+          <tbody><tr><td colspan="4">No hardware variants yet.</td></tr></tbody>
+        {% endfor %}
+      </table>
+      {% if can_edit %}
+        <form method="post" action="{% url 'products:hardware_variant_create' product.pk %}" class="inline-form">
+          {% csrf_token %}
+          <input type="text" name="name" placeholder="Variant name" required>
+          <input type="text" name="slug" placeholder="slug" required>
+          <button type="submit">+ Add hardware variant</button>
+        </form>
+      {% endif %}
+    </div>
+
+    <div class="tab-panel" x-show="tab === 'software'">
+      <table class="entity-table">
+        <thead>
+          <tr><th>Name / version</th><th>Released</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        {% for release in product.sw_releases.all %}
+          <tbody x-data="{ editingRelease: false, editingOption: null }">
+            <tr>
+              <td>{{ release.name }} {{ release.version }}</td>
+              <td>{{ release.released_at|default:"unreleased" }}</td>
+              <td>
+                {% if release.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
+              </td>
+              <td class="row-actions">
+                {% if can_edit %}<button type="button" @click="editingRelease = !editingRelease">Edit</button>{% endif %}
+                {% if can_edit %}
+                  <form method="post" action="{% url 'products:software_release_clone' release.pk %}">
+                    {% csrf_token %}
+                    <button type="submit">Clone</button>
+                  </form>
+                {% endif %}
+                {% if can_approve and not release.is_approved %}
+                  <form method="post" action="{% url 'products:entity_approve' 'software-release' release.pk %}">
+                    {% csrf_token %}
+                    <button type="submit">Approve</button>
+                  </form>
+                {% endif %}
+                {% if can_edit and not release.is_approved %}
+                  <form method="post" action="{% url 'products:entity_delete' 'software-release' release.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="button-danger">Delete</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% if can_edit %}
+              <tr x-show="editingRelease" x-cloak>
+                <td colspan="4">
+                  <form method="post" action="{% url 'products:software_release_edit' release.pk %}" class="form-vertical">
+                    {% csrf_token %}
+                    <h4>Edit software release: {{ release.name }} {{ release.version }}</h4>
+                    <div class="field"><label>Name<input type="text" name="name" value="{{ release.name }}" required></label></div>
+                    <div class="field"><label>Version<input type="text" name="version" value="{{ release.version }}" required></label></div>
+                    <div class="field"><label>Released<input type="date" name="released_at" value="{{ release.released_at|date:'Y-m-d' }}"></label></div>
+                    <button type="submit">Save</button>
+                  </form>
+                </td>
+              </tr>
+            {% endif %}
+
+            {% for option in release.options.all %}
+              <tr class="row-child">
+                <td>↳ {{ option.name }}</td>
+                <td></td>
+                <td>
+                  {% if option.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
+                </td>
+                <td class="row-actions">
+                  {% if can_edit %}<button type="button" @click="editingOption = editingOption === {{ option.pk }} ? null : {{ option.pk }}">Edit</button>{% endif %}
+                  {% if can_edit %}
+                    <form method="post" action="{% url 'products:software_option_clone' option.pk %}">
+                      {% csrf_token %}
+                      <button type="submit">Clone</button>
+                    </form>
+                  {% endif %}
+                  {% if can_approve and not option.is_approved %}
+                    <form method="post" action="{% url 'products:entity_approve' 'software-option' option.pk %}">
+                      {% csrf_token %}
+                      <button type="submit">Approve</button>
+                    </form>
+                  {% endif %}
+                  {% if can_edit and not option.is_approved %}
+                    <form method="post" action="{% url 'products:entity_delete' 'software-option' option.pk %}">
+                      {% csrf_token %}
+                      <button type="submit" class="button-danger">Delete</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% if can_edit %}
+                <tr x-show="editingOption === {{ option.pk }}" x-cloak>
+                  <td colspan="4">
+                    <form method="post" action="{% url 'products:software_option_edit' option.pk %}" class="form-vertical">
+                      {% csrf_token %}
+                      <h4>Edit software option: {{ option.name }}</h4>
+                      <div class="field"><label>Name<input type="text" name="name" value="{{ option.name }}" required></label></div>
+                      <div class="field"><label>Slug<input type="text" name="slug" value="{{ option.slug }}" required></label></div>
+                      <div class="field"><label>Description<textarea name="description">{{ option.description }}</textarea></label></div>
+                      <button type="submit">Save</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endif %}
+            {% empty %}
+              <tr class="row-child"><td colspan="4">No options yet.</td></tr>
+            {% endfor %}
+
+            {% if can_edit %}
+              <tr>
+                <td colspan="4">
+                  <form method="post" action="{% url 'products:software_option_create' release.pk %}" class="inline-form">
+                    {% csrf_token %}
+                    <input type="text" name="name" placeholder="Option name" required>
+                    <input type="text" name="slug" placeholder="slug" required>
+                    <button type="submit">+ Add option</button>
+                  </form>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        {% empty %}
+          <tbody><tr><td colspan="4">No software releases yet.</td></tr></tbody>
+        {% endfor %}
+      </table>
+      {% if can_edit %}
+        <form method="post" action="{% url 'products:software_release_create' product.pk %}" class="inline-form">
+          {% csrf_token %}
+          <input type="text" name="name" placeholder="Name (e.g. Firmware)" required>
+          <input type="text" name="version" placeholder="Version (e.g. 1.0.0)" required>
+          <input type="date" name="released_at">
+          <button type="submit">+ Add software release</button>
+        </form>
+      {% endif %}
+    </div>
+
+    <div class="tab-panel" x-show="tab === 'configurations'">
+      <table class="entity-table">
+        <thead>
+          <tr><th>Name</th><th>Hardware / software</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        {% for configuration in configurations %}
+          <tbody x-data="{ editingConfiguration: false }">
+            <tr>
+              <td><a href="{% url 'assessments:configuration_detail' configuration.pk %}">{{ configuration.name }}</a></td>
+              <td>
+                {{ configuration.hardware_revision }} / {{ configuration.software_release }}
+                {% with options=configuration.software_options.all %}
+                  {% if options %} + {% for o in options %}{{ o.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
+                {% endwith %}
+              </td>
+              <td>
+                {% if configuration.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
+              </td>
+              <td class="row-actions">
+                {% if can_edit %}<button type="button" @click="editingConfiguration = !editingConfiguration">Edit</button>{% endif %}
+                {% if can_approve and not configuration.is_approved %}
+                  <form method="post" action="{% url 'products:entity_approve' 'configuration' configuration.pk %}">
+                    {% csrf_token %}
+                    <button type="submit">Approve</button>
+                  </form>
+                {% endif %}
+                {% if can_edit and not configuration.is_approved %}
+                  <form method="post" action="{% url 'products:entity_delete' 'configuration' configuration.pk %}">
+                    {% csrf_token %}
+                    <button type="submit" class="button-danger">Delete</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% if can_edit %}
+              <tr x-show="editingConfiguration" x-cloak>
+                <td colspan="4">
+                  <form method="post" action="{% url 'products:configuration_edit' configuration.pk %}" class="form-vertical">
+                    {% csrf_token %}
+                    <h4>Edit configuration: {{ configuration.name }}</h4>
+                    <div class="field"><label>Name<input type="text" name="name" value="{{ configuration.name }}" required></label></div>
+                    <div class="field">
+                      <label for="id_config_{{ configuration.pk }}_hardware_revision">Hardware revision</label>
+                      <select id="id_config_{{ configuration.pk }}_hardware_revision" name="hardware_revision" required>
+                        {% for rev in hardware_revisions %}
+                          <option value="{{ rev.id }}" {% if rev == configuration.hardware_revision %}selected{% endif %}>{{ rev }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="id_config_{{ configuration.pk }}_software_release">Software release</label>
+                      <select id="id_config_{{ configuration.pk }}_software_release" name="software_release" required>
+                        {% for rel in software_releases %}
+                          <option value="{{ rel.id }}" {% if rel == configuration.software_release %}selected{% endif %}>{{ rel }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label for="id_config_{{ configuration.pk }}_software_options">Software options</label>
+                      <select id="id_config_{{ configuration.pk }}_software_options" name="software_options" multiple>
+                        {% for rel in software_releases %}
+                          {% for opt in rel.options.all %}
+                            <option value="{{ opt.id }}" {% if opt in configuration.software_options.all %}selected{% endif %}>{{ opt }}</option>
+                          {% endfor %}
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <button type="submit">Save</button>
+                  </form>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        {% empty %}
+          <tbody><tr><td colspan="4">No configurations yet.</td></tr></tbody>
+        {% endfor %}
+      </table>
+      {% if can_edit %}
+        <details>
+          <summary>+ Add configuration</summary>
+          <form method="post" action="{% url 'products:configuration_create' product.pk %}" class="form-vertical">
+            {% csrf_token %}
+            <div class="field"><label>Name<input type="text" name="name" placeholder="Configuration name" required></label></div>
+            <div class="field">
+              <label for="id_new_config_hardware_revision">Hardware revision</label>
+              <select id="id_new_config_hardware_revision" name="hardware_revision" required>
+                <option value="">— HW revision —</option>
+                {% for rev in hardware_revisions %}
+                  <option value="{{ rev.id }}">{{ rev }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="id_new_config_software_release">Software release</label>
+              <select id="id_new_config_software_release" name="software_release" required>
+                <option value="">— SW release —</option>
+                {% for rel in software_releases %}
+                  <option value="{{ rel.id }}">{{ rel }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="id_new_config_software_options">Software options</label>
+              <select id="id_new_config_software_options" name="software_options" multiple>
+                {% for rel in software_releases %}
+                  {% for opt in rel.options.all %}
+                    <option value="{{ opt.id }}">{{ opt }}</option>
+                  {% endfor %}
+                {% endfor %}
+              </select>
+            </div>
+            <button type="submit">+ Add configuration</button>
+          </form>
+        </details>
+      {% endif %}
+    </div>
+  </div>
 {% endblock %}
