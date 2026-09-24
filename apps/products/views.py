@@ -60,7 +60,9 @@ def _redirect_to_owner(instance):
 
 @login_required
 def product_detail(request, pk):
-    product = get_object_or_404(Product, pk=pk)
+    product = get_object_or_404(
+        Product.objects.select_related("product_family__organisation"), pk=pk
+    )
     configurations = Configuration.objects.filter(
         hardware_revision__hardware_variant__product=product
     ).prefetch_related("software_options")

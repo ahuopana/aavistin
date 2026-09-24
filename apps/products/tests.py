@@ -277,6 +277,15 @@ class ProductViewTests(ProductAuthoringFixture):
         self.assertTrue(response.context["can_edit"])
         self.assertFalse(response.context["can_approve"])
 
+    def test_product_detail_shows_breadcrumb_and_tabs(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("products:product_detail", args=[self.product.pk]))
+        self.assertContains(response, reverse("orgs:detail", args=[self.org.slug]))
+        self.assertContains(response, self.family.name)
+        self.assertContains(response, "Hardware variants")
+        self.assertContains(response, "Software releases")
+        self.assertContains(response, "Configurations")
+
     def test_editor_can_create_product(self):
         self.client.force_login(self.editor)
         response = self.client.post(
