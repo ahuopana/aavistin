@@ -185,6 +185,30 @@ class OrganisationViewTests(TestCase):
         response = self.client.get(reverse("orgs:detail", args=[self.org.slug]))
         self.assertEqual(response.status_code, 404)
 
+    def test_portfolio_flattens_families_across_organisations_visible_to_user(self):
+        from apps.products.models import Product, ProductStatus
+
+        family = ProductFamily.objects.create(
+            organisation=self.org, name="Sensors", slug="sensors"
+        )
+        visible_product = Product.objects.create(
+            product_family=family, name="TempSense", slug="tempsense"
+        )
+        deleted_product = Product.objects.create(
+            product_family=family,
+            name="OldSense",
+            slug="oldsense",
+            status=ProductStatus.DELETED,
+        )
+        RoleAssignment.objects.create(role=Role.VIEWER, user=self.user, organisation=self.org)
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("orgs:portfolio"))
+
+        self.assertContains(response, "Sensors")
+        self.assertContains(response, visible_product.name)
+        self.assertNotContains(response, deleted_product.name)
+
 
 class LdapOffByDefaultTests(TestCase):
     def test_ldap_disabled_by_default(self):

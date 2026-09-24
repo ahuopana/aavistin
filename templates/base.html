@@ -22,7 +22,7 @@
       </a>
       <nav class="app-nav">
         {% if user.is_authenticated %}
-          <a href="{% url 'orgs:list' %}">Organisations</a>
+          <a href="{% url 'orgs:portfolio' %}">Portfolio</a>
         {% endif %}
         {% block nav %}{% endblock %}
       </nav>

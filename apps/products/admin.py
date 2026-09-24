@@ -28,8 +28,8 @@ class SoftwareReleaseInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("name", "product_family")
-    list_filter = ("product_family",)
+    list_display = ("name", "product_family", "status")
+    list_filter = ("product_family", "status")
     prepopulated_fields = {"slug": ("name",)}
     inlines = [HardwareVariantInline, SoftwareReleaseInline]
 
@@ -61,7 +61,7 @@ class SoftwareOptionInline(admin.TabularInline):
 
 @admin.register(SoftwareRelease)
 class SoftwareReleaseAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "released_at")
+    list_display = ("name", "version", "product", "released_at")
     list_filter = ("product",)
     inlines = [SoftwareOptionInline]
 

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Portfolio · Aavistin{% endblock %}
+
+{% block content %}
+  <h1>Portfolio</h1>
+
+  {% if families %}
+    {% for family in families %}
+      <section class="portfolio-family">
+        <p class="tree-sublabel">{{ family.organisation.name }}</p>
+        <h2>{{ family.name }}</h2>
+        {% if family.visible_products %}
+          <ul class="dashboard-products">
+            {% for product in family.visible_products %}
+              <li>
+                <a href="{% url 'products:product_detail' product.pk %}">{{ product.name }}</a>
+                <span class="badge badge-{{ product.status }}">{{ product.get_status_display }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No products yet.</p>
+        {% endif %}
+        {% if family.id in editable_family_ids %}
+          <form method="post" action="{% url 'products:product_create' family.id %}" class="inline-form">
+            {% csrf_token %}
+            <input type="text" name="name" placeholder="Product name" required>
+            <input type="text" name="slug" placeholder="slug" required>
+            <button type="submit">+ Add product</button>
+          </form>
+        {% endif %}
+      </section>
+    {% endfor %}
+  {% else %}
+    <p>No product families visible to you yet.</p>
+  {% endif %}
+{% endblock %}
