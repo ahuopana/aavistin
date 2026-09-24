@@ -144,6 +144,67 @@ class LintingTests(TestCase):
         )
         self.assertTrue(any(i["code"] == "namespace_shadow" for i in issues))
 
+    def test_classification_var_allowed_in_finding_rules_and_routes(self):
+        content = {
+            "source": "x",
+            "version": "1.0.0",
+            "questions": [{"id": "a", "type": "boolean", "level": "product"}],
+            "scope": {"include": True},
+            "classifications": [{"id": "high", "label": "High", "when": {"var": "a"}}],
+            "assessment_routes": [
+                {"id": "route", "label": "Route", "allowed_when": {"var": "class__high"}}
+            ],
+            "finding_rules": [
+                {
+                    "id": "f",
+                    "level": "caution",
+                    "when": {"var": "class__high"},
+                    "message": "m",
+                }
+            ],
+        }
+        issues = lint_package(
+            content, is_official=False, existing_packages=RequirementPackage.objects.none()
+        )
+        self.assertEqual(issues, [])
+
+    def test_unknown_classification_reference(self):
+        content = {
+            "source": "x",
+            "version": "1.0.0",
+            "questions": [],
+            "scope": {"include": True},
+            "classifications": [{"id": "high", "label": "High", "when": True}],
+            "finding_rules": [
+                {
+                    "id": "f",
+                    "level": "caution",
+                    "when": {"var": "class__does_not_exist"},
+                    "message": "m",
+                }
+            ],
+        }
+        issues = lint_package(
+            content, is_official=False, existing_packages=RequirementPackage.objects.none()
+        )
+        self.assertTrue(any(i["code"] == "unknown_classification" for i in issues))
+
+    def test_classification_var_not_allowed_outside_routes_and_finding_rules(self):
+        # class__ vars only resolve inside assessment_routes/finding_rules
+        # (see evaluate_configuration); elsewhere it's just an undeclared
+        # question, same as any other unknown var.
+        content = {
+            "source": "x",
+            "version": "1.0.0",
+            "questions": [],
+            "scope": {"include": {"var": "class__high"}},
+            "classifications": [{"id": "high", "label": "High", "when": True}],
+        }
+        issues = lint_package(
+            content, is_official=False, existing_packages=RequirementPackage.objects.none()
+        )
+        self.assertTrue(any(i["code"] == "unknown_question" for i in issues))
+
     def test_supersedes_cycle(self):
         RequirementPackage.objects.create(
             source="x",
@@ -266,6 +327,12 @@ class ImportPipelineTests(TestCase):
     def test_legislation_creates_legal_obligations_flag(self):
         package = import_package(load_demo("1.0.0"))
         self.assertTrue(package.creates_legal_obligations)
+
+    def test_import_eu_cra_package_reaches_fixtures_passed(self):
+        package = import_package(load_package("eu-cra", "1.0.0"), is_official=True)
+        self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+        self.assertEqual(package.lint_report, [])
+        self.assertTrue(all(r["passed"] for r in package.fixture_report), package.fixture_report)
 
 
 class ManagementCommandTests(TestCase):

@@ -35,10 +35,16 @@ from .services import (
 from .tasks import refresh_staleness_task
 
 DEMO_DIR = Path(settings.BASE_DIR) / "packages" / "demo-widget-safety"
+PACKAGES_DIR = Path(settings.BASE_DIR) / "packages"
 
 
 def load_demo(version: str) -> dict:
     with (DEMO_DIR / f"{version}.json").open() as f:
+        return json.load(f)
+
+
+def load_package(dirname: str, version: str) -> dict:
+    with (PACKAGES_DIR / dirname / f"{version}.json").open() as f:
         return json.load(f)
 
 
@@ -219,6 +225,81 @@ class CarryForwardTests(ConfigurationFixture):
         copied = Answer.objects.get(software_release=next_release, question_id="is_toy_widget")
         self.assertTrue(copied.needs_confirmation)
         self.assertEqual(copied.value, False)
+
+
+class EuCraConfigurationFixture(TestCase):
+    """Mirrors ConfigurationFixture but approves the real eu-cra package,
+    to exercise its classification -> assessment_routes/finding_rules
+    wiring (the class__ synthetic vars) through evaluate_configuration.
+    """
+
+    def setUp(self):
+        self.org = Organisation.objects.create(name="Acme", slug="acme")
+        self.family = ProductFamily.objects.create(
+            organisation=self.org, name="Sensors", slug="sensors"
+        )
+        self.product = Product.objects.create(
+            product_family=self.family, name="TempSense", slug="tempsense"
+        )
+        self.variant = HardwareVariant.objects.create(
+            product=self.product, name="EU variant", slug="eu-variant"
+        )
+        self.variant.target_markets.add(TargetMarket.objects.get(code="EU"))
+        self.revision = HardwareRevision.objects.create(hardware_variant=self.variant, label="A")
+        self.release = SoftwareRelease.objects.create(product=self.product, version="1.0")
+        self.configuration = Configuration.objects.create(
+            name="TempSense EU 1.0",
+            hardware_revision=self.revision,
+            software_release=self.release,
+        )
+
+        self.package = import_package(load_package("eu-cra", "1.0.0"), is_official=True)
+        approve_package(self.package)
+
+    def _answer(self, **values):
+        for question_id, value in values.items():
+            Answer.objects.create(
+                question_id=question_id, value=value, hardware_revision=self.revision
+            )
+
+
+class EuCraEvaluationTests(EuCraConfigurationFixture):
+    def test_default_classification_gets_internal_control_route(self):
+        self._answer(
+            is_free_and_open_source=False,
+            is_commercial_activity=True,
+            is_annex_iii_important_product=False,
+            is_annex_iii_critical_product=False,
+        )
+        evaluation = evaluate_configuration(self.configuration)
+        result = evaluation["results"][0]
+        self.assertTrue(result["in_scope"])
+        self.assertEqual(result["classifications"], ["default"])
+        self.assertEqual(result["assessment_routes"], ["internal_control"])
+        self.assertEqual(evaluation["findings"], [])
+
+    def test_important_classification_gets_third_party_route_and_finding(self):
+        self._answer(
+            is_free_and_open_source=False,
+            is_commercial_activity=True,
+            is_annex_iii_important_product=True,
+            is_annex_iii_critical_product=False,
+        )
+        evaluation = evaluate_configuration(self.configuration)
+        result = evaluation["results"][0]
+        self.assertTrue(result["in_scope"])
+        self.assertEqual(result["classifications"], ["important"])
+        self.assertEqual(result["assessment_routes"], ["third_party_assessment"])
+        finding_ids = [f["id"] for f in evaluation["findings"]]
+        self.assertIn("important_or_critical_needs_third_party", finding_ids)
+
+    def test_foss_non_commercial_is_out_of_scope(self):
+        self._answer(is_free_and_open_source=True, is_commercial_activity=False)
+        evaluation = evaluate_configuration(self.configuration)
+        result = evaluation["results"][0]
+        self.assertFalse(result["in_scope"])
+        finding_ids = [f["id"] for f in evaluation["findings"]]
+        self.assertIn("monetisation_changes_scope", finding_ids)
 
     def test_confirm_answers_clears_flag(self):
         Answer.objects.create(
