@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page.title }} · User Guide · Aavistin{% endblock %}
+
+{% block sidebar %}
+  <div class="app-sidebar">
+    {% include "userguide/_nav.html" %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <article class="userguide-page">
+    {{ page.html|safe }}
+  </article>
+{% endblock %}
