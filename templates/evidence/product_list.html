@@ -37,22 +37,21 @@
   {% if can_edit %}
     <h2>Add evidence</h2>
     <p>Reuse an existing record above where it applies, rather than adding a duplicate.</p>
-    <form method="post" action="{% url 'evidence:create' product.pk %}" enctype="multipart/form-data">
+    <form method="post" action="{% url 'evidence:create' product.pk %}" enctype="multipart/form-data" class="form-vertical" autocomplete="off" x-data="{ kind: 'file' }">
       {% csrf_token %}
-      <p><label>Title <input type="text" name="title" required></label></p>
-      <p><label>Description <textarea name="description"></textarea></label></p>
-      <p>
-        <label>Kind
-          <select name="kind">
-            <option value="file">Uploaded file</option>
-            <option value="link">External link</option>
-            <option value="text">Reference note</option>
-          </select>
-        </label>
-      </p>
-      <p><label>File (if kind is "Uploaded file") <input type="file" name="file"></label></p>
-      <p><label>URL (if kind is "External link") <input type="url" name="external_url"></label></p>
-      <p><label>Reference note (if kind is "Reference note") <textarea name="reference_text"></textarea></label></p>
+      <div class="field"><label>Title<input type="text" name="title" required></label></div>
+      <div class="field"><label>Description<textarea name="description"></textarea></label></div>
+      <div class="field">
+        <label for="id_evidence_kind">Kind</label>
+        <select id="id_evidence_kind" name="kind" autocomplete="off" @change="kind = $event.target.value">
+          <option value="file">Uploaded file</option>
+          <option value="link">External link</option>
+          <option value="text">Reference note</option>
+        </select>
+      </div>
+      <div class="field" x-show="kind === 'file'"><label>File<input type="file" name="file"></label></div>
+      <div class="field" x-show="kind === 'link'"><label>URL<input type="url" name="external_url"></label></div>
+      <div class="field" x-show="kind === 'text'"><label>Reference note<textarea name="reference_text"></textarea></label></div>
       <button type="submit">Add evidence</button>
     </form>
   {% endif %}

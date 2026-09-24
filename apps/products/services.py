@@ -7,6 +7,7 @@ and small write-side rules, not persistence or request handling.
 
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.text import slugify
 
 from apps.assessments.evaluation import evaluate_configuration
 from apps.orgs.models import ProductFamily, Role, RoleAssignment
@@ -18,6 +19,7 @@ from .models import (
     HardwareRevision,
     HardwareVariant,
     Product,
+    ProductStatus,
     SoftwareOption,
     SoftwareRelease,
 )
@@ -91,6 +93,10 @@ class ApprovedEntityError(Exception):
     """Raised when trying to delete an entity that has already been approved."""
 
 
+class InvalidStatusTransition(Exception):
+    """Raised when a Product status change isn't allowed from its current status."""
+
+
 def product_of(instance) -> Product:
     """Resolve the owning Product for any product-level-and-below entity."""
     if isinstance(instance, Product):
@@ -119,6 +125,98 @@ def delete_entity(instance):
     if instance.is_approved:
         raise ApprovedEntityError(f"{instance} is approved and cannot be deleted.")
     instance.delete()
+
+
+def approve_product(product: Product, *, actor):
+    """Approve a Product and, on first approval, advance its status too.
+
+    is_approved/approved_at/approved_by (delete protection, shared with
+    every other product-level entity) and status (this product's own
+    lifecycle stage) are separate concepts that happen to move together
+    here: approving a still-draft product is what makes it "Approved".
+    """
+    approve(product, actor=actor)
+    if product.status == ProductStatus.DRAFT:
+        product.status = ProductStatus.APPROVED
+        product.save(update_fields=["status"])
+
+
+def close_product(product: Product):
+    if product.status != ProductStatus.APPROVED:
+        raise InvalidStatusTransition("Only an approved product can be closed.")
+    product.status = ProductStatus.CLOSED
+    product.save(update_fields=["status"])
+
+
+def archive_product(product: Product):
+    if product.status == ProductStatus.DELETED:
+        raise InvalidStatusTransition(
+            "A deleted product must be restored before it can be archived."
+        )
+    product.status = ProductStatus.ARCHIVED
+    product.save(update_fields=["status"])
+
+
+def restore_product(product: Product):
+    if product.status not in (ProductStatus.ARCHIVED, ProductStatus.DELETED):
+        raise InvalidStatusTransition("Only an archived or deleted product can be restored.")
+    product.status = ProductStatus.APPROVED if product.is_approved else ProductStatus.DRAFT
+    product.save(update_fields=["status"])
+
+
+def soft_delete_product(product: Product):
+    if product.status not in (ProductStatus.DRAFT, ProductStatus.ARCHIVED):
+        raise InvalidStatusTransition("Archive an approved or closed product before deleting it.")
+    product.status = ProductStatus.DELETED
+    product.save(update_fields=["status"])
+
+
+def _unique_copy(queryset, field: str, base: str) -> str:
+    """Find an unused value for ``field`` in ``queryset``, suffixing "copy" / "copy N"."""
+    candidate = f"{base} copy"
+    n = 2
+    while queryset.filter(**{field: candidate}).exists():
+        candidate = f"{base} copy {n}"
+        n += 1
+    return candidate
+
+
+def clone_hardware_variant(variant: HardwareVariant) -> HardwareVariant:
+    """Copy a variant's own fields and target markets. Revisions are not copied."""
+    siblings = HardwareVariant.objects.filter(product=variant.product)
+    name = _unique_copy(siblings, "name", variant.name)
+    slug = _unique_copy(siblings, "slug", slugify(name))
+    clone = HardwareVariant.objects.create(product=variant.product, name=name, slug=slug)
+    clone.target_markets.set(variant.target_markets.all())
+    return clone
+
+
+def clone_hardware_revision(revision: HardwareRevision) -> HardwareRevision:
+    """Copy a revision as a new, unreleased revision of the same variant."""
+    siblings = HardwareRevision.objects.filter(hardware_variant=revision.hardware_variant)
+    label = _unique_copy(siblings, "label", revision.label)
+    return HardwareRevision.objects.create(hardware_variant=revision.hardware_variant, label=label)
+
+
+def clone_software_release(release: SoftwareRelease) -> SoftwareRelease:
+    """Copy a release as a new, unreleased version under the same name."""
+    siblings = SoftwareRelease.objects.filter(product=release.product, name=release.name)
+    version = _unique_copy(siblings, "version", release.version)
+    return SoftwareRelease.objects.create(
+        product=release.product, name=release.name, version=version
+    )
+
+
+def clone_software_option(option: SoftwareOption) -> SoftwareOption:
+    siblings = SoftwareOption.objects.filter(software_release=option.software_release)
+    name = _unique_copy(siblings, "name", option.name)
+    slug = _unique_copy(siblings, "slug", slugify(name))
+    return SoftwareOption.objects.create(
+        software_release=option.software_release,
+        name=name,
+        slug=slug,
+        description=option.description,
+    )
 
 
 def _grantee_filter(user):
@@ -173,6 +271,8 @@ def editable_products(user, role: str | None = Role.EDITOR):
         "product_id", flat=True
     )
     families = editable_product_families(user, role=role)
-    return Product.objects.filter(
-        Q(product_family__in=families) | Q(id__in=product_ids)
-    ).distinct()
+    return (
+        Product.objects.filter(Q(product_family__in=families) | Q(id__in=product_ids))
+        .exclude(status=ProductStatus.DELETED)
+        .distinct()
+    )

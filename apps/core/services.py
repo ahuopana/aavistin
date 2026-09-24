@@ -184,7 +184,7 @@ def product_tree(user):
             for variant in product.hw_variants.all()
             for revision in variant.revisions.all()
         ]
-        releases = [release.version for release in product.sw_releases.all()]
+        releases = [f"{release.name} {release.version}" for release in product.sw_releases.all()]
         family_node["products"].append(
             {"product": product, "revisions": revisions, "releases": releases}
         )

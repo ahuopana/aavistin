@@ -18,8 +18,11 @@ services:
   web:
     image: aavistin:dev
     build: .
+    # scripts/generate_env.sh bootstraps .env (random DJANGO_SECRET_KEY)
+    # on first run, if one doesn't already exist; a no-op afterwards.
     command: >
-      sh -c "python manage.py migrate &&
+      sh -c "sh scripts/generate_env.sh &&
+             python manage.py migrate &&
              python manage.py seed_dev_users &&
              python manage.py seed_dev_roles &&
              python manage.py runserver 0.0.0.0:8000"
@@ -29,7 +32,6 @@ services:
       - "8000:8000"
     environment:
       DEBUG: "True"
-      DJANGO_SECRET_KEY: dev-secret-key-not-for-production
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
       DATABASE_URL: postgres://aavistin:aavistin@db:5432/aavistin
     depends_on:
@@ -43,12 +45,11 @@ services:
   worker:
     image: aavistin:dev
     build: .
-    command: sh -c "python manage.py migrate && python manage.py db_worker"
+    command: sh -c "sh scripts/generate_env.sh && python manage.py migrate && python manage.py db_worker"
     volumes:
       - .:/app
     environment:
       DEBUG: "True"
-      DJANGO_SECRET_KEY: dev-secret-key-not-for-production
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
       DATABASE_URL: postgres://aavistin:aavistin@db:5432/aavistin
     depends_on:
@@ -58,12 +59,11 @@ services:
   scheduler:
     image: aavistin:dev
     build: .
-    command: python manage.py scheduler
+    command: sh -c "sh scripts/generate_env.sh && python manage.py scheduler"
     volumes:
       - .:/app
     environment:
       DEBUG: "True"
-      DJANGO_SECRET_KEY: dev-secret-key-not-for-production
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
       DATABASE_URL: postgres://aavistin:aavistin@db:5432/aavistin
     depends_on:

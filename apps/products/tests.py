@@ -20,19 +20,30 @@ from .models import (
     HardwareRevision,
     HardwareVariant,
     Product,
+    ProductStatus,
     SoftwareOption,
     SoftwareRelease,
     TargetMarket,
 )
 from .services import (
     ApprovedEntityError,
+    InvalidStatusTransition,
     approve,
+    approve_product,
+    archive_product,
+    clone_hardware_revision,
+    clone_hardware_variant,
+    clone_software_option,
+    clone_software_release,
+    close_product,
     compliance_ratio,
     delete_entity,
     editable_product_families,
     editable_products,
     product_of,
+    restore_product,
     risk_ratio,
+    soft_delete_product,
 )
 
 User = get_user_model()
@@ -209,7 +220,9 @@ class ConfigurationTests(TestCase):
             product=self.product, name="EU variant", slug="eu-variant"
         )
         self.revision = HardwareRevision.objects.create(hardware_variant=variant, label="A")
-        self.release = SoftwareRelease.objects.create(product=self.product, version="1.0")
+        self.release = SoftwareRelease.objects.create(
+            product=self.product, name="Firmware", version="1.0"
+        )
         self.option = SoftwareOption.objects.create(
             software_release=self.release, name="Bluetooth", slug="bluetooth"
         )
@@ -241,7 +254,9 @@ class ConfigurationTests(TestCase):
             config.clean()
 
     def test_software_option_must_belong_to_release(self):
-        other_release = SoftwareRelease.objects.create(product=self.product, version="2.0")
+        other_release = SoftwareRelease.objects.create(
+            product=self.product, name="Firmware", version="2.0"
+        )
         other_option = SoftwareOption.objects.create(
             software_release=other_release, name="WiFi", slug="wifi"
         )
@@ -270,7 +285,9 @@ class ProductAuthoringFixture(TestCase):
             product=self.product, name="EU variant", slug="eu-variant"
         )
         self.revision = HardwareRevision.objects.create(hardware_variant=self.variant, label="A")
-        self.release = SoftwareRelease.objects.create(product=self.product, version="1.0")
+        self.release = SoftwareRelease.objects.create(
+            product=self.product, name="Firmware", version="1.0"
+        )
         self.option = SoftwareOption.objects.create(
             software_release=self.release, name="Bluetooth", slug="bluetooth"
         )
@@ -443,10 +460,12 @@ class ProductViewTests(ProductAuthoringFixture):
         self.client.force_login(self.editor)
         self.client.post(
             reverse("products:software_release_create", args=[self.product.pk]),
-            {"version": "2.0"},
+            {"name": "Firmware", "version": "2.0"},
         )
         self.assertTrue(
-            SoftwareRelease.objects.filter(product=self.product, version="2.0").exists()
+            SoftwareRelease.objects.filter(
+                product=self.product, name="Firmware", version="2.0"
+            ).exists()
         )
 
     def test_editor_can_create_software_option(self):
@@ -519,6 +538,142 @@ class ProductViewTests(ProductAuthoringFixture):
             reverse("products:entity_delete", args=["software-option", self.option.pk])
         )
         self.assertTrue(SoftwareOption.objects.filter(pk=self.option.pk).exists())
+
+    def test_delete_soft_deletes_product_instead_of_removing_it(self):
+        self.client.force_login(self.editor)
+        self.client.post(reverse("products:entity_delete", args=["product", self.product.pk]))
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, ProductStatus.DELETED)
+        self.assertTrue(Product.objects.filter(pk=self.product.pk).exists())
+
+
+class ProductStatusTests(ProductAuthoringFixture):
+    def test_new_product_starts_draft(self):
+        self.assertEqual(self.product.status, ProductStatus.DRAFT)
+
+    def test_approve_product_advances_status(self):
+        approve_product(self.product, actor=self.approver)
+        self.product.refresh_from_db()
+        self.assertTrue(self.product.is_approved)
+        self.assertEqual(self.product.status, ProductStatus.APPROVED)
+
+    def test_close_requires_approved_status(self):
+        with self.assertRaises(InvalidStatusTransition):
+            close_product(self.product)
+
+    def test_close_after_approval(self):
+        approve_product(self.product, actor=self.approver)
+        close_product(self.product)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, ProductStatus.CLOSED)
+
+    def test_archive_and_restore_round_trip(self):
+        approve_product(self.product, actor=self.approver)
+        archive_product(self.product)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, ProductStatus.ARCHIVED)
+
+        restore_product(self.product)
+        self.product.refresh_from_db()
+        # Restoring an approved-then-archived product returns it to Approved,
+        # not Draft, since is_approved never changed while archived.
+        self.assertEqual(self.product.status, ProductStatus.APPROVED)
+
+    def test_soft_delete_blocked_once_approved(self):
+        approve_product(self.product, actor=self.approver)
+        with self.assertRaises(InvalidStatusTransition):
+            soft_delete_product(self.product)
+
+    def test_soft_delete_allowed_when_draft(self):
+        soft_delete_product(self.product)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, ProductStatus.DELETED)
+
+    def test_restore_from_deleted(self):
+        soft_delete_product(self.product)
+        restore_product(self.product)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, ProductStatus.DRAFT)
+
+    def test_deleted_product_excluded_from_editable_products(self):
+        soft_delete_product(self.product)
+        self.assertNotIn(self.product, editable_products(self.editor))
+
+
+class CloneTests(ProductAuthoringFixture):
+    def test_clone_hardware_variant_copies_markets_not_revisions(self):
+        eu = TargetMarket.objects.get(code="EU")
+        self.variant.target_markets.add(eu)
+        clone = clone_hardware_variant(self.variant)
+        self.assertNotEqual(clone.pk, self.variant.pk)
+        self.assertEqual(clone.name, "EU variant copy")
+        self.assertFalse(clone.is_approved)
+        self.assertEqual(list(clone.target_markets.all()), [eu])
+        self.assertEqual(clone.revisions.count(), 0)
+
+    def test_clone_hardware_variant_name_collision_increments(self):
+        clone_hardware_variant(self.variant)
+        second_clone = clone_hardware_variant(self.variant)
+        self.assertEqual(second_clone.name, "EU variant copy 2")
+
+    def test_clone_hardware_revision(self):
+        clone = clone_hardware_revision(self.revision)
+        self.assertEqual(clone.hardware_variant, self.variant)
+        self.assertEqual(clone.label, "A copy")
+        self.assertIsNone(clone.released_at)
+        self.assertFalse(clone.is_approved)
+
+    def test_clone_software_release(self):
+        clone = clone_software_release(self.release)
+        self.assertEqual(clone.name, self.release.name)
+        self.assertEqual(clone.version, "1.0 copy")
+        self.assertIsNone(clone.released_at)
+
+    def test_clone_software_option(self):
+        clone = clone_software_option(self.option)
+        self.assertEqual(clone.name, "Bluetooth copy")
+        self.assertEqual(clone.software_release, self.release)
+        self.assertFalse(clone.is_approved)
+
+
+class ProductStatusViewTests(ProductAuthoringFixture):
+    def test_approver_can_close_approved_product(self):
+        approve_product(self.product, actor=self.approver)
+        self.client.force_login(self.approver)
+        response = self.client.post(reverse("products:product_close", args=[self.product.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, ProductStatus.CLOSED)
+
+    def test_editor_cannot_close_product(self):
+        approve_product(self.product, actor=self.approver)
+        self.client.force_login(self.editor)
+        self.client.post(reverse("products:product_close", args=[self.product.pk]))
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, ProductStatus.APPROVED)
+
+    def test_editor_can_archive_and_restore(self):
+        self.client.force_login(self.editor)
+        self.client.post(reverse("products:product_archive", args=[self.product.pk]))
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, ProductStatus.ARCHIVED)
+
+        self.client.post(reverse("products:product_restore", args=[self.product.pk]))
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.status, ProductStatus.DRAFT)
+
+    def test_editor_can_clone_hardware_variant_via_view(self):
+        self.client.force_login(self.editor)
+        response = self.client.post(
+            reverse("products:hardware_variant_clone", args=[self.variant.pk])
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(HardwareVariant.objects.filter(name="EU variant copy").exists())
+
+    def test_viewer_cannot_clone_hardware_variant(self):
+        self.client.force_login(self.viewer)
+        self.client.post(reverse("products:hardware_variant_clone", args=[self.variant.pk]))
+        self.assertFalse(HardwareVariant.objects.filter(name="EU variant copy").exists())
 
 
 class SeedDevRolesCommandTests(TestCase):

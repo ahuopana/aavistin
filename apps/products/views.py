@@ -12,17 +12,28 @@ from .models import (
     HardwareRevision,
     HardwareVariant,
     Product,
+    ProductStatus,
     SoftwareOption,
     SoftwareRelease,
     TargetMarket,
 )
 from .services import (
     ApprovedEntityError,
+    InvalidStatusTransition,
     approve,
+    approve_product,
+    archive_product,
+    clone_hardware_revision,
+    clone_hardware_variant,
+    clone_software_option,
+    clone_software_release,
+    close_product,
     compliance_ratio,
     delete_entity,
     product_of,
+    restore_product,
     risk_ratio,
+    soft_delete_product,
 )
 
 ENTITY_MODELS = {
@@ -46,8 +57,6 @@ def _flash_errors(request, exc: ValidationError):
 
 
 def _redirect_to_owner(instance):
-    if isinstance(instance, Product):
-        return redirect("orgs:detail", slug=instance.product_family.organisation.slug)
     return redirect("products:product_detail", pk=product_of(instance).pk)
 
 
@@ -59,6 +68,8 @@ def product_detail(request, pk):
     ).prefetch_related("software_options")
     hardware_revisions = HardwareRevision.objects.filter(hardware_variant__product=product)
     software_releases = product.sw_releases.all()
+    can_edit = has_role(request.user, Role.EDITOR, product=product)
+    can_approve = has_role(request.user, Role.APPROVER, product=product)
     return render(
         request,
         "products/product_detail.html",
@@ -70,8 +81,16 @@ def product_detail(request, pk):
             "software_releases": software_releases,
             "compliance": compliance_ratio(product),
             "risk": risk_ratio(product),
-            "can_edit": has_role(request.user, Role.EDITOR, product=product),
-            "can_approve": has_role(request.user, Role.APPROVER, product=product),
+            "can_edit": can_edit,
+            "can_approve": can_approve,
+            "can_close": can_approve and product.status == ProductStatus.APPROVED,
+            "can_archive": can_edit
+            and product.status
+            in (ProductStatus.DRAFT, ProductStatus.APPROVED, ProductStatus.CLOSED),
+            "can_restore": can_edit
+            and product.status in (ProductStatus.ARCHIVED, ProductStatus.DELETED),
+            "can_soft_delete": can_edit
+            and product.status in (ProductStatus.DRAFT, ProductStatus.ARCHIVED),
         },
     )
 
@@ -81,7 +100,7 @@ def product_create(request, family_id):
     family = get_object_or_404(ProductFamily, pk=family_id)
     if not has_role(request.user, Role.EDITOR, product_family=family):
         django_messages.error(request, "You need the editor role to add products.")
-        return redirect("orgs:detail", slug=family.organisation.slug)
+        return redirect("orgs:portfolio")
 
     if request.method == "POST":
         product = Product(
@@ -94,12 +113,12 @@ def product_create(request, family_id):
             product.full_clean()
         except ValidationError as exc:
             _flash_errors(request, exc)
-            return redirect("orgs:detail", slug=family.organisation.slug)
+            return redirect("orgs:portfolio")
         product.save()
         django_messages.success(request, "Product created.")
         return redirect("products:product_detail", pk=product.pk)
 
-    return redirect("orgs:detail", slug=family.organisation.slug)
+    return redirect("orgs:portfolio")
 
 
 @login_required
@@ -224,6 +243,7 @@ def software_release_create(request, product_id):
     if request.method == "POST":
         release = SoftwareRelease(
             product=product,
+            name=request.POST.get("name", ""),
             version=request.POST.get("version", ""),
             released_at=request.POST.get("released_at") or None,
         )
@@ -246,6 +266,7 @@ def software_release_edit(request, pk):
         return redirect("products:product_detail", pk=product.pk)
 
     if request.method == "POST":
+        release.name = request.POST.get("name", "")
         release.version = request.POST.get("version", "")
         release.released_at = request.POST.get("released_at") or None
         try:
@@ -376,7 +397,10 @@ def entity_approve(request, model_name, pk):
     if not has_role(request.user, Role.APPROVER, product=product):
         django_messages.error(request, "You need the approver role to approve this.")
         return _redirect_to_owner(instance)
-    approve(instance, actor=request.user)
+    if isinstance(instance, Product):
+        approve_product(instance, actor=request.user)
+    else:
+        approve(instance, actor=request.user)
     django_messages.success(request, f"{instance} approved.")
     return _redirect_to_owner(instance)
 
@@ -395,9 +419,113 @@ def entity_delete(request, model_name, pk):
         return _redirect_to_owner(instance)
 
     owner_redirect = _redirect_to_owner(instance)
+    if isinstance(instance, Product):
+        try:
+            soft_delete_product(instance)
+            django_messages.success(request, "Product deleted (can be restored later).")
+        except InvalidStatusTransition as exc:
+            django_messages.error(request, str(exc))
+        return owner_redirect
     try:
         delete_entity(instance)
         django_messages.success(request, "Deleted.")
     except ApprovedEntityError as exc:
         django_messages.error(request, str(exc))
     return owner_redirect
+
+
+@login_required
+@require_POST
+def product_close(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    if not has_role(request.user, Role.APPROVER, product=product):
+        django_messages.error(request, "You need the approver role to close this product.")
+        return redirect("products:product_detail", pk=pk)
+    try:
+        close_product(product)
+        django_messages.success(request, "Product closed.")
+    except InvalidStatusTransition as exc:
+        django_messages.error(request, str(exc))
+    return redirect("products:product_detail", pk=pk)
+
+
+@login_required
+@require_POST
+def product_archive(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    if not has_role(request.user, Role.EDITOR, product=product):
+        django_messages.error(request, "You need the editor role to archive this product.")
+        return redirect("products:product_detail", pk=pk)
+    try:
+        archive_product(product)
+        django_messages.success(request, "Product archived.")
+    except InvalidStatusTransition as exc:
+        django_messages.error(request, str(exc))
+    return redirect("products:product_detail", pk=pk)
+
+
+@login_required
+@require_POST
+def product_restore(request, pk):
+    product = get_object_or_404(Product, pk=pk)
+    if not has_role(request.user, Role.EDITOR, product=product):
+        django_messages.error(request, "You need the editor role to restore this product.")
+        return redirect("products:product_detail", pk=pk)
+    try:
+        restore_product(product)
+        django_messages.success(request, "Product restored.")
+    except InvalidStatusTransition as exc:
+        django_messages.error(request, str(exc))
+    return redirect("products:product_detail", pk=pk)
+
+
+@login_required
+@require_POST
+def hardware_variant_clone(request, pk):
+    variant = get_object_or_404(HardwareVariant, pk=pk)
+    product = variant.product
+    if not has_role(request.user, Role.EDITOR, product=product):
+        django_messages.error(request, "You need the editor role to clone hardware variants.")
+        return redirect("products:product_detail", pk=product.pk)
+    clone = clone_hardware_variant(variant)
+    django_messages.success(request, f"Cloned as {clone.name}.")
+    return redirect("products:product_detail", pk=product.pk)
+
+
+@login_required
+@require_POST
+def hardware_revision_clone(request, pk):
+    revision = get_object_or_404(HardwareRevision, pk=pk)
+    product = revision.hardware_variant.product
+    if not has_role(request.user, Role.EDITOR, product=product):
+        django_messages.error(request, "You need the editor role to clone hardware revisions.")
+        return redirect("products:product_detail", pk=product.pk)
+    clone = clone_hardware_revision(revision)
+    django_messages.success(request, f"Cloned as rev {clone.label}.")
+    return redirect("products:product_detail", pk=product.pk)
+
+
+@login_required
+@require_POST
+def software_release_clone(request, pk):
+    release = get_object_or_404(SoftwareRelease, pk=pk)
+    product = release.product
+    if not has_role(request.user, Role.EDITOR, product=product):
+        django_messages.error(request, "You need the editor role to clone software releases.")
+        return redirect("products:product_detail", pk=product.pk)
+    clone = clone_software_release(release)
+    django_messages.success(request, f"Cloned as {clone.name} {clone.version}.")
+    return redirect("products:product_detail", pk=product.pk)
+
+
+@login_required
+@require_POST
+def software_option_clone(request, pk):
+    option = get_object_or_404(SoftwareOption, pk=pk)
+    product = option.software_release.product
+    if not has_role(request.user, Role.EDITOR, product=product):
+        django_messages.error(request, "You need the editor role to clone software options.")
+        return redirect("products:product_detail", pk=product.pk)
+    clone = clone_software_option(option)
+    django_messages.success(request, f"Cloned as {clone.name}.")
+    return redirect("products:product_detail", pk=product.pk)
