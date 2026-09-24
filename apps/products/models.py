@@ -27,6 +27,25 @@ class Approvable(models.Model):
         abstract = True
 
 
+class ProductStatus(models.TextChoices):
+    """Product lifecycle stage, independent of the per-entity Approvable bits.
+
+    Draft -> Approved -> Closed is the forward path (Closed meaning e.g.
+    "CE marked", though nothing here enforces that a risk assessment
+    approval exists yet -- that link is future work). Archived and
+    Deleted are side branches: Archived is a reversible "not active right
+    now", Deleted is a soft delete (hidden from listings, not removed
+    from the database) so approved/historical products are never
+    actually destroyed by this UI.
+    """
+
+    DRAFT = "draft", "Draft"
+    APPROVED = "approved", "Approved"
+    CLOSED = "closed", "Closed"
+    ARCHIVED = "archived", "Archived"
+    DELETED = "deleted", "Deleted"
+
+
 class TargetMarket(models.Model):
     """A jurisdiction a hardware variant can be sold into (EU, US, UK, ...).
 
@@ -52,6 +71,9 @@ class Product(Approvable):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200)
     description = models.TextField(blank=True, default="")
+    status = models.CharField(
+        max_length=16, choices=ProductStatus.choices, default=ProductStatus.DRAFT
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -107,20 +129,21 @@ class HardwareRevision(Approvable):
 
 class SoftwareRelease(Approvable):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="sw_releases")
+    name = models.CharField(max_length=200, help_text="e.g. Firmware, Companion app")
     version = models.CharField(max_length=50)
     released_at = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["product__name", "version"]
+        ordering = ["product__name", "name", "version"]
         constraints = [
             models.UniqueConstraint(
-                fields=["product", "version"], name="unique_sw_release_version_per_product"
+                fields=["product", "name", "version"], name="unique_sw_release_version_per_product"
             ),
         ]
 
     def __str__(self):
-        return f"{self.product.name} {self.version}"
+        return f"{self.product.name} {self.name} {self.version}"
 
 
 class SoftwareOption(Approvable):

@@ -14,6 +14,7 @@
   --color-warning: #b5540e;
   --color-success: #1b7d52;
   --color-focus-ring: #1f3d7a;
+  --color-input-bg: var(--color-surface);
   --font-display: "Space Grotesk", system-ui, sans-serif;
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
@@ -45,6 +46,7 @@
   --color-warning: #e08b3d;
   --color-success: #3fbe87;
   --color-focus-ring: #7da1e8;
+  --color-input-bg: var(--color-bg);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -64,6 +66,7 @@
     --color-warning: #e08b3d;
     --color-success: #3fbe87;
     --color-focus-ring: #7da1e8;
+    --color-input-bg: var(--color-bg);
   }
 }
 
@@ -352,4 +355,165 @@ td {
   .app-body {
     flex-direction: column;
   }
+}
+
+/* Forms */
+
+input[type="text"],
+input[type="date"],
+input[type="url"],
+input[type="number"],
+input[type="file"],
+select,
+textarea {
+  display: block;
+  width: 100%;
+  max-width: 28rem;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font: inherit;
+}
+
+select[multiple] {
+  max-width: 100%;
+}
+
+textarea {
+  min-height: 4.5rem;
+  resize: vertical;
+}
+
+button {
+  font: inherit;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--color-accent);
+}
+
+button[type="submit"] {
+  border-color: var(--color-gold-fill);
+}
+
+button.button-danger {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.field {
+  margin-bottom: var(--space-3);
+}
+
+.field label {
+  display: block;
+  margin-bottom: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: 0.9em;
+}
+
+.form-vertical {
+  display: block;
+  padding: var(--space-3);
+  margin: var(--space-2) 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.form-vertical h4 {
+  margin-top: 0;
+}
+
+.form-vertical .field:last-of-type {
+  margin-bottom: var(--space-3);
+}
+
+.inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+
+.inline-form input,
+.inline-form select {
+  width: auto;
+  max-width: 16rem;
+  display: inline-block;
+}
+
+/* Badges */
+
+.badge {
+  display: inline-block;
+  padding: 0.1em 0.6em;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.8em;
+  white-space: nowrap;
+}
+
+.badge-approved {
+  border-color: var(--color-gold-fill);
+  color: var(--color-accent);
+}
+
+.badge-closed {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.badge-archived {
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
+}
+
+.badge-deleted {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+/* Entity tables (hardware variants/revisions, software releases/options) */
+
+.entity-table {
+  margin-bottom: var(--space-3);
+}
+
+.entity-table tbody {
+  border-top: 2px solid var(--color-border);
+}
+
+.entity-table .row-child td:first-child {
+  padding-left: var(--space-4);
+  color: var(--color-text-muted);
+}
+
+.entity-table .row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.entity-table .row-actions form {
+  display: inline;
+}
+
+.entity-table td[colspan] {
+  background: var(--color-bg);
+}
+
+[x-cloak] {
+  display: none !important;
 }

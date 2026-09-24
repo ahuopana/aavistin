@@ -48,7 +48,7 @@
   {% if can_edit %}
     <h3>Link to a control</h3>
     {% if controls %}
-      <form method="post" action="{% url 'evidence:link_control' evidence.pk %}">
+      <form method="post" action="{% url 'evidence:link_control' evidence.pk %}" class="inline-form">
         {% csrf_token %}
         <select name="control_id">
           {% for control in controls %}
@@ -62,7 +62,7 @@
     {% endif %}
 
     <h3>Link to a requirement</h3>
-    <form method="post" action="{% url 'evidence:link_requirement' evidence.pk %}">
+    <form method="post" action="{% url 'evidence:link_requirement' evidence.pk %}" class="inline-form">
       {% csrf_token %}
       <input type="text" name="requirement_source" placeholder="package source (e.g. eu-cra)" required>
       <input type="text" name="requirement_version" placeholder="package version" required>
@@ -73,7 +73,7 @@
     <h3>Delete evidence</h3>
     <form method="post" action="{% url 'evidence:delete' evidence.pk %}">
       {% csrf_token %}
-      <button type="submit">Delete</button>
+      <button type="submit" class="button-danger">Delete</button>
     </form>
   {% endif %}
 {% endblock %}

@@ -62,7 +62,9 @@ class DashboardFixture(TestCase):
         )
         self.variant.target_markets.add(TargetMarket.objects.get(code="EU"))
         self.revision = HardwareRevision.objects.create(hardware_variant=self.variant, label="A")
-        self.release = SoftwareRelease.objects.create(product=self.product, version="1.0")
+        self.release = SoftwareRelease.objects.create(
+            product=self.product, name="Firmware", version="1.0"
+        )
         self.configuration = Configuration.objects.create(
             name="TempSense EU 1.0",
             hardware_revision=self.revision,
@@ -255,7 +257,9 @@ class DashboardTasksTests(DashboardFixture):
         )
         for i in range(3):
             Control.objects.create(product=self.product, name=f"Control {i}")
-        other_release = SoftwareRelease.objects.create(product=self.product, version="2.0")
+        other_release = SoftwareRelease.objects.create(
+            product=self.product, name="Firmware", version="2.0"
+        )
         other_config = Configuration.objects.create(
             name="TempSense EU 2.0",
             hardware_revision=self.revision,
@@ -285,7 +289,7 @@ class ProductTreeTests(DashboardFixture):
         row = family_node["products"][0]
         self.assertEqual(row["product"], self.product)
         self.assertEqual(row["revisions"], ["EU variant rev A"])
-        self.assertEqual(row["releases"], ["1.0"])
+        self.assertEqual(row["releases"], ["Firmware 1.0"])
 
     def test_multiple_products_grouped_under_same_family(self):
         other_product = Product.objects.create(
