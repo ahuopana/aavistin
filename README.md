@@ -16,9 +16,12 @@ podman compose up --build
 
 This starts four services: `db` (PostgreSQL), `web` (Django dev server on
 `localhost:8000`), `worker` and `scheduler` (background jobs — see
-`docs/adr/0007-background-job-backend.md`). `web` runs migrations and
-seeds the default dev accounts below on every startup, before starting the
-dev server.
+`docs/adr/0007-background-job-backend.md`). Each of `web`, `worker` and
+`scheduler` first bootstraps a local `.env` from `.env.example` with a
+random `DJANGO_SECRET_KEY`, if one doesn't already exist (see
+`scripts/generate_env.sh`; a no-op once `.env` exists). `web` runs
+migrations and seeds the default dev accounts below on every startup,
+before starting the dev server.
 
 Once it's up:
 
