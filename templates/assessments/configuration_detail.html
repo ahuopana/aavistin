@@ -6,6 +6,8 @@
   <h1>{{ configuration.name }}</h1>
   <p>{{ product.name }} — {{ configuration.hardware_revision }} / {{ configuration.software_release }}</p>
 
+  <p><a href="{% url 'risk:register' configuration.pk %}">Risk register for this configuration &rarr;</a></p>
+
   <h2>Questions</h2>
   <table>
     <thead>

@@ -609,3 +609,65 @@ class ControlModelTests(RiskFixture):
         self.assertIn(threat, control.threats.all())
         self.assertIn(cause, control.hazard_causes.all())
         self.assertIn(control, threat.controls.all())
+
+
+class RegisterViewTests(RiskFixture):
+    def setUp(self):
+        super().setUp()
+        self.asset = self.make_asset()
+        self.threat = self.make_threat(self.asset)
+        ThreatConsequence.objects.create(
+            threat=self.threat, impact_category=ImpactCategory.PRIVACY, severity=4
+        )
+        Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=4)
+        self.hazard = self.make_hazard()
+        self.client.force_login(self.editor)
+        self.url = f"/risk/configurations/{self.configuration.pk}/"
+
+    def test_requires_login(self):
+        self.client.logout()
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+
+    def test_register_lists_entries_with_computed_rating(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Wireless eavesdropping")
+        self.assertContains(response, "must_treat")  # 4 x 4 = 16 -> high
+        self.assertContains(response, "not rated")  # the hazard has no rating yet
+        self.assertEqual(response.context["counts"], {"asset": 1, "threat": 1, "hazard": 1})
+
+    def test_filter_by_type_and_search(self):
+        response = self.client.get(self.url, {"type": "hazard"})
+        self.assertContains(response, "Overheating fire")
+        self.assertNotContains(response, "Wireless eavesdropping")
+        response = self.client.get(self.url, {"q": "firmware"})
+        self.assertContains(response, "Widget firmware")
+        self.assertNotContains(response, "Overheating fire")
+
+    def test_delta_replaces_baseline_in_configuration_view(self):
+        RiskEntry.objects.create(
+            product=self.product,
+            entry_type=EntryType.THREAT,
+            label="Eavesdropping (TLS)",
+            asset=self.asset,
+            violates="confidentiality",
+            scope_software_release=self.release,
+            base_entry=self.threat,
+            delta_justification="TLS enforced",
+        )
+        response = self.client.get(self.url)
+        self.assertContains(response, "Eavesdropping (TLS)")
+        self.assertContains(response, "Delta · SW release 1.0")
+        self.assertNotContains(response, ">Wireless eavesdropping<")
+
+    def test_entry_detail_shows_ratings_and_consequences(self):
+        response = self.client.get(f"{self.url}entries/{self.threat.pk}/")
+        self.assertContains(response, "Privacy")
+        self.assertContains(response, "default-cia-5x5")
+
+    def test_entry_of_another_product_is_404(self):
+        other = Product.objects.create(product_family=self.family, name="Other", slug="other")
+        foreign = RiskEntry.objects.create(product=other, entry_type=EntryType.ASSET, label="X")
+        response = self.client.get(f"{self.url}entries/{foreign.pk}/")
+        self.assertEqual(response.status_code, 404)

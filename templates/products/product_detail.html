@@ -331,6 +331,7 @@
     <h3>
       <a href="{% url 'assessments:configuration_detail' configuration.pk %}">{{ configuration.name }}</a>
       {% if configuration.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
+      <a class="field-hint" href="{% url 'risk:register' configuration.pk %}">Risk register</a>
     </h3>
     <p>
       {{ configuration.hardware_revision }} / {{ configuration.software_release }}
