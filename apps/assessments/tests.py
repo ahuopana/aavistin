@@ -314,6 +314,30 @@ class EuCraEvaluationTests(EuCraConfigurationFixture):
         self.assertFalse(Answer.objects.get().needs_confirmation)
 
 
+class EuCraGuidanceRenderingTests(EuCraConfigurationFixture):
+    """The eu-cra package's self-assessed questions (FOSS status, Annex
+    III/IV) carry guidance text precisely because the package can't
+    reproduce those lists itself -- check it actually reaches the page."""
+
+    def setUp(self):
+        super().setUp()
+        self.editor = User.objects.create_user(username="edna", password="x")
+        RoleAssignment.objects.create(
+            role=Role.EDITOR, user=self.editor, product_family=self.family
+        )
+
+    def test_guidance_and_link_are_rendered_for_annex_iii_question(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, "Good to understand before you answer")
+        self.assertContains(response, "core functionality")
+        self.assertContains(
+            response, "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+        )
+
+
 class ApprovalTests(ConfigurationFixture):
     def _ready_answers(self):
         Answer.objects.create(
@@ -622,6 +646,15 @@ class ViewTests(ConfigurationFixture):
         )
         help_text = Answer._meta.get_field("override_justification").help_text
         self.assertContains(response, help_text)
+
+    def test_question_without_guidance_has_no_guidance_block(self):
+        # The demo package's questions carry no guidance; the block must
+        # be conditional, not rendered unconditionally and left blank.
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertNotContains(response, "Good to understand before you answer")
 
 
 class CoerceValueTests(TestCase):

@@ -23,7 +23,13 @@ decision.
   product falls into `important` or `critical` is a question the user
   answers themselves (against Annex III/IV) — this package does not
   reproduce that category list, to avoid asserting a possibly
-  inaccurate enumeration from memory.
+  inaccurate enumeration from memory. Each self-assessed question
+  (FOSS status, commercial activity, Annex III/IV) carries a
+  `guidance` field — our own summary of how to approach that
+  self-assessment (e.g. the "core functionality" test), shown in the
+  UI as a "Good to understand before you answer" note — plus a
+  `guidance_url` to the European Commission's CRA guidance document for
+  further reading.
 - **Requirements**: a representative, non-exhaustive set of Annex I
   Part I (product) and Part II (vulnerability handling) obligations —
   secure-by-default, no known exploitable vulnerabilities at
