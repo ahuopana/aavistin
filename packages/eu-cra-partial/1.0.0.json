@@ -1,9 +1,9 @@
 {
-  "source": "eu-cra",
+  "source": "eu-cra-partial",
   "type": "legislation",
   "jurisdiction": "EU",
   "version": "2024-2847@2026-10",
-  "title": "EU Cyber Resilience Act",
+  "title": "EU Cyber Resilience Act (partial scaffold, not full coverage)",
   "legal_sources": [{ "celex": "32024R2847" }],
   "dates_of_application": { "from": "2027-12-11" },
   "redistributable": true,

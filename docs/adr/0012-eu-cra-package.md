@@ -4,7 +4,7 @@ Status: Accepted (content is a first pass, not legally reviewed -- see "Conseque
 
 ## Context
 
-`packages/eu-cra/1.0.0.json` is the first real (non-demo) requirement package: the EU Cyber Resilience Act, Regulation (EU) 2024/2847. `docs/architecture.md`'s demo seed section already specifies the exact expected behaviour for a fictional Aavistin-as-a-product scenario (Community release out of scope as free/open-source software outside a commercial activity; Paid support in scope, default category, internal control route; a caution finding when monetisation would change scope) — that's the acceptance spec this package's fixtures implement.
+`packages/eu-cra-partial/1.0.0.json` is the first real (non-demo) requirement package: the EU Cyber Resilience Act, Regulation (EU) 2024/2847. `docs/architecture.md`'s demo seed section already specifies the exact expected behaviour for a fictional Aavistin-as-a-product scenario (Community release out of scope as free/open-source software outside a commercial activity; Paid support in scope, default category, internal control route; a caution finding when monetisation would change scope) — that's the acceptance spec this package's fixtures implement.
 
 Building it surfaced a real gap in `apps/packages/linting.py`: `apps.assessments.evaluation.evaluate_configuration` injects `class__<classification_id>` synthetic variables into `finding_rules`/`assessment_routes` evaluation (so a route or finding can be gated on "is this product classified as X"), but the semantic linter's `_referenced_vars` check had no notion of this — it would flag `{"var": "class__default"}` as `unknown_question`, since no package had ever actually used the pattern before.
 
@@ -18,6 +18,10 @@ Building it surfaced a real gap in `apps/packages/linting.py`: `apps.assessments
 
 ## Consequences
 
-- **This package is not a substitute for legal advice**, and isn't a settled reading of the regulation — `packages/eu-cra/README.md` says so explicitly, and this ADR is where the specific things to verify are listed, so a legal review has a concrete checklist rather than needing to re-derive it: the `ref` citations, the Annex III/IV category list (once encoded), and the full Annex I requirement set.
-- The `class__` linter fix is a small, generally-useful capability, not eu-cra-specific: any future package with classification-gated routes or findings benefits from it.
+- **This package is not a substitute for legal advice**, and isn't a settled reading of the regulation — `packages/eu-cra-partial/README.md` says so explicitly, and this ADR is where the specific things to verify are listed, so a legal review has a concrete checklist rather than needing to re-derive it: the `ref` citations, the Annex III/IV category list (once encoded), and the full Annex I requirement set.
+- The `class__` linter fix is a small, generally-useful capability, not eu-cra-partial-specific: any future package with classification-gated routes or findings benefits from it.
 - Fixtures only cover `in_scope`/`findings` (what `apps.packages.fixtures_runner` checks); classification and assessment-route behaviour for this package is covered by an integration test against `apps.assessments.evaluation.evaluate_configuration` instead, in `apps/packages/tests.py`.
+
+## Addendum: renamed to `eu-cra-partial`
+
+Merged as a scaffold proving out the mechanics, not a stand-in for full CRA coverage, so the package's `source` was renamed from `eu-cra` to `eu-cra-partial` before merge -- while it was still cheap to do (no real assessments or evidence links yet referencing `eu-cra` as a source id). The `-partial` suffix is permanent for this package: a future full-coverage CRA package is a separate, later effort and is expected to take its own identity (e.g. `eu-cra`) rather than reuse or supersede this one, so this scaffold keeps meaning exactly what it always meant.

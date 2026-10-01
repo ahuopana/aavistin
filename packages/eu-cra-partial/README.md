@@ -1,9 +1,17 @@
-# eu-cra
+# eu-cra-partial
 
-The first real (non-demo) requirement package: the EU Cyber Resilience
-Act, Regulation (EU) 2024/2847 (CELEX `32024R2847`).
+**This package is explicitly partial, not the full EU Cyber Resilience
+Act.** The `-partial` suffix in its `source` id is deliberate and
+permanent for this package: it is a structural scaffold proving out the
+scope/classification/assessment-route/finding-rule wiring end to end
+with a representative (not exhaustive) slice of real content, not a
+complete, legally reviewed implementation of Regulation (EU) 2024/2847
+(CELEX `32024R2847`). A full-coverage CRA package is planned as a
+separate, later effort; it is expected to get its own package (e.g.
+`eu-cra`) rather than reuse this one's identity, so this scaffold can
+keep being referenced (by any assessments/evidence that used it) without
+being silently reinterpreted as "the real thing" once that lands.
 
-**This is a first pass, not a legally reviewed compliance artifact.**
 Scope logic, classifications and the finding rule match the behaviour
 already documented and agreed in `docs/architecture.md`'s demo seed
 section. Everything else — the exact legal references (`ref` fields),
@@ -11,8 +19,8 @@ the Annex I requirement list, and the assessment-route mapping — is a
 best-effort structural sketch written from general knowledge of the
 regulation, not verified against the current consolidated legal text.
 See `docs/adr/0012-eu-cra-package.md` for exactly what was assumed and
-what needs checking before this package backs a real compliance
-decision.
+what needs checking before any package in this family backs a real
+compliance decision.
 
 ## What this version covers
 
@@ -60,7 +68,7 @@ the package's own `version` field — what `approve_package` and every
 other lookup actually key on — is `2024-2847@2026-10`, not `1.0.0`:
 
 ```bash
-docker compose exec web python manage.py import_package packages/eu-cra/1.0.0.json --kind requirement --official
+docker compose exec web python manage.py import_package packages/eu-cra-partial/1.0.0.json --kind requirement --official
 ```
 
 Review the lint/fixture report this prints (and the diff/report in
@@ -69,7 +77,7 @@ hasn't been checked against the current consolidated legal text, so
 don't publish it as-is against a real compliance decision:
 
 ```bash
-docker compose exec web python manage.py approve_package eu-cra "2024-2847@2026-10"
+docker compose exec web python manage.py approve_package eu-cra-partial "2024-2847@2026-10"
 ```
 
 **Updating an already-approved copy.** The questionnaire reads whatever

@@ -229,8 +229,8 @@ class CarryForwardTests(ConfigurationFixture):
 
 
 class EuCraConfigurationFixture(TestCase):
-    """Mirrors ConfigurationFixture but approves the real eu-cra package,
-    to exercise its classification -> assessment_routes/finding_rules
+    """Mirrors ConfigurationFixture but approves the real eu-cra-partial
+    package, to exercise its classification -> assessment_routes/finding_rules
     wiring (the class__ synthetic vars) through evaluate_configuration.
     """
 
@@ -254,7 +254,7 @@ class EuCraConfigurationFixture(TestCase):
             software_release=self.release,
         )
 
-        self.package = import_package(load_package("eu-cra", "1.0.0"), is_official=True)
+        self.package = import_package(load_package("eu-cra-partial", "1.0.0"), is_official=True)
         approve_package(self.package)
 
     def _answer(self, **values):
@@ -315,8 +315,8 @@ class EuCraEvaluationTests(EuCraConfigurationFixture):
 
 
 class EuCraGuidanceRenderingTests(EuCraConfigurationFixture):
-    """The eu-cra package's self-assessed questions (FOSS status, Annex
-    III/IV) carry guidance text precisely because the package can't
+    """The eu-cra-partial package's self-assessed questions (FOSS status,
+    Annex III/IV) carry guidance text precisely because the package can't
     reproduce those lists itself -- check it actually reaches the page."""
 
     def setUp(self):
