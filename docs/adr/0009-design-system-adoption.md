@@ -55,3 +55,15 @@ by `docs/architecture.md`.
 - The logo SVGs are hand-authored path/polyline geometry (no source
   design file exists in the repo); any future rework of the mark should
   treat these SVGs as the source of truth.
+
+## Amendment: logo rework (outlined wordmark)
+
+- SVGs loaded through `<img>` cannot use web fonts, so the live `<text>`
+  wordmark rendered in the browser's fallback sans, not Space Grotesk.
+  The wordmark in both lockups is now outlined to `<path>` data (Space
+  Grotesk Bold, SIL OFL, 38px, 0.3 letter-spacing), so it renders
+  identically everywhere.
+- Lockup viewBox tightened from 340×90 to 234×90 (no dead space).
+- Shield outline stroke raised from 6 to 8 so the mark holds up at the
+  32px header height.
+- All logo SVGs gain `role="img"`, `aria-label` and `<title>`.
