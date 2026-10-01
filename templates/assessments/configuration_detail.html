@@ -16,6 +16,7 @@
         <tr>
           <td>
             {{ row.question.label|default:row.question.id }}
+            {% if row.question.used_by|length > 1 %}<span class="field-hint">also used by: {{ row.question.used_by|join:", " }}</span>{% endif %}
             {% if row.needs_confirmation %}<span class="message message-warning">needs confirmation</span>{% endif %}
             {% if row.question.guidance %}
               <details class="question-guidance">
@@ -28,7 +29,7 @@
             {% endif %}
           </td>
           <td>{{ row.value }}</td>
-          <td>{{ row.origin|default:"unanswered" }}</td>
+          <td>{% if row.origin == "derived" %}derived from other answers{% else %}{{ row.origin|default:"unanswered" }}{% endif %}</td>
           {% if can_edit %}
             <td>
               {% if row.owner_id %}

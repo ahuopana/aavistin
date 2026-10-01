@@ -18,14 +18,16 @@ from jsonschema import Draft202012Validator
 from .catalog_engine import run_catalog_fixtures
 from .diffing import diff_packages
 from .fixtures_runner import run_fixtures
-from .linting import lint_catalog, lint_method, lint_package
+from .linting import lint_catalog, lint_method, lint_package, lint_question_set
 from .method_engine import run_method_fixtures
 from .models import PackageKind, PackageStatus, RequirementPackage
+from .question_sets import library_questions, run_question_set_fixtures
 
 SCHEMA_PATHS = {
     PackageKind.REQUIREMENT: Path(settings.BASE_DIR) / "schemas" / "package.schema.json",
     PackageKind.METHOD: Path(settings.BASE_DIR) / "schemas" / "method.schema.json",
     PackageKind.CATALOG: Path(settings.BASE_DIR) / "schemas" / "catalog.schema.json",
+    PackageKind.QUESTION_SET: Path(settings.BASE_DIR) / "schemas" / "question-set.schema.json",
 }
 
 
@@ -60,13 +62,38 @@ def _lint(content, *, kind, is_official, existing):
         question_ids: set[str] = set()
         for raw_content in requirement_contents:
             question_ids.update(q["id"] for q in raw_content.get("questions", []))
+        question_ids.update(library_questions())
         return lint_catalog(
             content,
             is_official=is_official,
             existing_packages=existing,
             known_question_ids=question_ids,
         )
-    return lint_package(content, is_official=is_official, existing_packages=existing)
+    if kind == PackageKind.QUESTION_SET:
+        return lint_question_set(
+            content,
+            is_official=is_official,
+            existing_packages=existing,
+            other_library_questions=library_questions(exclude_source=content["source"]),
+        )
+    return lint_package(
+        content,
+        is_official=is_official,
+        existing_packages=existing,
+        library=library_questions(),
+        other_package_questions=_other_package_questions(content["source"]),
+    )
+
+
+def _other_package_questions(source: str) -> dict[str, dict]:
+    """Question definitions declared by requirement packages other than ``source``
+    (any status): the linter flags a same-id question whose type/level differs."""
+    declared: dict[str, dict] = {}
+    others = RequirementPackage.objects.filter(kind=PackageKind.REQUIREMENT).exclude(source=source)
+    for raw_content in others.order_by("imported_at").values_list("content", flat=True):
+        for question in raw_content.get("questions", []):
+            declared.setdefault(question["id"], question)
+    return declared
 
 
 def _run_fixtures(content, *, kind):
@@ -74,6 +101,8 @@ def _run_fixtures(content, *, kind):
         return run_method_fixtures(content)
     if kind == PackageKind.CATALOG:
         return run_catalog_fixtures(content)
+    if kind == PackageKind.QUESTION_SET:
+        return run_question_set_fixtures(content)
     return run_fixtures(content)
 
 

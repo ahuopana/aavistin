@@ -1,0 +1,39 @@
+{
+  "source": "common",
+  "version": "1.0.0",
+  "title": "Common questions shared across requirement packages",
+  "questions": [
+    {
+      "id": "uses_mfa",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does the product support multi-factor authentication?",
+      "guidance": "Answer once; every package that asks about MFA reads this answer."
+    },
+    {
+      "id": "mfa_for_admin_access",
+      "type": "boolean",
+      "level": "software",
+      "label": "Is multi-factor authentication required for administrative access?",
+      "implied_by": { "when": { "==": [{ "var": "mfa_for_all_users" }, true] }, "value": true }
+    },
+    {
+      "id": "mfa_for_all_users",
+      "type": "boolean",
+      "level": "software",
+      "label": "Is multi-factor authentication required for all users?"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "mfa-for-all-implies-admin",
+      "answers": { "mfa_for_all_users": true },
+      "expected": { "mfa_for_admin_access": true }
+    },
+    {
+      "id": "no-implication-without-answer",
+      "answers": {},
+      "expected": { "mfa_for_admin_access": null }
+    }
+  ]
+}
