@@ -322,6 +322,10 @@ td {
   margin-bottom: var(--space-1);
 }
 
+.page-status {
+  margin: var(--space-3) 0 var(--space-4);
+}
+
 .stat-bar-row {
   display: flex;
   align-items: center;
