@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} · Aavistin User Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="{{ static_prefix }}static/css/base.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="app-brand" href="{{ static_prefix }}index.html">
+        <img src="{{ static_prefix }}static/img/aavistin-lockup-horizontal-reversed.svg" alt="Aavistin" height="32">
+      </a>
+      <nav class="app-nav">
+        <span>User Guide</span>
+      </nav>
+    </header>
+    <div class="app-body">
+      <div class="app-sidebar">
+        <nav aria-label="User Guide pages">
+          <ul>
+            {% for p in pages %}
+              <li><a href="{{ static_prefix }}{{ p.slug }}/" {% if p.slug == page_slug %}class="active" aria-current="page"{% endif %}>{{ p.title }}</a></li>
+            {% endfor %}
+          </ul>
+        </nav>
+      </div>
+      <main class="app-main">
+        {% if content_html %}
+          <article class="userguide-page">{{ content_html|safe }}</article>
+        {% else %}
+          <h1>User Guide</h1>
+          <p>Pick a page to get started:</p>
+          <ul>
+            {% for p in pages %}
+              <li><a href="{{ static_prefix }}{{ p.slug }}/">{{ p.title }}</a></li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </main>
+    </div>
+  </div>
+</body>
+</html>
