@@ -514,3 +514,104 @@ class MethodCatalogImportPipelineTests(TestCase):
                 kind=PackageKind.METHOD,
                 content={},
             )
+
+
+def _mfa_package(source: str, **overrides) -> dict:
+    content = {
+        "source": source,
+        "type": "guidance",
+        "jurisdiction": "EU",
+        "version": "1.0.0",
+        "uses": ["common:uses_mfa"],
+        "questions": [],
+        "scope": {"include": {"var": "uses_mfa"}},
+        "fixtures": [
+            {"id": "yes", "answers": {"uses_mfa": True}, "expected": {"in_scope": True}},
+            {"id": "no", "answers": {"uses_mfa": False}, "expected": {"in_scope": False}},
+        ],
+    }
+    content.update(overrides)
+    return content
+
+
+class SharedQuestionLibraryTests(TestCase):
+    def import_common(self):
+        package = import_package(
+            load_package("common", "1.0.0"), kind=PackageKind.QUESTION_SET, is_official=True
+        )
+        approve_package(package)
+        return package
+
+    def test_common_question_set_passes_lint_and_fixtures(self):
+        package = self.import_common()
+        self.assertEqual(package.lint_report, [])
+        self.assertTrue(all(r["passed"] for r in package.fixture_report))
+        self.assertEqual(package.status, PackageStatus.APPROVED)
+
+    def test_package_can_use_library_question_without_declaring_it(self):
+        self.import_common()
+        package = import_package(_mfa_package("spec-a"))
+        self.assertEqual(package.lint_report, [])
+        self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+
+    def test_unknown_library_reference_is_an_error(self):
+        self.import_common()
+        package = import_package(_mfa_package("spec-a", uses=["common:no_such_question"]))
+        codes = {i["code"] for i in package.lint_report}
+        self.assertIn("unknown_library_question", codes)
+
+    def test_redeclaring_library_question_warns_and_conflicting_definition_errors(self):
+        self.import_common()
+        same = {"id": "uses_mfa", "type": "boolean", "level": "software"}
+        package = import_package(_mfa_package("spec-a", uses=[], questions=[same]))
+        self.assertEqual([i["code"] for i in package.lint_report], ["redeclared_library_question"])
+
+        clash = {"id": "uses_mfa", "type": "boolean", "level": "product"}
+        package = import_package(_mfa_package("spec-b", uses=[], questions=[clash]))
+        self.assertIn("question_conflict", {i["code"] for i in package.lint_report})
+
+    def test_conflict_with_another_requirement_package_is_an_error(self):
+        first = {"id": "has_cloud", "type": "boolean", "level": "software"}
+        import_package(
+            _mfa_package(
+                "spec-a", uses=[], questions=[first], scope={"include": True}, fixtures=[]
+            )
+        )
+        second = {"id": "has_cloud", "type": "number", "level": "software"}
+        package = import_package(
+            _mfa_package(
+                "spec-b", uses=[], questions=[second], scope={"include": True}, fixtures=[]
+            )
+        )
+        self.assertIn("question_conflict", {i["code"] for i in package.lint_report})
+
+    def test_implied_by_cycle_and_duplicate_ids_are_errors(self):
+        content = {
+            "source": "loop",
+            "version": "1.0.0",
+            "questions": [
+                {
+                    "id": "a",
+                    "type": "boolean",
+                    "level": "software",
+                    "implied_by": {"when": {"var": "b"}, "value": True},
+                },
+                {
+                    "id": "b",
+                    "type": "boolean",
+                    "level": "software",
+                    "implied_by": {"when": {"var": "a"}, "value": True},
+                },
+            ],
+        }
+        package = import_package(content, kind=PackageKind.QUESTION_SET)
+        self.assertIn("implied_by_cycle", {i["code"] for i in package.lint_report})
+
+        self.import_common()
+        dup = {
+            "source": "other",
+            "version": "1.0.0",
+            "questions": [{"id": "uses_mfa", "type": "boolean", "level": "software"}],
+        }
+        package = import_package(dup, kind=PackageKind.QUESTION_SET)
+        self.assertIn("duplicate_library_question", {i["code"] for i in package.lint_report})

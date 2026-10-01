@@ -649,3 +649,71 @@ class CoerceValueTests(TestCase):
         self.assertIs(_coerce_value("false"), False)
         self.assertEqual(_coerce_value("7"), 7)
         self.assertEqual(_coerce_value("other"), "other")
+
+
+class SharedQuestionTests(ConfigurationFixture):
+    """One answer feeds every package that uses the shared library question."""
+
+    def setUp(self):
+        super().setUp()
+        common = import_package(
+            load_package("common", "1.0.0"), kind="question_set", is_official=True
+        )
+        approve_package(common)
+        for source in ("spec-a", "spec-b"):
+            content = {
+                "source": source,
+                "type": "guidance",
+                "jurisdiction": "EU",
+                "version": "1.0.0",
+                "uses": ["common:uses_mfa"],
+                "questions": [],
+                "scope": {"include": {"var": "uses_mfa"}},
+                "fixtures": [
+                    {"id": "yes", "answers": {"uses_mfa": True}, "expected": {"in_scope": True}}
+                ],
+            }
+            approve_package(import_package(content))
+
+    def test_question_is_asked_once_and_answer_reaches_both_packages(self):
+        Answer.objects.create(question_id="uses_mfa", value=True, software_release=self.release)
+        resolved, _packages = resolve_answers(self.configuration)
+        self.assertEqual(resolved["uses_mfa"].value, True)
+        self.assertEqual(resolved["uses_mfa"].question["used_by"], ["spec-a", "spec-b"])
+
+        results = evaluate_configuration(self.configuration)["results"]
+        by_source = {r["source"]: r for r in results}
+        self.assertTrue(by_source["spec-a"]["in_scope"])
+        self.assertTrue(by_source["spec-b"]["in_scope"])
+
+    def test_derived_answer_is_used_and_explicit_answer_wins(self):
+        content = {
+            "source": "spec-c",
+            "type": "guidance",
+            "jurisdiction": "EU",
+            "version": "1.0.0",
+            "uses": ["common:mfa_for_all_users", "common:mfa_for_admin_access"],
+            "questions": [],
+            "scope": {"include": {"var": "mfa_for_admin_access"}},
+            "fixtures": [
+                {
+                    "id": "yes",
+                    "answers": {"mfa_for_admin_access": True},
+                    "expected": {"in_scope": True},
+                }
+            ],
+        }
+        approve_package(import_package(content))
+        Answer.objects.create(
+            question_id="mfa_for_all_users", value=True, software_release=self.release
+        )
+        admin = resolve_answers(self.configuration)[0]["mfa_for_admin_access"]
+        self.assertEqual((admin.value, admin.origin, admin.is_derived), (True, "derived", True))
+        results = evaluate_configuration(self.configuration)["results"]
+        self.assertTrue({r["source"]: r for r in results}["spec-c"]["in_scope"])
+
+        Answer.objects.create(
+            question_id="mfa_for_admin_access", value=False, software_release=self.release
+        )
+        admin = resolve_answers(self.configuration)[0]["mfa_for_admin_access"]
+        self.assertEqual((admin.value, admin.origin), (False, "software_release"))

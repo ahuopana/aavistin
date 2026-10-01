@@ -138,15 +138,78 @@ def _supersedes_cycle_issues(content: dict, *, existing_packages) -> list[dict]:
     return []
 
 
-def lint_package(content: dict, *, is_official: bool, existing_packages) -> list[dict]:
+def _library_issues(content, *, library, other_package_questions) -> list[dict]:
+    """Shared-question checks: ``uses`` must resolve, and a question declared
+    here must agree on type and level with any same-id question in the
+    library or in another package (they share one answer)."""
+    issues: list[dict] = []
+    for i, ref in enumerate(content.get("uses", [])):
+        set_source, _, question_id = ref.partition(":")
+        known = library.get(question_id)
+        if known is None or known["_set"] != set_source:
+            issues.append(
+                _issue(
+                    "error",
+                    "unknown_library_question",
+                    f"uses '{ref}', which no question set declares",
+                    f"uses[{i}]",
+                )
+            )
+    for i, q in enumerate(content.get("questions", [])):
+        path = f"questions[{i}]"
+        if q["id"] in library:
+            issues.append(
+                _issue(
+                    "warning",
+                    "redeclared_library_question",
+                    f"'{q['id']}' is in shared set '{library[q['id']]['_set']}'; "
+                    "reference it with 'uses' instead of redeclaring it",
+                    path,
+                )
+            )
+        other = library.get(q["id"]) or other_package_questions.get(q["id"])
+        if other is not None and (other["type"], other["level"]) != (q["type"], q["level"]):
+            issues.append(
+                _issue(
+                    "error",
+                    "question_conflict",
+                    f"'{q['id']}' is {q['type']}/{q['level']} here but "
+                    f"{other['type']}/{other['level']} elsewhere; one answer is shared, "
+                    "so the definitions must agree",
+                    path,
+                )
+            )
+    return issues
+
+
+def lint_package(
+    content: dict,
+    *,
+    is_official: bool,
+    existing_packages,
+    library=None,
+    other_package_questions=None,
+) -> list[dict]:
     """Return a list of lint issues for a *requirement* package; empty means clean.
 
     ``existing_packages`` is a RequirementPackage queryset (any status,
     same source universe) to check namespace shadowing and supersedes
-    cycles against.
+    cycles against. ``library`` maps question id -> definition for the
+    shared question sets; ``other_package_questions`` the same for other
+    requirement packages.
     """
     issues: list[dict] = []
+    library = library or {}
+    issues.extend(
+        _library_issues(
+            content, library=library, other_package_questions=other_package_questions or {}
+        )
+    )
     question_types = {q["id"]: q["type"] for q in content.get("questions", [])}
+    for ref in content.get("uses", []):
+        used = library.get(ref.partition(":")[2])
+        if used is not None:
+            question_types.setdefault(used["id"], used["type"])
     classification_ids = {c["id"] for c in content.get("classifications", [])}
 
     for path, expr in _iter_expressions(content):
@@ -274,4 +337,80 @@ def lint_catalog(
         )
     )
     issues.extend(_supersedes_cycle_issues(content, existing_packages=existing_packages))
+    return issues
+
+
+def lint_question_set(
+    content: dict, *, is_official: bool, existing_packages, other_library_questions
+) -> list[dict]:
+    """Return lint issues for a *question set* package."""
+    issues: list[dict] = []
+    own = {q["id"]: q for q in content.get("questions", [])}
+    seen: set[str] = set()
+    for i, q in enumerate(content.get("questions", [])):
+        path = f"questions[{i}]"
+        if q["id"] in seen:
+            issues.append(_issue("error", "duplicate_question", f"duplicate id '{q['id']}'", path))
+        seen.add(q["id"])
+        if q["id"] in other_library_questions:
+            issues.append(
+                _issue(
+                    "error",
+                    "duplicate_library_question",
+                    f"'{q['id']}' is already declared by set "
+                    f"'{other_library_questions[q['id']]['_set']}'",
+                    path,
+                )
+            )
+
+    known = set(own) | set(other_library_questions)
+    graph: dict[str, set[str]] = {}
+    for i, q in enumerate(content.get("questions", [])):
+        for field in ("condition", "implied_by"):
+            expr = q.get(field)
+            if field == "implied_by" and expr is not None:
+                expr = expr["when"]
+            if expr is None:
+                continue
+            for var_name, _ in _referenced_vars(expr):
+                if var_name not in known:
+                    issues.append(
+                        _issue(
+                            "error",
+                            "unknown_question",
+                            f"references undeclared question '{var_name}'",
+                            f"questions[{i}].{field}",
+                        )
+                    )
+                elif field == "implied_by":
+                    graph.setdefault(q["id"], set()).add(var_name)
+    issues.extend(_implied_by_cycle_issues(graph))
+    issues.extend(_date_issues(content))
+    issues.extend(
+        _namespace_shadow_issues(
+            content, is_official=is_official, existing_packages=existing_packages
+        )
+    )
+    return issues
+
+
+def _implied_by_cycle_issues(graph: dict[str, set[str]]) -> list[dict]:
+    issues: list[dict] = []
+    done: set[str] = set()
+
+    def visit(node, stack):
+        if node in stack:
+            cycle = " -> ".join([*stack[stack.index(node) :], node])
+            issues.append(
+                _issue("error", "implied_by_cycle", f"implied_by cycle: {cycle}", "questions")
+            )
+            return
+        if node in done:
+            return
+        for nxt in sorted(graph.get(node, ())):
+            visit(nxt, [*stack, node])
+        done.add(node)
+
+    for node in sorted(graph):
+        visit(node, [])
     return issues

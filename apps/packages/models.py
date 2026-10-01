@@ -11,6 +11,7 @@ class PackageKind(models.TextChoices):
     REQUIREMENT = "requirement", "Requirement (applicability)"
     METHOD = "method", "Risk method"
     CATALOG = "catalog", "Risk catalog"
+    QUESTION_SET = "question_set", "Shared question set"
 
 
 class PackageType(models.TextChoices):
