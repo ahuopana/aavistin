@@ -25,7 +25,20 @@ def _product_family(configuration):
     return configuration.hardware_revision.hardware_variant.product.product_family
 
 
-def _coerce_value(raw: str):
+def _coerce_value(raw: str, question_type: str = ""):
+    if raw == "":
+        return raw
+    if question_type == "boolean":
+        return raw in ("true", "True")
+    if question_type == "number":
+        try:
+            return float(raw) if "." in raw else int(raw)
+        except ValueError:
+            return raw
+    if question_type == "choice":
+        return raw
+    # No (or unrecognised) declared type: best-effort guess, kept for
+    # backward compatibility with callers that don't send question_type.
     if raw in ("true", "True"):
         return True
     if raw in ("false", "False"):
@@ -75,6 +88,7 @@ def configuration_detail(request, pk):
             "rows": rows,
             "assessments": configuration.assessments.all(),
             "can_edit": has_role(request.user, Role.EDITOR, product_family=family),
+            "justification_help": Answer._meta.get_field("override_justification").help_text,
         },
     )
 
@@ -104,7 +118,8 @@ def answer_question(request, pk):
     # hardware_revision, software_release, software_option) — the
     # template renders it from LEVEL_TO_OWNER_FIELD in configuration_detail.
     owner_field = f"{owner_type}_id"
-    value = _coerce_value(request.POST.get("value", ""))
+    question_type = request.POST.get("question_type", "")
+    value = _coerce_value(request.POST.get("value", ""), question_type)
     justification = request.POST.get("justification", "")
 
     try:

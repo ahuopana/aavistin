@@ -1,4 +1,4 @@
-# 11. UI component conventions: buttons, badges, add fields, tree rows
+# 15. UI component conventions: buttons, badges, add fields, tree rows
 
 Status: Accepted
 

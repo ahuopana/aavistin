@@ -33,12 +33,19 @@ from .services import (
     recompute_staleness,
 )
 from .tasks import refresh_staleness_task
+from .views import _coerce_value
 
 DEMO_DIR = Path(settings.BASE_DIR) / "packages" / "demo-widget-safety"
+PACKAGES_DIR = Path(settings.BASE_DIR) / "packages"
 
 
 def load_demo(version: str) -> dict:
     with (DEMO_DIR / f"{version}.json").open() as f:
+        return json.load(f)
+
+
+def load_package(dirname: str, version: str) -> dict:
+    with (PACKAGES_DIR / dirname / f"{version}.json").open() as f:
         return json.load(f)
 
 
@@ -220,6 +227,81 @@ class CarryForwardTests(ConfigurationFixture):
         self.assertTrue(copied.needs_confirmation)
         self.assertEqual(copied.value, False)
 
+
+class EuCraConfigurationFixture(TestCase):
+    """Mirrors ConfigurationFixture but approves the real eu-cra-partial
+    package, to exercise its classification -> assessment_routes/finding_rules
+    wiring (the class__ synthetic vars) through evaluate_configuration.
+    """
+
+    def setUp(self):
+        self.org = Organisation.objects.create(name="Acme", slug="acme")
+        self.family = ProductFamily.objects.create(
+            organisation=self.org, name="Sensors", slug="sensors"
+        )
+        self.product = Product.objects.create(
+            product_family=self.family, name="TempSense", slug="tempsense"
+        )
+        self.variant = HardwareVariant.objects.create(
+            product=self.product, name="EU variant", slug="eu-variant"
+        )
+        self.variant.target_markets.add(TargetMarket.objects.get(code="EU"))
+        self.revision = HardwareRevision.objects.create(hardware_variant=self.variant, label="A")
+        self.release = SoftwareRelease.objects.create(product=self.product, version="1.0")
+        self.configuration = Configuration.objects.create(
+            name="TempSense EU 1.0",
+            hardware_revision=self.revision,
+            software_release=self.release,
+        )
+
+        self.package = import_package(load_package("eu-cra-partial", "1.0.0"), is_official=True)
+        approve_package(self.package)
+
+    def _answer(self, **values):
+        for question_id, value in values.items():
+            Answer.objects.create(
+                question_id=question_id, value=value, hardware_revision=self.revision
+            )
+
+
+class EuCraEvaluationTests(EuCraConfigurationFixture):
+    def test_default_classification_gets_internal_control_route(self):
+        self._answer(
+            is_free_and_open_source=False,
+            is_commercial_activity=True,
+            is_annex_iii_important_product=False,
+            is_annex_iii_critical_product=False,
+        )
+        evaluation = evaluate_configuration(self.configuration)
+        result = evaluation["results"][0]
+        self.assertTrue(result["in_scope"])
+        self.assertEqual(result["classifications"], ["default"])
+        self.assertEqual(result["assessment_routes"], ["internal_control"])
+        self.assertEqual(evaluation["findings"], [])
+
+    def test_important_classification_gets_third_party_route_and_finding(self):
+        self._answer(
+            is_free_and_open_source=False,
+            is_commercial_activity=True,
+            is_annex_iii_important_product=True,
+            is_annex_iii_critical_product=False,
+        )
+        evaluation = evaluate_configuration(self.configuration)
+        result = evaluation["results"][0]
+        self.assertTrue(result["in_scope"])
+        self.assertEqual(result["classifications"], ["important"])
+        self.assertEqual(result["assessment_routes"], ["third_party_assessment"])
+        finding_ids = [f["id"] for f in evaluation["findings"]]
+        self.assertIn("important_or_critical_needs_third_party", finding_ids)
+
+    def test_foss_non_commercial_is_out_of_scope(self):
+        self._answer(is_free_and_open_source=True, is_commercial_activity=False)
+        evaluation = evaluate_configuration(self.configuration)
+        result = evaluation["results"][0]
+        self.assertFalse(result["in_scope"])
+        finding_ids = [f["id"] for f in evaluation["findings"]]
+        self.assertIn("monetisation_changes_scope", finding_ids)
+
     def test_confirm_answers_clears_flag(self):
         Answer.objects.create(
             question_id="is_toy_widget",
@@ -230,6 +312,30 @@ class CarryForwardTests(ConfigurationFixture):
         confirmed = confirm_answers(Answer.objects.filter(software_release=self.release))
         self.assertEqual(confirmed, 1)
         self.assertFalse(Answer.objects.get().needs_confirmation)
+
+
+class EuCraGuidanceRenderingTests(EuCraConfigurationFixture):
+    """The eu-cra-partial package's self-assessed questions (FOSS status,
+    Annex III/IV) carry guidance text precisely because the package can't
+    reproduce those lists itself -- check it actually reaches the page."""
+
+    def setUp(self):
+        super().setUp()
+        self.editor = User.objects.create_user(username="edna", password="x")
+        RoleAssignment.objects.create(
+            role=Role.EDITOR, user=self.editor, product_family=self.family
+        )
+
+    def test_guidance_and_link_are_rendered_for_annex_iii_question(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, "Good to understand before you answer")
+        self.assertContains(response, "core functionality")
+        self.assertContains(
+            response, "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+        )
 
 
 class ApprovalTests(ConfigurationFixture):
@@ -524,3 +630,55 @@ class ViewTests(ConfigurationFixture):
         self.client.post(reverse("assessments:assessment_approve", args=[assessment.pk]))
         assessment.refresh_from_db()
         self.assertEqual(assessment.status, AssessmentStatus.DRAFT)
+
+    def test_answer_form_declares_question_type_per_row(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, '<input type="hidden" name="question_type" value="boolean">')
+        self.assertContains(response, '<input type="hidden" name="question_type" value="number">')
+
+    def test_justification_help_text_is_rendered(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        help_text = Answer._meta.get_field("override_justification").help_text
+        self.assertContains(response, help_text)
+
+    def test_question_without_guidance_has_no_guidance_block(self):
+        # The demo package's questions carry no guidance; the block must
+        # be conditional, not rendered unconditionally and left blank.
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertNotContains(response, "Good to understand before you answer")
+
+
+class CoerceValueTests(TestCase):
+    def test_boolean_true_and_false(self):
+        self.assertIs(_coerce_value("true", "boolean"), True)
+        self.assertIs(_coerce_value("false", "boolean"), False)
+
+    def test_choice_value_is_not_mistaken_for_boolean_or_number(self):
+        # A choice option that happens to spell "true" or a digit must stay
+        # a plain string, unlike the untyped best-effort guess below.
+        self.assertEqual(_coerce_value("true", "choice"), "true")
+        self.assertEqual(_coerce_value("10", "choice"), "10")
+
+    def test_number_value(self):
+        self.assertEqual(_coerce_value("7", "number"), 7)
+        self.assertEqual(_coerce_value("3.5", "number"), 3.5)
+
+    def test_blank_value_stays_blank_regardless_of_type(self):
+        self.assertEqual(_coerce_value("", "boolean"), "")
+        self.assertEqual(_coerce_value("", "number"), "")
+        self.assertEqual(_coerce_value("", "choice"), "")
+
+    def test_unknown_type_falls_back_to_guessing(self):
+        self.assertIs(_coerce_value("true"), True)
+        self.assertIs(_coerce_value("false"), False)
+        self.assertEqual(_coerce_value("7"), 7)
+        self.assertEqual(_coerce_value("other"), "other")

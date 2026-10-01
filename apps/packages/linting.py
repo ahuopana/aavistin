@@ -13,6 +13,14 @@ from datetime import date
 
 NUMERIC_OPS = {"<", "<=", ">", ">=", "+", "-", "*", "/"}
 
+CLASSIFICATION_VAR_PREFIX = "class__"
+# apps.assessments.evaluation.evaluate_configuration injects
+# class__<classification_id> synthetic vars into "extended_data" only
+# for these two expression kinds -- scope/questions/classifications
+# expressions run before any classification is computed, so class__
+# vars aren't meaningful (and wouldn't resolve) there.
+EXTENDED_DATA_PATH_PREFIXES = ("assessment_routes", "finding_rules")
+
 
 def _issue(severity, code, message, path=""):
     return {"severity": severity, "code": code, "path": path, "message": message}
@@ -139,11 +147,27 @@ def lint_package(content: dict, *, is_official: bool, existing_packages) -> list
     """
     issues: list[dict] = []
     question_types = {q["id"]: q["type"] for q in content.get("questions", [])}
+    classification_ids = {c["id"] for c in content.get("classifications", [])}
 
     for path, expr in _iter_expressions(content):
         if expr is None:
             continue
+        allows_classification_vars = path.startswith(EXTENDED_DATA_PATH_PREFIXES)
         for question_id, under_numeric_op in _referenced_vars(expr):
+            if allows_classification_vars and question_id.startswith(CLASSIFICATION_VAR_PREFIX):
+                classification_id = question_id[len(CLASSIFICATION_VAR_PREFIX) :]
+                if classification_id not in classification_ids:
+                    issues.append(
+                        _issue(
+                            "error",
+                            "unknown_classification",
+                            f"references undeclared classification '{classification_id}' "
+                            f"via '{question_id}'",
+                            path,
+                        )
+                    )
+                continue
+
             qtype = question_types.get(question_id)
             if qtype is None:
                 issues.append(

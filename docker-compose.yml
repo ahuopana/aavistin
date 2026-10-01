@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: aavistin
       POSTGRES_DB: aavistin
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - aavistin_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -29,7 +29,7 @@ services:
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "${WEB_PORT:-8000}:8000"
     environment:
       DEBUG: "True"
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
