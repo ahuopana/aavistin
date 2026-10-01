@@ -161,6 +161,16 @@ a {
   display: inline;
 }
 
+.app-header-actions button {
+  color: var(--color-brand-contrast);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.app-header-actions button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--color-brand-contrast);
+}
+
 .theme-toggle {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.4);
@@ -408,27 +418,52 @@ textarea {
   resize: vertical;
 }
 
-button {
+::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+/* Buttons: secondary by default (neutral outline); at most one
+   .button-primary per row or form; .button-danger for destructive actions. */
+
+button,
+.button {
   font: inherit;
+  line-height: 1.4;
   padding: var(--space-1) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-text);
   cursor: pointer;
 }
 
 button:hover {
-  border-color: var(--color-accent);
+  background: var(--color-surface);
+  border-color: var(--color-text-muted);
 }
 
-button[type="submit"] {
+button.button-primary {
+  background: var(--color-gold-fill);
+  border-color: var(--color-gold-fill);
+  color: var(--color-on-gold);
+  font-weight: 600;
+}
+
+button.button-primary:hover {
+  filter: brightness(1.08);
+  background: var(--color-gold-fill);
   border-color: var(--color-gold-fill);
 }
 
 button.button-danger {
   color: var(--color-danger);
+  border-color: transparent;
+}
+
+button.button-danger:hover {
   border-color: var(--color-danger);
+  background: transparent;
 }
 
 .field {
@@ -474,36 +509,199 @@ button.button-danger {
   display: inline-block;
 }
 
-/* Badges */
+/* Badges: status pill with a leading dot, colour from semantic tokens */
 
 .badge {
-  display: inline-block;
-  padding: 0.1em 0.6em;
+  --badge-color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.15em 0.7em;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  font-size: 0.8em;
+  border: 1px solid color-mix(in srgb, var(--badge-color) 55%, transparent);
+  background: color-mix(in srgb, var(--badge-color) 12%, transparent);
+  color: var(--badge-color);
+  font-size: 0.85em;
+  font-weight: 500;
   white-space: nowrap;
 }
 
-.badge-approved {
-  border-color: var(--color-gold-fill);
-  color: var(--color-accent);
+.badge::before {
+  content: "";
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: var(--badge-color);
 }
 
-.badge-closed {
-  border-color: var(--color-success);
-  color: var(--color-success);
+.badge-draft {
+  border-style: dashed;
 }
 
+.badge-draft::before {
+  background: transparent;
+  border: 1px solid var(--badge-color);
+}
+
+.badge-approved,
+.badge-closed,
+.badge-product {
+  --badge-color: var(--color-success);
+}
+
+.badge-inherited {
+  --badge-color: var(--color-focus-ring);
+}
+
+.badge-unanswered,
 .badge-archived {
-  border-color: var(--color-text-muted);
-  color: var(--color-text-muted);
+  --badge-color: var(--color-text-muted);
+}
+
+.badge-warning {
+  --badge-color: var(--color-warning);
 }
 
 .badge-deleted {
-  border-color: var(--color-danger);
-  color: var(--color-danger);
+  --badge-color: var(--color-danger);
+}
+
+h1 .badge {
+  font-size: 0.45em;
+  vertical-align: middle;
+}
+
+/* Answer form (assessment questions) */
+
+.answer-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 28rem;
+}
+
+.answer-form input[type="text"],
+.answer-form input[type="number"],
+.answer-form select {
+  flex: 1 1 10rem;
+  min-height: 2.4rem;
+}
+
+.answer-form button {
+  min-height: 2.4rem;
+}
+
+.answer-form input.answer-justification {
+  flex: 1 1 100%;
+  order: 3;
+}
+
+/* (i) hint: guidance on hover or keyboard focus, no layout space */
+
+.info {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.3rem;
+  height: 1.3rem;
+  border: 1px solid var(--color-text-muted);
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-style: italic;
+  cursor: help;
+}
+
+.info::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10;
+  width: 16rem;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  font-size: 0.85rem;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: left;
+  white-space: normal;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.12s;
+  pointer-events: none;
+}
+
+.info:hover::after,
+.info:focus-visible::after {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Add row: one grouped field, type a value and press Enter or Add */
+
+.add-row {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: nowrap;
+  gap: 0;
+  max-width: 40rem;
+  --add-row-line: color-mix(in srgb, var(--color-text-muted) 55%, var(--color-border));
+  border: 1px solid var(--add-row-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.add-row:focus-within {
+  border-color: var(--color-focus-ring);
+}
+
+.add-row input,
+.add-row input[type="text"],
+.add-row input[type="date"] {
+  flex: 1 1 8rem;
+  width: auto;
+  max-width: none;
+  min-height: 2.4rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.add-row input[name] + input[name] {
+  border-left: 1px solid var(--add-row-line);
+}
+
+.add-row input:focus-visible {
+  outline: none;
+}
+
+.add-row button {
+  flex: 0 0 auto;
+  border: 0;
+  border-left: 1px solid var(--add-row-line);
+  border-radius: 0;
+  background: var(--color-surface);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.add-row button:hover {
+  background: var(--color-brand-tint);
+}
+
+.cell-question {
+  max-width: 70ch;
 }
 
 /* Entity tables (hardware variants/revisions, software releases/options) */
@@ -516,9 +714,55 @@ button.button-danger {
   border-top: 2px solid var(--color-border);
 }
 
+/* Children read as a tree under their parent: tinted, lighter dividers,
+   connector glyphs, and the "add" field as the final child row. */
+
+.entity-table .row-child td {
+  background: var(--color-surface);
+  border-bottom-color: color-mix(in srgb, var(--color-border) 45%, transparent);
+}
+
 .entity-table .row-child td:first-child {
   padding-left: var(--space-4);
+  box-shadow: inset 3px 0 0 var(--color-brand-tint);
+}
+
+.entity-table .row-child td:first-child:not([colspan])::before {
+  content: "\251C";
+  display: inline-block;
+  width: 1.6em;
   color: var(--color-text-muted);
+  opacity: 0.7;
+}
+
+.entity-table .row-child:last-child td:first-child:not([colspan])::before {
+  content: "\2514";
+}
+
+.entity-table .row-empty td {
+  color: var(--color-text-muted);
+  padding-left: calc(var(--space-4) + 1.6em);
+}
+
+.entity-table .cell-add::before {
+  content: "\2514";
+  display: inline-block;
+  width: 1.6em;
+  color: var(--color-text-muted);
+  opacity: 0.7;
+  vertical-align: middle;
+}
+
+.entity-table .cell-add .add-row {
+  display: inline-flex;
+  vertical-align: middle;
+  width: calc(100% - 2rem);
+  max-width: 40rem;
+  background: var(--color-bg);
+}
+
+.entity-table .cell-add {
+  padding-left: var(--space-4);
 }
 
 .entity-table .row-actions {
@@ -532,8 +776,12 @@ button.button-danger {
   display: inline;
 }
 
-.entity-table td[colspan] {
-  background: var(--color-bg);
+.entity-table .row-actions {
+  justify-content: flex-start;
+}
+
+input[type="date"] {
+  min-height: 2.4rem;
 }
 
 [x-cloak] {
