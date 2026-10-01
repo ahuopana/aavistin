@@ -31,7 +31,12 @@ class Answer(models.Model):
 
     question_id = models.CharField(max_length=100)
     value = models.JSONField()
-    override_justification = models.TextField(blank=True, default="")
+    override_justification = models.TextField(
+        blank=True,
+        default="",
+        help_text="Required only when this overrides an answer inherited from "
+        "a broader level. Explain why the override is correct.",
+    )
     needs_confirmation = models.BooleanField(
         default=False,
         help_text="Set when carried forward from a previous software release; "

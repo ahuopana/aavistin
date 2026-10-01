@@ -142,7 +142,7 @@ Only legislation can create legal obligations; the schema enforces this, and the
 A package contains:
 
 - **Identity:** id (namespaced), version, jurisdiction, legal sources (CELEX/ELI), dates of application, supersedes/amends links.
-- **Questions:** typed (boolean, choice, number with unit), each declaring its natural level (product, hardware, software, option), with optional conditions (radio band questions only if a radio is present). Questions are shared across packages.
+- **Questions:** typed (boolean, choice, number with unit), each declaring its natural level (product, hardware, software, option), with optional conditions (radio band questions only if a radio is present). Questions are shared across packages. A question may also carry plain-text `guidance` (our own summary, never standards/legal text verbatim) and a `guidance_url`, shown in the UI as a "Good to understand before you answer" note -- for self-assessed questions where a package deliberately doesn't encode the full rule (e.g. CRA Annex III/IV category lists; see ADR 0014).
 - **Scope rules:** inclusion, exclusions and exemptions, each with a legal reference.
 - **Classifications:** classes or categories that change requirements and assessment routes (CRA default / important I / important II / critical; RED 3(3)(d)(e)(f) categories).
 - **Requirements:** tagged by role (manufacturer, importer, distributor), class and date.
@@ -153,10 +153,10 @@ A package contains:
 Rules are declarative expressions (JSONLogic or a small custom language) evaluated safely, never Python `eval`.
 
 ```yaml
-source: eu-cra
+source: eu-cra-partial
 type: legislation
 jurisdiction: EU
-version: 2024-2847@2026-09
+version: 2024-2847@2026-10
 sources: [{celex: 32024R2847}]
 questions:
   - id: has_data_connection
@@ -357,7 +357,7 @@ The tool ships with a demo dataset in which Aavistin is the product under assess
 | LVD | Out of scope: no electrical equipment | Out of scope |
 | GDPR | Info finding: the deploying organisation is controller for user, LDAP and audit data | Same |
 
-The CRA interpretation of monetised support sits in the eu-cra package with its legal reference, not in the seed; the seed only states the expected outcome.
+The CRA interpretation of monetised support sits in the eu-cra-partial package with its legal reference, not in the seed; the seed only states the expected outcome.
 
 **Findings.** A caution on the Community release: "Offering paid support or other monetisation changes CRA scope and requires re-assessment." Selecting the Paid support option triggers that re-assessment, as for any flagged option.
 

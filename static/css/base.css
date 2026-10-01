@@ -211,6 +211,28 @@ a {
   color: var(--color-success);
 }
 
+.field-hint {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+}
+
+.question-guidance {
+  margin-top: var(--space-1);
+  font-size: 0.85em;
+}
+
+.question-guidance summary {
+  cursor: pointer;
+  color: var(--color-accent);
+}
+
+.question-guidance p {
+  color: var(--color-text-muted);
+  margin: var(--space-1) 0 0;
+}
+
 .message-info {
   border-color: var(--color-gold-fill);
   color: var(--color-accent);
