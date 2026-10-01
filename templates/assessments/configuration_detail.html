@@ -14,23 +14,27 @@
     <tbody>
       {% for row in rows %}
         <tr>
-          <td>
+          <td class="cell-question">
             {{ row.question.label|default:row.question.id }}
-            {% if row.needs_confirmation %}<span class="message message-warning">needs confirmation</span>{% endif %}
+            {% if row.needs_confirmation %}<span class="badge badge-warning">needs confirmation</span>{% endif %}
           </td>
-          <td>{{ row.value }}</td>
-          <td>{{ row.origin|default:"unanswered" }}</td>
+          <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% else %}{{ row.value }}{% endif %}</td>
+          <td><span class="badge badge-{{ row.origin|default:'unanswered' }}">{{ row.origin|default:"unanswered" }}</span></td>
           {% if can_edit %}
             <td>
               {% if row.owner_id %}
-                <form method="post" action="{% url 'assessments:answer_question' configuration.pk %}">
+                <form method="post" class="answer-form" x-data="{ changed: false }" action="{% url 'assessments:answer_question' configuration.pk %}">
                   {% csrf_token %}
                   <input type="hidden" name="question_id" value="{{ row.question.id }}">
                   <input type="hidden" name="owner_type" value="{{ row.owner_type }}">
                   <input type="hidden" name="owner_id" value="{{ row.owner_id }}">
-                  <input type="text" name="value" value="{{ row.value|default_if_none:'' }}" placeholder="value">
-                  <input type="text" name="justification" placeholder="justification (if overriding)">
-                  <button type="submit">Save</button>
+                  <input type="text" name="value" value="{{ row.value|default_if_none:'' }}" placeholder="value"
+                         aria-label="Answer" @input="changed = $event.target.value !== $event.target.defaultValue">
+                  <button type="submit" class="button-primary">Save</button>
+                  <span class="info" tabindex="0" role="note" aria-label="Justification is required only when this overrides an answer inherited from a broader level."
+                        data-tip="A justification is required only when this overrides an answer inherited from a broader level.">i</span>
+                  <input type="text" name="justification" class="answer-justification" x-cloak x-show="changed"
+                         placeholder="justification (if overriding)" aria-label="Justification">
                 </form>
               {% endif %}
             </td>

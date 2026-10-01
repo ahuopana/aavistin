@@ -24,7 +24,7 @@
       <div class="field"><label>Name<input type="text" name="name" value="{{ product.name }}" required></label></div>
       <div class="field"><label>Slug<input type="text" name="slug" value="{{ product.slug }}" required></label></div>
       <div class="field"><label>Description<textarea name="description">{{ product.description }}</textarea></label></div>
-      <button type="submit">Save</button>
+      <button type="submit" class="button-primary">Save</button>
     </form>
   {% endif %}
 
@@ -84,7 +84,7 @@
           <td>{{ variant.name }}</td>
           <td>{% for tm in variant.target_markets.all %}{{ tm.code }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</td>
           <td>
-            {% if variant.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
+            {% if variant.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
           </td>
           <td class="row-actions">
             {% if can_edit %}<button type="button" @click="editingVariant = !editingVariant">Edit</button>{% endif %}
@@ -97,7 +97,7 @@
             {% if can_approve and not variant.is_approved %}
               <form method="post" action="{% url 'products:entity_approve' 'hardware-variant' variant.pk %}">
                 {% csrf_token %}
-                <button type="submit">Approve</button>
+                <button type="submit" class="button-primary">Approve</button>
               </form>
             {% endif %}
             {% if can_edit and not variant.is_approved %}
@@ -124,7 +124,7 @@
                     {% endfor %}
                   </select>
                 </div>
-                <button type="submit">Save</button>
+                <button type="submit" class="button-primary">Save</button>
               </form>
             </td>
           </tr>
@@ -132,10 +132,10 @@
 
         {% for revision in variant.revisions.all %}
           <tr class="row-child">
-            <td>↳ Rev {{ revision.label }}</td>
+            <td>Rev {{ revision.label }}</td>
             <td>{{ revision.released_at|default:"unreleased" }}</td>
             <td>
-              {% if revision.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
+              {% if revision.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
             </td>
             <td class="row-actions">
               {% if can_edit %}<button type="button" @click="editingRevision = editingRevision === {{ revision.pk }} ? null : {{ revision.pk }}">Edit</button>{% endif %}
@@ -148,7 +148,7 @@
               {% if can_approve and not revision.is_approved %}
                 <form method="post" action="{% url 'products:entity_approve' 'hardware-revision' revision.pk %}">
                   {% csrf_token %}
-                  <button type="submit">Approve</button>
+                  <button type="submit" class="button-primary">Approve</button>
                 </form>
               {% endif %}
               {% if can_edit and not revision.is_approved %}
@@ -160,30 +160,30 @@
             </td>
           </tr>
           {% if can_edit %}
-            <tr x-show="editingRevision === {{ revision.pk }}" x-cloak>
+            <tr class="row-child" x-show="editingRevision === {{ revision.pk }}" x-cloak>
               <td colspan="4">
                 <form method="post" action="{% url 'products:hardware_revision_edit' revision.pk %}" class="form-vertical">
                   {% csrf_token %}
                   <h4>Edit revision: {{ variant.name }} rev {{ revision.label }}</h4>
                   <div class="field"><label>Label<input type="text" name="label" value="{{ revision.label }}" required></label></div>
                   <div class="field"><label>Released<input type="date" name="released_at" value="{{ revision.released_at|date:'Y-m-d' }}"></label></div>
-                  <button type="submit">Save</button>
+                  <button type="submit" class="button-primary">Save</button>
                 </form>
               </td>
             </tr>
           {% endif %}
         {% empty %}
-          <tr class="row-child"><td colspan="4">No revisions yet.</td></tr>
+          <tr class="row-child row-empty"><td colspan="4">No revisions yet.</td></tr>
         {% endfor %}
 
         {% if can_edit %}
-          <tr>
-            <td colspan="4">
-              <form method="post" action="{% url 'products:hardware_revision_create' variant.pk %}" class="inline-form">
+          <tr class="row-child row-add">
+            <td colspan="4" class="cell-add">
+              <form method="post" action="{% url 'products:hardware_revision_create' variant.pk %}" class="inline-form add-row">
                 {% csrf_token %}
-                <input type="text" name="label" placeholder="Rev label (e.g. A)" required>
-                <input type="date" name="released_at">
-                <button type="submit">+ Add revision</button>
+                <input type="text" name="label" placeholder="New revision (e.g. A)" aria-label="New revision label" required>
+                <input type="date" name="released_at" aria-label="Release date">
+                <button type="submit">+ Add</button>
               </form>
             </td>
           </tr>
@@ -194,11 +194,11 @@
     {% endfor %}
   </table>
   {% if can_edit %}
-    <form method="post" action="{% url 'products:hardware_variant_create' product.pk %}" class="inline-form">
+    <form method="post" action="{% url 'products:hardware_variant_create' product.pk %}" class="inline-form add-row">
       {% csrf_token %}
-      <input type="text" name="name" placeholder="Variant name" required>
-      <input type="text" name="slug" placeholder="slug" required>
-      <button type="submit">+ Add hardware variant</button>
+      <input type="text" name="name" placeholder="New hardware variant name" aria-label="New hardware variant name" required>
+      <input type="text" name="slug" placeholder="slug" aria-label="Slug" required>
+      <button type="submit">+ Add</button>
     </form>
   {% endif %}
 
@@ -213,7 +213,7 @@
           <td>{{ release.name }} {{ release.version }}</td>
           <td>{{ release.released_at|default:"unreleased" }}</td>
           <td>
-            {% if release.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
+            {% if release.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
           </td>
           <td class="row-actions">
             {% if can_edit %}<button type="button" @click="editingRelease = !editingRelease">Edit</button>{% endif %}
@@ -226,7 +226,7 @@
             {% if can_approve and not release.is_approved %}
               <form method="post" action="{% url 'products:entity_approve' 'software-release' release.pk %}">
                 {% csrf_token %}
-                <button type="submit">Approve</button>
+                <button type="submit" class="button-primary">Approve</button>
               </form>
             {% endif %}
             {% if can_edit and not release.is_approved %}
@@ -246,7 +246,7 @@
                 <div class="field"><label>Name<input type="text" name="name" value="{{ release.name }}" required></label></div>
                 <div class="field"><label>Version<input type="text" name="version" value="{{ release.version }}" required></label></div>
                 <div class="field"><label>Released<input type="date" name="released_at" value="{{ release.released_at|date:'Y-m-d' }}"></label></div>
-                <button type="submit">Save</button>
+                <button type="submit" class="button-primary">Save</button>
               </form>
             </td>
           </tr>
@@ -254,10 +254,10 @@
 
         {% for option in release.options.all %}
           <tr class="row-child">
-            <td>↳ {{ option.name }}</td>
+            <td>{{ option.name }}</td>
             <td></td>
             <td>
-              {% if option.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
+              {% if option.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
             </td>
             <td class="row-actions">
               {% if can_edit %}<button type="button" @click="editingOption = editingOption === {{ option.pk }} ? null : {{ option.pk }}">Edit</button>{% endif %}
@@ -270,7 +270,7 @@
               {% if can_approve and not option.is_approved %}
                 <form method="post" action="{% url 'products:entity_approve' 'software-option' option.pk %}">
                   {% csrf_token %}
-                  <button type="submit">Approve</button>
+                  <button type="submit" class="button-primary">Approve</button>
                 </form>
               {% endif %}
               {% if can_edit and not option.is_approved %}
@@ -282,7 +282,7 @@
             </td>
           </tr>
           {% if can_edit %}
-            <tr x-show="editingOption === {{ option.pk }}" x-cloak>
+            <tr class="row-child" x-show="editingOption === {{ option.pk }}" x-cloak>
               <td colspan="4">
                 <form method="post" action="{% url 'products:software_option_edit' option.pk %}" class="form-vertical">
                   {% csrf_token %}
@@ -290,23 +290,23 @@
                   <div class="field"><label>Name<input type="text" name="name" value="{{ option.name }}" required></label></div>
                   <div class="field"><label>Slug<input type="text" name="slug" value="{{ option.slug }}" required></label></div>
                   <div class="field"><label>Description<textarea name="description">{{ option.description }}</textarea></label></div>
-                  <button type="submit">Save</button>
+                  <button type="submit" class="button-primary">Save</button>
                 </form>
               </td>
             </tr>
           {% endif %}
         {% empty %}
-          <tr class="row-child"><td colspan="4">No options yet.</td></tr>
+          <tr class="row-child row-empty"><td colspan="4">No options yet.</td></tr>
         {% endfor %}
 
         {% if can_edit %}
-          <tr>
-            <td colspan="4">
-              <form method="post" action="{% url 'products:software_option_create' release.pk %}" class="inline-form">
+          <tr class="row-child row-add">
+            <td colspan="4" class="cell-add">
+              <form method="post" action="{% url 'products:software_option_create' release.pk %}" class="inline-form add-row">
                 {% csrf_token %}
-                <input type="text" name="name" placeholder="Option name" required>
-                <input type="text" name="slug" placeholder="slug" required>
-                <button type="submit">+ Add option</button>
+                <input type="text" name="name" placeholder="New option name" aria-label="New option name" required>
+                <input type="text" name="slug" placeholder="slug" aria-label="Slug" required>
+                <button type="submit">+ Add</button>
               </form>
             </td>
           </tr>
@@ -317,12 +317,12 @@
     {% endfor %}
   </table>
   {% if can_edit %}
-    <form method="post" action="{% url 'products:software_release_create' product.pk %}" class="inline-form">
+    <form method="post" action="{% url 'products:software_release_create' product.pk %}" class="inline-form add-row">
       {% csrf_token %}
-      <input type="text" name="name" placeholder="Name (e.g. Firmware)" required>
-      <input type="text" name="version" placeholder="Version (e.g. 1.0.0)" required>
-      <input type="date" name="released_at">
-      <button type="submit">+ Add software release</button>
+      <input type="text" name="name" placeholder="New software release name (e.g. Firmware)" aria-label="New software release name" required>
+      <input type="text" name="version" placeholder="Version (e.g. 1.0.0)" aria-label="Version" required>
+      <input type="date" name="released_at" aria-label="Release date">
+      <button type="submit">+ Add</button>
     </form>
   {% endif %}
 
@@ -330,7 +330,7 @@
   {% for configuration in configurations %}
     <h3>
       <a href="{% url 'assessments:configuration_detail' configuration.pk %}">{{ configuration.name }}</a>
-      {% if configuration.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge">Draft</span>{% endif %}
+      {% if configuration.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
     </h3>
     <p>
       {{ configuration.hardware_revision }} / {{ configuration.software_release }}
@@ -371,7 +371,7 @@
               {% endfor %}
             </select>
           </div>
-          <button type="submit">Save</button>
+          <button type="submit" class="button-primary">Save</button>
         </form>
       </details>
     {% endif %}
@@ -379,7 +379,7 @@
       {% if can_approve and not configuration.is_approved %}
         <form method="post" action="{% url 'products:entity_approve' 'configuration' configuration.pk %}">
           {% csrf_token %}
-          <button type="submit">Approve</button>
+          <button type="submit" class="button-primary">Approve</button>
         </form>
       {% endif %}
       {% if can_edit and not configuration.is_approved %}
