@@ -28,9 +28,11 @@ from .services import (
     clone_software_option,
     clone_software_release,
     close_product,
+    compliance_ratio,
     delete_entity,
     product_of,
     restore_product,
+    risk_ratio,
     soft_delete_product,
 )
 
@@ -77,6 +79,8 @@ def product_detail(request, pk):
             "configurations": configurations,
             "hardware_revisions": hardware_revisions,
             "software_releases": software_releases,
+            "compliance": compliance_ratio(product),
+            "risk": risk_ratio(product),
             "can_edit": can_edit,
             "can_approve": can_approve,
             "can_close": can_approve and product.status == ProductStatus.APPROVED,
