@@ -57,7 +57,7 @@ decision.
 Run inside the `web` container (see the main `README.md`'s "Packages"
 section for why). The file is named `1.0.0.json` for convenience, but
 the package's own `version` field — what `approve_package` and every
-other lookup actually key on — is `2024-2847@2026-09`, not `1.0.0`:
+other lookup actually key on — is `2024-2847@2026-10`, not `1.0.0`:
 
 ```bash
 docker compose exec web python manage.py import_package packages/eu-cra/1.0.0.json --kind requirement --official
@@ -69,5 +69,15 @@ hasn't been checked against the current consolidated legal text, so
 don't publish it as-is against a real compliance decision:
 
 ```bash
-docker compose exec web python manage.py approve_package eu-cra "2024-2847@2026-09"
+docker compose exec web python manage.py approve_package eu-cra "2024-2847@2026-10"
 ```
+
+**Updating an already-approved copy.** The questionnaire reads whatever
+content was approved into the database, not this file directly — pulling
+a newer `1.0.0.json` and rebuilding changes nothing on its own until you
+re-import and re-approve it. Content changes always bump the `version`
+field (`RequirementPackage` has a DB-level uniqueness constraint on
+`source` + `version`, so re-importing under an unchanged version fails
+with an integrity error); re-running `import_package` then
+`approve_package` with the new version supersedes whatever was approved
+before.

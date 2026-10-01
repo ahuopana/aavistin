@@ -2,7 +2,7 @@
   "source": "eu-cra",
   "type": "legislation",
   "jurisdiction": "EU",
-  "version": "2024-2847@2026-09",
+  "version": "2024-2847@2026-10",
   "title": "EU Cyber Resilience Act",
   "legal_sources": [{ "celex": "32024R2847" }],
   "dates_of_application": { "from": "2027-12-11" },
