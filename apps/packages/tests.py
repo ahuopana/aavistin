@@ -328,8 +328,8 @@ class ImportPipelineTests(TestCase):
         package = import_package(load_demo("1.0.0"))
         self.assertTrue(package.creates_legal_obligations)
 
-    def test_import_eu_cra_package_reaches_fixtures_passed(self):
-        package = import_package(load_package("eu-cra", "1.0.0"), is_official=True)
+    def test_import_eu_cra_partial_package_reaches_fixtures_passed(self):
+        package = import_package(load_package("eu-cra-partial", "1.0.0"), is_official=True)
         self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
         self.assertEqual(package.lint_report, [])
         self.assertTrue(all(r["passed"] for r in package.fixture_report), package.fixture_report)

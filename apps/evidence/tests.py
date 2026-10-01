@@ -145,7 +145,7 @@ class EvidenceLinkValidationTests(EvidenceFixture):
         link = EvidenceLink(
             evidence=evidence,
             target_type=EvidenceTargetType.REQUIREMENT,
-            requirement_source="eu-cra",
+            requirement_source="eu-cra-partial",
         )
         with self.assertRaises(ValidationError):
             link.full_clean()
@@ -155,7 +155,7 @@ class EvidenceLinkValidationTests(EvidenceFixture):
         link = EvidenceLink(
             evidence=evidence,
             target_type=EvidenceTargetType.REQUIREMENT,
-            requirement_source="eu-cra",
+            requirement_source="eu-cra-partial",
             requirement_version="2024-2847@2026-09",
             requirement_id="annex-1-part-2",
             control=self.control,
@@ -175,7 +175,7 @@ class EvidenceLinkValidationTests(EvidenceFixture):
         link = EvidenceLink(
             evidence=evidence,
             target_type=EvidenceTargetType.REQUIREMENT,
-            requirement_source="eu-cra",
+            requirement_source="eu-cra-partial",
             requirement_version="2024-2847@2026-09",
             requirement_id="annex-1-part-2",
         )
@@ -208,7 +208,7 @@ class LinkingServiceTests(EvidenceFixture):
         evidence = self.make_text_evidence()
         link = link_evidence(
             evidence,
-            requirement=("eu-cra", "2024-2847@2026-09", "annex-1-part-2"),
+            requirement=("eu-cra-partial", "2024-2847@2026-09", "annex-1-part-2"),
             actor=self.user,
         )
         self.assertEqual(link.target_type, EvidenceTargetType.REQUIREMENT)
@@ -222,7 +222,7 @@ class LinkingServiceTests(EvidenceFixture):
             link_evidence(
                 evidence,
                 control=self.control,
-                requirement=("eu-cra", "1.0", "x"),
+                requirement=("eu-cra-partial", "1.0", "x"),
             )
 
     def test_unlink(self):
@@ -278,14 +278,14 @@ class DeleteEvidenceTests(EvidenceFixture):
 
     def test_blocks_delete_when_requirement_link_in_approved_assessment(self):
         evidence = self.make_text_evidence()
-        link_evidence(evidence, requirement=("eu-cra", "1.0", "annex-1-part-2"))
+        link_evidence(evidence, requirement=("eu-cra-partial", "1.0", "annex-1-part-2"))
         Assessment.objects.create(
             configuration=self.configuration,
             status=AssessmentStatus.APPROVED,
             snapshot={
                 "results": [
                     {
-                        "source": "eu-cra",
+                        "source": "eu-cra-partial",
                         "version": "1.0",
                         "requirement_evidence": {
                             "annex-1-part-2": [{"evidence_id": evidence.id, "current": True}]
@@ -425,7 +425,7 @@ class ViewTests(EvidenceFixture):
         response = self.client.post(
             reverse("evidence:link_requirement", args=[evidence.pk]),
             {
-                "requirement_source": "eu-cra",
+                "requirement_source": "eu-cra-partial",
                 "requirement_version": "1.0",
                 "requirement_id": "annex-1-part-2",
             },

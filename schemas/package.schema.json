@@ -119,14 +119,22 @@
           "enum": ["product", "hardware", "software", "option"]
         },
         "label": { "type": "string" },
-        "help": { "type": "string" },
         "unit": { "type": "string" },
         "choices": {
           "type": "array",
           "items": { "type": "string" }
         },
         "condition": { "$ref": "#/$defs/expression" },
-        "implied_by": { "$ref": "#/$defs/impliedBy" }
+        "implied_by": { "$ref": "#/$defs/impliedBy" },
+        "guidance": {
+          "type": "string",
+          "description": "Plain text shown to the user before they answer, e.g. how to assess the question themselves. Our own summary only -- never standards/legal text verbatim."
+        },
+        "guidance_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional link to an authoritative source for further reading."
+        }
       },
       "allOf": [
         {

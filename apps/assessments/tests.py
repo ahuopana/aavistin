@@ -229,8 +229,8 @@ class CarryForwardTests(ConfigurationFixture):
 
 
 class EuCraConfigurationFixture(TestCase):
-    """Mirrors ConfigurationFixture but approves the real eu-cra package,
-    to exercise its classification -> assessment_routes/finding_rules
+    """Mirrors ConfigurationFixture but approves the real eu-cra-partial
+    package, to exercise its classification -> assessment_routes/finding_rules
     wiring (the class__ synthetic vars) through evaluate_configuration.
     """
 
@@ -254,7 +254,7 @@ class EuCraConfigurationFixture(TestCase):
             software_release=self.release,
         )
 
-        self.package = import_package(load_package("eu-cra", "1.0.0"), is_official=True)
+        self.package = import_package(load_package("eu-cra-partial", "1.0.0"), is_official=True)
         approve_package(self.package)
 
     def _answer(self, **values):
@@ -312,6 +312,30 @@ class EuCraEvaluationTests(EuCraConfigurationFixture):
         confirmed = confirm_answers(Answer.objects.filter(software_release=self.release))
         self.assertEqual(confirmed, 1)
         self.assertFalse(Answer.objects.get().needs_confirmation)
+
+
+class EuCraGuidanceRenderingTests(EuCraConfigurationFixture):
+    """The eu-cra-partial package's self-assessed questions (FOSS status,
+    Annex III/IV) carry guidance text precisely because the package can't
+    reproduce those lists itself -- check it actually reaches the page."""
+
+    def setUp(self):
+        super().setUp()
+        self.editor = User.objects.create_user(username="edna", password="x")
+        RoleAssignment.objects.create(
+            role=Role.EDITOR, user=self.editor, product_family=self.family
+        )
+
+    def test_guidance_and_link_are_rendered_for_annex_iii_question(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, "Good to understand before you answer")
+        self.assertContains(response, "core functionality")
+        self.assertContains(
+            response, "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+        )
 
 
 class ApprovalTests(ConfigurationFixture):
@@ -622,6 +646,15 @@ class ViewTests(ConfigurationFixture):
         )
         help_text = Answer._meta.get_field("override_justification").help_text
         self.assertContains(response, help_text)
+
+    def test_question_without_guidance_has_no_guidance_block(self):
+        # The demo package's questions carry no guidance; the block must
+        # be conditional, not rendered unconditionally and left blank.
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertNotContains(response, "Good to understand before you answer")
 
 
 class CoerceValueTests(TestCase):

@@ -8,7 +8,7 @@
       "type": "boolean",
       "level": "software",
       "label": "Does the product support multi-factor authentication?",
-      "help": "Answer once; every package that asks about MFA reads this answer."
+      "guidance": "Answer once; every package that asks about MFA reads this answer."
     },
     {
       "id": "mfa_for_admin_access",
