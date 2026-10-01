@@ -105,3 +105,17 @@ uv run ruff format --check .
 
 Tests require a running PostgreSQL instance (see `DATABASE_URL` in `.env`
 or `docker-compose.yml`) — this project never relies on SQLite.
+
+### End-to-end (browser) tests
+
+The tests under `e2e/` drive the real UI in Chromium via Playwright. They
+are marked `e2e` and skipped by the default `pytest` run:
+
+```bash
+uv run playwright install chromium   # once
+uv run pytest -m e2e
+```
+
+On failure, add `--screenshot only-on-failure --tracing retain-on-failure`
+to keep artefacts under `test-results/`. If a Chromium is already installed,
+point `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at it instead of running the install.
