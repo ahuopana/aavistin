@@ -1,4 +1,4 @@
-# 12. Product status lifecycle, entity cloning, and portfolio-first navigation
+# 13. Product status lifecycle, entity cloning, and portfolio-first navigation
 
 Status: Accepted
 

@@ -65,6 +65,35 @@ by the `web` service on startup right after `seed_dev_users`, seeds:
 Same caveats as `seed_dev_users`: local development only, idempotent,
 never run against a non-dev database.
 
+## Packages
+
+Regulation and other requirement content (EU CRA, RED, LVD, GDPR, and
+non-legal sources like internal QMS procedures) lives outside application
+code as versioned, schema-validated JSON **packages** under `packages/`
+(see `docs/architecture.md`, "Requirement sources") — adding or changing a
+regulation means writing a package, never changing Python code. The same
+mechanism also covers risk-assessment method and catalog packages
+(`docs/architecture.md`, "Risk assessment: methods and catalogs").
+
+Nothing imports a package automatically — not even the demo ones — so a
+fresh dev database has none installed. To add one, run these *inside* the
+`web` container (not your host — it needs the app's dependencies and the
+`db` container's `DATABASE_URL`; use `exec` if the stack is already up
+via `docker compose up`, or `run --rm` otherwise):
+
+```bash
+docker compose exec web python manage.py import_package packages/eu-cra/1.0.0.json --kind requirement --official
+```
+
+This validates the file against the package JSON Schema, runs the
+semantic linter, and runs the package's own test fixtures — it does
+**not** activate it. Review the resulting lint/fixture report and diff
+against the previous version in Django admin
+(`/admin/packages/requirementpackage/`), then publish it with the
+"Approve selected packages" admin action (or
+`docker compose exec web python manage.py approve_package <source> <version>`).
+Only approved packages affect real assessments.
+
 ## Running tests and lint
 
 ```bash
