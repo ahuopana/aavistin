@@ -60,7 +60,7 @@ Inputs:
 | `is_civil_aviation_product`, `is_marine_equipment` | boolean | product | Art. 2(3), 2(4) exclusions | |
 | `is_exclusively_national_security_product` | boolean | product | Art. 2(7) | common: separate facts, because other legislation treats them differently (e.g. defence-only matters for dual-use and procurement rules). |
 | `is_exclusively_defence_product` | boolean | product | Art. 2(7) | common |
-| `processes_classified_information` | boolean | product | Art. 2(7) | common; "specifically designed to process classified information" is the third case in the same article. |
+| `processes_classified_information` | boolean | product | Art. 2(7) | common; "specifically designed to process classified information" is the third case in the same article. Out of CRA scope does not mean unregulated: national rules on handling classified information (security accreditation by the national security authority) apply instead, so this raises an info finding. |
 | `supplied_as_spare_part`, `spare_part_security_identical` | boolean | hardware | Art. 2(6) | exclusion when both true (G 4.2). |
 | `hardware_first_placed_on_market`, `hardware_last_placed_on_market` | date | hardware | Part II, Art. 69(2), reference dates for requirements (4.1.1) | common. Hardware units are placed one by one (G 2.1, Blue Guide), so a revision straddling 11.12.2027 has units on both sides; "last" stays empty while units still ship. Needs a `date` question type (6.8). |
 | `software_first_placed_on_market` | date | software | same | common. All copies of a version count as placed at its first offering (G 2.1), so one date per release is enough; a non-substantial release keeps the date of the release it updates (Example 2). |
@@ -182,6 +182,7 @@ The Art. 8(1) and Art. 32 conditions need checking against the OJ text when enco
   - Ship it disabled, with its risks already assessed. Enabling it later is then not a substantial modification (Example 43). Disabled code is still attack surface (capability vs enablement).
 - Caution: hardware capability present but disabled (e.g. debug port) → attack surface if enabled later.
 - Info: legacy design (G 2.7); prior type-examination certificate (G 9.3.2).
+- Info: excluded as designed to process classified information, but national rules on classified information (e.g. security accreditation) apply instead; check them with the national security authority.
 - Caution: monetisation changes FOSS scope.
 
 ### 4.5 Fixtures from guidance examples
