@@ -13,6 +13,7 @@ dependencies = [
     "django-tasks-db>=0.13.0",
     "gunicorn>=26.2.0",
     "jsonschema>=4.26.0",
+    "mistune>=3.1.4",
     "nh3>=0.3.7",
     "psycopg[binary]>=3.3.6",
 ]
@@ -21,6 +22,7 @@ dependencies = [
 dev = [
     "pytest>=9.1.1",
     "pytest-django>=4.14.0",
+    "pytest-playwright>=0.9.0",
     "ruff>=0.16.8",
 ]
 
@@ -38,5 +40,6 @@ known-first-party = ["apps", "config"]
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["tests.py", "test_*.py"]
-addopts = "--reuse-db"
+addopts = "--reuse-db -m \"not e2e\""
+markers = ["e2e: browser tests that drive the app through Playwright (run with -m e2e)"]
 

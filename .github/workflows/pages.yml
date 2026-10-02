@@ -1,0 +1,64 @@
+name: User Guide (GitHub Pages)
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "docs/userguide/**"
+      - "apps/userguide/**"
+      - "templates/userguide/**"
+      - "static/css/**"
+      - "static/img/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Export the User Guide
+        env:
+          DJANGO_SECRET_KEY: pages-build-key
+        # No database is needed -- export_userguide only reads Markdown
+        # files and renders templates, and Django's DB connection is
+        # lazy, so DATABASE_URL is left at its settings.py default
+        # (a Postgres URL, per CLAUDE.md -- never SQLite, even unused).
+        run: uv run manage.py export_userguide --output _site
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

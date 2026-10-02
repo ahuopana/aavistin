@@ -16,10 +16,10 @@
     <tbody>
       {% for row in rows %}
         <tr>
-          <td>
+          <td class="cell-question">
             {{ row.question.label|default:row.question.id }}
             {% if row.question.used_by|length > 1 %}<span class="field-hint">also used by: {{ row.question.used_by|join:", " }}</span>{% endif %}
-            {% if row.needs_confirmation %}<span class="message message-warning">needs confirmation</span>{% endif %}
+            {% if row.needs_confirmation %}<span class="badge badge-warning">needs confirmation</span>{% endif %}
             {% if row.question.guidance %}
               <details class="question-guidance">
                 <summary>Good to understand before you answer</summary>
@@ -30,41 +30,41 @@
               </details>
             {% endif %}
           </td>
-          <td>{{ row.value }}</td>
-          <td>{% if row.origin == "derived" %}derived from other answers{% else %}{{ row.origin|default:"unanswered" }}{% endif %}</td>
+          <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% else %}{{ row.value }}{% endif %}</td>
+          <td><span class="badge badge-{{ row.origin|default:'unanswered' }}">{% if row.origin == "derived" %}derived{% else %}{{ row.origin|default:"unanswered" }}{% endif %}</span></td>
           {% if can_edit %}
             <td>
               {% if row.owner_id %}
-                <form method="post" action="{% url 'assessments:answer_question' configuration.pk %}">
+                <form method="post" class="answer-form" x-data="{ changed: false }"
+                      @input="if ($event.target.name === 'value') changed = $event.target.tagName === 'SELECT' ? !$event.target.selectedOptions[0].defaultSelected : $event.target.value !== $event.target.defaultValue" action="{% url 'assessments:answer_question' configuration.pk %}">
                   {% csrf_token %}
                   <input type="hidden" name="question_id" value="{{ row.question.id }}">
                   <input type="hidden" name="owner_type" value="{{ row.owner_type }}">
                   <input type="hidden" name="owner_id" value="{{ row.owner_id }}">
                   <input type="hidden" name="question_type" value="{{ row.question.type }}">
                   {% if row.question.type == "boolean" %}
-                    <select name="value">
+                    <select name="value" aria-label="Answer">
                       <option value="" {% if row.value is None %}selected{% endif %}>—</option>
                       <option value="true" {% if row.value == True %}selected{% endif %}>Yes</option>
                       <option value="false" {% if row.value == False %}selected{% endif %}>No</option>
                     </select>
                   {% elif row.question.type == "choice" %}
-                    <select name="value">
+                    <select name="value" aria-label="Answer">
                       <option value="" {% if row.value is None %}selected{% endif %}>—</option>
                       {% for choice in row.question.choices %}
                         <option value="{{ choice }}" {% if row.value == choice %}selected{% endif %}>{{ choice }}</option>
                       {% endfor %}
                     </select>
                   {% elif row.question.type == "number" %}
-                    <input type="number" step="any" name="value" value="{{ row.value|default_if_none:'' }}">
+                    <input type="number" step="any" name="value" value="{{ row.value|default_if_none:'' }}" aria-label="Answer">
                     {% if row.question.unit %}<span class="field-hint">{{ row.question.unit }}</span>{% endif %}
                   {% else %}
-                    <input type="text" name="value" value="{{ row.value|default_if_none:'' }}" placeholder="value">
+                    <input type="text" name="value" value="{{ row.value|default_if_none:'' }}" placeholder="value" aria-label="Answer">
                   {% endif %}
-                  <label>
-                    <input type="text" name="justification" placeholder="justification (if overriding)">
-                    <span class="field-hint">{{ justification_help }}</span>
-                  </label>
-                  <button type="submit">Save</button>
+                  <button type="submit" class="button-primary">Save</button>
+                  <span class="info" tabindex="0" role="note" aria-label="{{ justification_help }}" data-tip="{{ justification_help }}">i</span>
+                  <input type="text" name="justification" class="answer-justification" x-cloak x-show="changed"
+                         placeholder="justification (if overriding)" aria-label="Justification">
                 </form>
               {% endif %}
             </td>

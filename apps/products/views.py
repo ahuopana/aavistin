@@ -28,9 +28,11 @@ from .services import (
     clone_software_option,
     clone_software_release,
     close_product,
+    compliance_ratio,
     delete_entity,
     product_of,
     restore_product,
+    risk_ratio,
     soft_delete_product,
 )
 
@@ -60,7 +62,9 @@ def _redirect_to_owner(instance):
 
 @login_required
 def product_detail(request, pk):
-    product = get_object_or_404(Product, pk=pk)
+    product = get_object_or_404(
+        Product.objects.select_related("product_family__organisation"), pk=pk
+    )
     configurations = Configuration.objects.filter(
         hardware_revision__hardware_variant__product=product
     ).prefetch_related("software_options")
@@ -77,6 +81,8 @@ def product_detail(request, pk):
             "configurations": configurations,
             "hardware_revisions": hardware_revisions,
             "software_releases": software_releases,
+            "compliance": compliance_ratio(product),
+            "risk": risk_ratio(product),
             "can_edit": can_edit,
             "can_approve": can_approve,
             "can_close": can_approve and product.status == ProductStatus.APPROVED,

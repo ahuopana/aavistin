@@ -9,7 +9,10 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.text import slugify
 
+from apps.assessments.evaluation import evaluate_configuration
 from apps.orgs.models import ProductFamily, Role, RoleAssignment
+from apps.risk.models import EntryType, RiskEntry
+from apps.risk.rating import evaluate_residual_rating
 
 from .models import (
     Configuration,
@@ -20,6 +23,70 @@ from .models import (
     SoftwareOption,
     SoftwareRelease,
 )
+
+ACCEPTABLE_RESIDUAL_RATINGS = ("accept", "justify")
+
+
+def compliance_ratio(product) -> tuple[int, int]:
+    """(fulfilled, total) in-scope requirements across the product's
+    configurations' current evaluation (live, not frozen to an approved
+    snapshot). A requirement counts as fulfilled unless its package has
+    an unresolved action-required finding in that evaluation -- findings
+    aren't tracked per requirement, only per package, so this is a
+    package-level proxy, not a true per-requirement pass/fail.
+    """
+    total: set[tuple[str, str, str]] = set()
+    bad: set[tuple[str, str, str]] = set()
+
+    configurations = Configuration.objects.filter(
+        hardware_revision__hardware_variant__product=product
+    )
+    for configuration in configurations:
+        evaluation = evaluate_configuration(configuration)
+        blocking_packages = {
+            (f["source"], f["version"])
+            for f in evaluation["findings"]
+            if f["level"] == "action_required"
+        }
+        for result in evaluation["results"]:
+            if not result["in_scope"]:
+                continue
+            package_key = (result["source"], result["version"])
+            for requirement_id in result["requirements"]:
+                key = (*package_key, requirement_id)
+                total.add(key)
+                if package_key in blocking_packages:
+                    bad.add(key)
+
+    return len(total - bad), len(total)
+
+
+def risk_ratio(product) -> tuple[int, int]:
+    """(acceptable, total) baseline threat/hazard entries, where
+    "acceptable" means every method treatment on the entry has a
+    residual acceptance of "accept" or "justify" -- an entry with no
+    treatment yet, or one still rated "must_treat" under any method,
+    doesn't count.
+    """
+    entries = RiskEntry.objects.filter(
+        product=product,
+        entry_type__in=[EntryType.THREAT, EntryType.HAZARD],
+        scope_hardware_variant__isnull=True,
+        scope_software_release__isnull=True,
+        scope_software_option__isnull=True,
+    ).prefetch_related("treatments__method")
+
+    total = 0
+    acceptable = 0
+    for entry in entries:
+        total += 1
+        treatments = list(entry.treatments.all())
+        if treatments and all(
+            evaluate_residual_rating(t)["acceptance"] in ACCEPTABLE_RESIDUAL_RATINGS
+            for t in treatments
+        ):
+            acceptable += 1
+    return acceptable, total
 
 
 class ApprovedEntityError(Exception):

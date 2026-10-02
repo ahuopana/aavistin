@@ -68,9 +68,10 @@ Design principles for software professionals on wide screens:
 - **Use the full width.** No fixed 1200 px column. Master–detail and multi-pane layouts: list left, detail right, optional context panel.
 - **Dense, scannable data.** Compact tables with sorting, filtering, column selection and resizable panes.
 - **Keyboard first.** Shortcuts for navigation and search; a command palette (Ctrl/Cmd+K) as the app grows.
-- **Deep links for every state.** Filters, selected items and tabs live in the URL so links can be pasted into tickets and chat.
+- **Deep links for every state.** Filters, selected items and tabs live in the URL so links can be pasted into tickets and chat. In practice: an Alpine `x-data` tab widget reads its initial tab from a `?tab=` query param and updates it with `history.replaceState` on click (no full reload) — see `templates/products/product_detail.html` for the pattern to reuse.
 - **Dark mode from the start**, built on CSS variables.
 - **Mobile: usable, not designed for.** Panes collapse into stacked views on narrow screens.
+- **Tabs degrade to "show everything," never to "show nothing."** A tab panel's default (first) tab must not carry `x-cloak` — only non-default panels should, so a page whose primary content depends on tab state still shows *all* of it if Alpine fails to load (CDN blocked, ad blocker, offline), rather than rendering an empty page below the tab bar.
 
 ## Documents and concurrent editing
 
@@ -113,6 +114,10 @@ Dashboards refresh per widget with HTMX polling (`hx-trigger="every 60s"`); no W
 
 - **Products widget:** up to three products the user holds any role on, newest first (a stand-in for "most recently updated" — nothing yet rolls up activity across a product's configurations, assessments, risk register and evidence into one timestamp). Each shows two labeled bars: *compliance* (in-scope requirements, across the product's configurations' current evaluation, with no unresolved action-required finding — a package-level proxy, since findings aren't tracked per requirement) and *risk* (baseline threat/hazard entries whose residual rating, under every method they're treated for, meets that method's acceptance threshold). No products yet: a prompt to add one.
 - **Tasks widget:** up to three pending-work suggestions the user can act on (holds Editor on), one per category where possible, oldest first within each — a stable worklist, not reshuffled per visit. Categories: start/complete/re-review an assessment, and provide evidence for a `Control` with none linked. A fourth category (mitigate an unacceptable risk entry) is intentionally left out until `apps.risk` has its own UI to link to.
+
+**Compliance Overview.** A separate page (`apps.core`, `/compliance/`), linked from the main nav, giving a portfolio-wide view instead of the welcome dashboard's capped-at-three preview: every product the user holds any role on (uncapped), each with the same *compliance* and *risk* ratios (`compliance_ratio` / `risk_ratio`, moved to `apps.products.services` since they're product-domain logic the welcome dashboard, this page and the product detail page below all consume). A flat table — organisation, product family, product, compliance, risk — sorted worst-compliance-first (risk ratio as tiebreak) so problem products surface without scrolling or grouping; a product with no in-scope requirements or no baseline risk entries yet sorts as if fully clean rather than as a false alarm. Above the table, two portfolio-wide totals: requirements fulfilled and risk entries acceptable, summed across every product in view — the same proxies as the per-product ratios, just aggregated. Plain server-rendered like the welcome dashboard for the same reason (see "Performance" above); revisit with HTMX polling or precomputation if portfolio size makes per-request cost a problem.
+
+**Product status.** The product detail page (`apps.products`) shows the same two ratios for that one product, computed live the same way — so "how compliant is this product" doesn't require a trip to the portfolio page. Not linked to any configuration in particular: it's the same all-configurations rollup `compliance_ratio` already computes.
 
 ## API, jobs, tooling and operations
 
@@ -334,6 +339,15 @@ A document (an SBOM, a test report, a policy, a certificate) is rarely proof of 
 
 **Deletion.** An `Evidence` record referenced by any approved (frozen) assessment or risk snapshot can't be deleted — matching how an approved product-level entity can't be deleted (ADR 0010) — but can still be edited. Deleting an unreferenced record also checks whether any other `Evidence` record (in this product or another) still points at the same `EvidenceFile`; the stored blob is only removed once nothing references it.
 
+## User Guide
+
+Aavistin's own product documentation — not the "Documents" system above (that's for user-authored content with locking and revision history), and not a per-organisation wiki (a distinct, separate feature; see "Open questions"). It is maintainer-authored, single-sourced, and ships with the codebase.
+
+- **Source:** Markdown files under `docs/userguide/`, named `NN-slug.md` (the number sets reading order, the slug is the URL and cross-link target). A page's title is its leading `# H1`, not a separate config field — one place to change it, not two.
+- **Rendering:** `mistune` to HTML, always sanitized with `nh3` (CLAUDE.md hard rule — the guide's content is maintainer-authored, but nothing exempts it from the rule, and a contributor could still paste in something unsafe unnoticed). A link whose target is exactly another page's slug (`[text](other-page)`) is rewritten to that page's real URL at render time; anything else (external URLs, `mailto:`, anchors) renders unchanged — this is what lets the same Markdown source work both in-app and in the static export below, without hand-maintaining two sets of links.
+- **In-app:** `apps.userguide`, at `/guide/`, linked from the main nav. No login required — someone evaluating the product before creating an account can still read it.
+- **GitHub Pages:** `manage.py export_userguide` renders the same pages (via the same rendering path, with internal links rewritten to relative `../<slug>/` paths instead of in-app URLs) to a static site, reusing the app's own CSS and logos so it looks the same without a Django server behind it. `.github/workflows/pages.yml` builds and publishes it via `actions/deploy-pages` on a push to `main` that touches the guide; GitHub Pages itself (Settings → Pages → Source: GitHub Actions) is a one-time manual step for a repository admin, outside what a workflow file can turn on.
+
 ## Demo seed: Aavistin assesses itself
 
 The tool ships with a demo dataset in which Aavistin is the product under assessment. It shows every main feature on a product people already understand, and it runs in CI as an end-to-end test.
@@ -387,3 +401,4 @@ The CRA interpretation of monetised support sits in the eu-cra-partial package w
 - [ ] Which identity provider will SSO target first?
 - [ ] Severity mappings between methods: which method pairs need one first (e.g. CIA 5×5 ↔ LVD safety)?
 - [ ] Software-only products: target markets are set on the HW variant, so where do they live for a product with no hardware, such as Aavistin itself?
+- [ ] Organisation wiki: a separate, per-organisation, user-authored Markdown wiki (likely built on the "Documents and concurrent editing" system above) — not yet designed. Not to be confused with the User Guide, which is maintainer-authored and the same for everyone.
