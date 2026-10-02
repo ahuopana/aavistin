@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aavistin.example/schemas/question-set.schema.json",
+  "title": "Shared question set",
+  "description": "A library of questions shared by several requirement packages (see docs/adr/0015-shared-question-library.md).",
+  "type": "object",
+  "required": [
+    "source",
+    "version",
+    "questions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "source": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/question"
+      }
+    },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "answers",
+          "expected"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "answers": {
+            "type": "object"
+          },
+          "expected": {
+            "type": "object",
+            "description": "Expected derived values by question id."
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "question": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "level"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "boolean",
+            "choice",
+            "number"
+          ]
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "product",
+            "hardware",
+            "software",
+            "option"
+          ]
+        },
+        "label": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "condition": {
+          "$ref": "#/$defs/expression"
+        },
+        "implied_by": {
+          "$ref": "#/$defs/impliedBy"
+        },
+        "guidance": {
+          "type": "string",
+          "description": "Plain text shown to the user before they answer, e.g. how to assess the question themselves. Our own summary only -- never standards/legal text verbatim."
+        },
+        "guidance_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional link to an authoritative source for further reading."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "choice"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "choices"
+            ]
+          }
+        }
+      ]
+    },
+    "expression": {
+      "description": "A JSONLogic-subset expression; see apps/packages/ruleengine.py for the supported operators.",
+      "type": [
+        "object",
+        "boolean"
+      ]
+    },
+    "impliedBy": {
+      "type": "object",
+      "required": [
+        "when",
+        "value"
+      ],
+      "additionalProperties": false,
+      "description": "Derives this question's value when no explicit answer exists: if 'when' is truthy the value is 'value'.",
+      "properties": {
+        "when": {
+          "$ref": "#/$defs/expression"
+        },
+        "value": {}
+      }
+    }
+  }
+}

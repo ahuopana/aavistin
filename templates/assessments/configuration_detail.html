@@ -6,6 +6,8 @@
   <h1>{{ configuration.name }}</h1>
   <p>{{ product.name }} — {{ configuration.hardware_revision }} / {{ configuration.software_release }}</p>
 
+  <p><a href="{% url 'risk:register' configuration.pk %}">Risk register for this configuration &rarr;</a></p>
+
   <h2>Questions</h2>
   <table>
     <thead>
@@ -16,6 +18,7 @@
         <tr>
           <td class="cell-question">
             {{ row.question.label|default:row.question.id }}
+            {% if row.question.used_by|length > 1 %}<span class="field-hint">also used by: {{ row.question.used_by|join:", " }}</span>{% endif %}
             {% if row.needs_confirmation %}<span class="badge badge-warning">needs confirmation</span>{% endif %}
             {% if row.question.guidance %}
               <details class="question-guidance">
@@ -28,7 +31,7 @@
             {% endif %}
           </td>
           <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% else %}{{ row.value }}{% endif %}</td>
-          <td><span class="badge badge-{{ row.origin|default:'unanswered' }}">{{ row.origin|default:"unanswered" }}</span></td>
+          <td><span class="badge badge-{{ row.origin|default:'unanswered' }}">{% if row.origin == "derived" %}derived{% else %}{{ row.origin|default:"unanswered" }}{% endif %}</span></td>
           {% if can_edit %}
             <td>
               {% if row.owner_id %}

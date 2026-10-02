@@ -402,7 +402,10 @@
         {% for configuration in configurations %}
           <tbody x-data="{ editingConfiguration: false }">
             <tr>
-              <td><a href="{% url 'assessments:configuration_detail' configuration.pk %}">{{ configuration.name }}</a></td>
+              <td>
+                <a href="{% url 'assessments:configuration_detail' configuration.pk %}">{{ configuration.name }}</a>
+                <a class="field-hint" href="{% url 'risk:register' configuration.pk %}">Risk register</a>
+              </td>
               <td>
                 {{ configuration.hardware_revision }} / {{ configuration.software_release }}
                 {% with options=configuration.software_options.all %}

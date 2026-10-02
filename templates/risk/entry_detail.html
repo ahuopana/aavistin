@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}{{ entry.label }} · Risk register · Aavistin{% endblock %}
+
+{% block content %}
+  <p class="field-hint">
+    <a href="{% url 'risk:register' configuration.pk %}">&larr; Risk register</a> · {{ configuration.name }}
+  </p>
+  <h1>{{ entry.label }}</h1>
+  <p>
+    <span class="badge">{{ entry.get_entry_type_display }}</span>
+    <span class="badge {% if scope != 'Baseline' %}badge-scoped{% endif %}">{{ scope }}</span>
+    {% if entry.suggestion_status != "custom" %}<span class="badge">{{ entry.get_suggestion_status_display }}</span>{% endif %}
+  </p>
+  {% if entry.description %}<p>{{ entry.description }}</p>{% endif %}
+  {% if entry.base_entry %}
+    <p>Overrides baseline entry
+      <a href="{% url 'risk:entry_detail' configuration.pk entry.base_entry.pk %}">{{ entry.base_entry.label }}</a>.
+      {% if entry.delta_justification %}Justification: {{ entry.delta_justification }}{% endif %}
+    </p>
+  {% endif %}
+
+  {% for issue in issues %}
+    <p class="risk-issue" role="alert">&#9888; {{ issue.message }}</p>
+  {% endfor %}
+
+  {% if entry.entry_type == "threat" %}
+    <p>
+      Targets
+      {% if entry.asset %}<a href="{% url 'risk:entry_detail' configuration.pk entry.asset.pk %}">{{ entry.asset.label }}</a>{% else %}<em>no asset</em>{% endif %},
+      violating <strong>{{ entry.violates }}</strong>.
+    </p>
+  {% endif %}
+
+  {% if entry.entry_type == "asset" %}
+    <h2>Asset rating</h2>
+    {% if asset_ratings %}
+      <table>
+        <thead><tr><th>Method</th><th>Property</th><th>Severity</th></tr></thead>
+        <tbody>
+          {% for r in asset_ratings %}<tr><td>{{ r.method.source }}</td><td>{{ r.get_property_display }}</td><td>{{ r.severity }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    {% else %}<p class="field-hint">Not rated.</p>{% endif %}
+    <h2>Threats targeting this asset</h2>
+    <ul>
+      {% for t in threats %}<li><a href="{% url 'risk:entry_detail' configuration.pk t.pk %}">{{ t.label }}</a> ({{ t.violates }})</li>{% empty %}<li class="field-hint">None.</li>{% endfor %}
+    </ul>
+  {% else %}
+    <h2>Ratings and treatment</h2>
+    {% if method_rows %}
+      <table>
+        <thead><tr><th>Method</th><th>Severity</th><th>Likelihood</th><th>Level</th><th>Treatment</th><th>Residual</th></tr></thead>
+        <tbody>
+          {% for row in method_rows %}
+            <tr>
+              <td>{{ row.method }}</td>
+              <td>{{ row.severity|default:"—" }}</td>
+              <td>{{ row.likelihood|default:"—" }}</td>
+              <td>{% if row.level %}<span class="risk-level risk-level-{{ row.level }}">{{ row.level }}</span> <span class="field-hint">{{ row.acceptance }}</span>{% else %}—{% endif %}</td>
+              <td>
+                {% if row.treatment %}{{ row.treatment.get_treatment_type_display }}
+                  {% if row.treatment.justification %}<div class="field-hint">{{ row.treatment.justification }}</div>{% endif %}
+                {% else %}<span class="field-hint">none yet</span>{% endif %}
+              </td>
+              <td>
+                {% if row.residual and row.residual.level %}<span class="risk-level risk-level-{{ row.residual.level }}">{{ row.residual.level }}</span> <span class="field-hint">{{ row.residual.acceptance }}</span>{% else %}—{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}<p class="field-hint">Not rated under any method.</p>{% endif %}
+  {% endif %}
+
+  {% if entry.entry_type == "threat" %}
+    <h2>Consequences</h2>
+    <table>
+      <thead><tr><th>Impact category</th><th>Severity</th><th>Linked hazard</th></tr></thead>
+      <tbody>
+        {% for c in consequences %}
+          <tr>
+            <td>{{ c.get_impact_category_display }}</td>
+            <td>{{ c.severity }}{% if c.severity_is_override %} <span class="badge">override</span><div class="field-hint">{{ c.override_justification }}</div>{% endif %}</td>
+            <td>{% if c.hazard %}<a href="{% url 'risk:entry_detail' configuration.pk c.hazard.pk %}">{{ c.hazard.label }}</a>{% else %}—{% endif %}</td>
+          </tr>
+        {% empty %}<tr><td colspan="3" class="field-hint">None recorded.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  {% if entry.entry_type == "hazard" %}
+    <h2>Causes</h2>
+    <ul>
+      {% for c in causes %}
+        <li>{{ c.get_cause_type_display }}{% if c.description %} — {{ c.description }}{% endif %}
+          {% if c.threat %}(<a href="{% url 'risk:entry_detail' configuration.pk c.threat.pk %}">{{ c.threat.label }}</a>){% endif %}</li>
+      {% empty %}<li class="field-hint">None recorded.</li>{% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if entry.entry_type != "asset" %}
+    <h2>Controls</h2>
+    <ul>
+      {% for c in controls %}<li>{{ c.name }} <span class="badge">{{ c.get_status_display }}</span></li>{% empty %}<li class="field-hint">None linked.</li>{% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if deltas %}
+    <h2>Configuration deltas</h2>
+    <ul>
+      {% for d in deltas %}<li><a href="{% url 'risk:entry_detail' configuration.pk d.pk %}">{{ d.label }}</a></li>{% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}

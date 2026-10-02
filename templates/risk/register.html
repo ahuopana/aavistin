@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Risk register · {{ configuration.name }} · Aavistin{% endblock %}
+
+{% block content %}
+  <p class="field-hint">
+    <a href="{% url 'products:product_detail' product.pk %}">{{ product.name }}</a> /
+    <a href="{% url 'assessments:configuration_detail' configuration.pk %}">{{ configuration.name }}</a>
+  </p>
+  <h1>Risk register</h1>
+  <p>
+    {{ configuration.hardware_revision }} / {{ configuration.software_release }} —
+    product baseline plus the deltas that apply to this configuration.
+  </p>
+
+  <div class="risk-summary">
+    <div class="risk-stat"><span class="risk-stat-value">{{ total }}</span> entries</div>
+    <div class="risk-stat"><span class="risk-stat-value">{{ counts.asset }}</span> assets</div>
+    <div class="risk-stat"><span class="risk-stat-value">{{ counts.threat }}</span> threats</div>
+    <div class="risk-stat"><span class="risk-stat-value">{{ counts.hazard }}</span> hazards</div>
+    <div class="risk-stat {% if must_treat %}risk-stat-alert{% endif %}"><span class="risk-stat-value">{{ must_treat }}</span> must treat</div>
+    <div class="risk-stat"><span class="risk-stat-value">{{ unrated }}</span> unrated</div>
+    <div class="risk-stat {% if issue_count %}risk-stat-alert{% endif %}"><span class="risk-stat-value">{{ issue_count }}</span> consistency issues</div>
+    <div class="risk-stat"><span class="risk-stat-value">{{ pending_suggestions }}</span> suggestions pending</div>
+  </div>
+
+  <form method="get" class="risk-filters" role="search">
+    <label>Type
+      <select name="type" onchange="this.form.submit()">
+        <option value="">All</option>
+        {% for t in entry_types %}
+          <option value="{{ t.value }}" {% if type_filter == t.value %}selected{% endif %}>{{ t.label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Search
+      <input type="search" name="q" value="{{ query }}" placeholder="label or description">
+    </label>
+    <button type="submit">Filter</button>
+    {% if type_filter or query %}<a href="{% url 'risk:register' configuration.pk %}">Clear</a>{% endif %}
+  </form>
+
+  {% for section in sections %}
+    <h2>{{ section.label }} <span class="badge">{{ section.rows|length }}</span></h2>
+    <table class="risk-table">
+      <thead>
+        <tr>
+          <th>Entry</th>
+          <th>Scope</th>
+          {% if section.type != "asset" %}<th>Rating</th>{% endif %}
+          <th>Controls</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in section.rows %}
+          {% with entry=row.entry %}
+            <tr>
+              <td>
+                <a href="{% url 'risk:entry_detail' configuration.pk entry.pk %}">{{ entry.label }}</a>
+                {% if entry.asset %}<div class="field-hint">targets {{ entry.asset.label }} · violates {{ entry.violates }}</div>{% endif %}
+                {% if entry.suggestion_status == "accepted" %}<span class="badge">from catalog</span>{% endif %}
+                {% for issue in row.issues %}
+                  <div class="risk-issue" role="alert">&#9888; {{ issue.message }}</div>
+                {% endfor %}
+              </td>
+              <td>
+                <span class="badge {% if row.scope != 'Baseline' %}badge-scoped{% endif %}">{{ row.scope }}</span>
+              </td>
+              {% if section.type != "asset" %}
+                <td>
+                  {% for cell in row.ratings %}
+                    <div class="risk-rating">
+                      <span class="field-hint">{{ cell.method }}</span>
+                      {% if cell.level %}
+                        <span class="risk-level risk-level-{{ cell.level }}">{{ cell.level }}</span>
+                        <span class="field-hint">S{{ cell.severity }} × L{{ cell.likelihood }} · {{ cell.acceptance }}</span>
+                      {% else %}
+                        <span class="field-hint">incomplete</span>
+                      {% endif %}
+                    </div>
+                  {% empty %}
+                    <span class="field-hint">not rated</span>
+                  {% endfor %}
+                </td>
+              {% endif %}
+              <td>{{ row.controls }}</td>
+            </tr>
+          {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  {% empty %}
+    <p>No register entries match{% if not total %} — this product has none yet{% endif %}.</p>
+  {% endfor %}
+{% endblock %}
