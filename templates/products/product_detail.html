@@ -124,8 +124,14 @@
   </div>
 
   <div x-data="{
-    tab: new URLSearchParams(window.location.search).get('tab') || 'hardware',
-    setTab(t) { this.tab = t; history.replaceState(null, '', '?tab=' + t); },
+    tab: new URLSearchParams(window.location.search).get('tab')
+      || (() => { try { return sessionStorage.getItem('product-tab-{{ product.pk }}'); } catch (e) { return null; } })()
+      || '{% if configurations %}configurations{% else %}hardware{% endif %}',
+    setTab(t) {
+      this.tab = t;
+      history.replaceState(null, '', '?tab=' + t);
+      try { sessionStorage.setItem('product-tab-{{ product.pk }}', t); } catch (e) { /* storage unavailable */ }
+    },
   }">
     <div class="tab-list" role="tablist">
       <button type="button" role="tab" :class="{ active: tab === 'hardware' }" @click="setTab('hardware')">
