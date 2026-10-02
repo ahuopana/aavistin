@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from apps.core.readiness import assessment_readiness
 from apps.orgs.models import Role
 from apps.orgs.services import has_role
 from apps.products.models import Configuration
@@ -180,6 +181,9 @@ def assessment_detail(request, pk):
             "assessment": assessment,
             "evaluation": evaluation,
             "answer_rows": answer_rows,
+            "readiness": assessment_readiness(assessment.configuration)
+            if not evaluation.get("results")
+            else [],
             "can_approve": has_role(request.user, Role.APPROVER, product_family=family),
         },
     )

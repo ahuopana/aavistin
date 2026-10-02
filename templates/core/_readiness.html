@@ -1,0 +1,10 @@
+<ul class="readiness">
+  {% for check in checks %}
+    <li class="readiness-item {% if check.ok %}readiness-ok{% else %}readiness-todo{% endif %}">
+      <span class="readiness-state">{% if check.ok %}Done{% else %}To do{% endif %}</span>
+      <span class="readiness-label">{{ check.label }}</span>
+      {% if check.detail %}<div class="field-hint">{{ check.detail }}</div>{% endif %}
+      {% if check.url %}<a href="{{ check.url }}">{{ check.url_label }} &rarr;</a>{% endif %}
+    </li>
+  {% endfor %}
+</ul>

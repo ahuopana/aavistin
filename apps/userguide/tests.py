@@ -68,6 +68,20 @@ class RenderPageTests(MarkdownFixture):
         self.assertNotIn("<script", page.html)
         self.assertNotIn("alert(1)", page.html)
 
+    def test_mermaid_fence_becomes_escaped_diagram_block(self):
+        self._write("01-a.md", "# A\n\n```mermaid\nflowchart LR\n  A[<b>x</b>] --> B\n```\n")
+        page = render_page("a")
+        self.assertTrue(page.has_diagrams)
+        self.assertIn('<pre class="mermaid">flowchart LR', page.html)
+        self.assertIn("&lt;b&gt;x&lt;/b&gt;", page.html)
+        self.assertNotIn("<b>", page.html)
+
+    def test_other_code_fences_are_not_diagrams_and_class_is_stripped(self):
+        self._write("01-a.md", '# A\n\n```python\nprint(1)\n```\n\n<p class="mermaid">x</p>\n')
+        page = render_page("a")
+        self.assertFalse(page.has_diagrams)
+        self.assertNotIn("mermaid", page.html)
+
     def test_known_internal_link_is_rewritten(self):
         self._write("01-a.md", "# A\n\nSee [B](b).\n")
         self._write("02-b.md", "# B\n\nBody.\n")
@@ -126,6 +140,20 @@ class ExportCommandTests(TestCase):
             for entry in pages:
                 page_file = output_dir / entry["slug"] / "index.html"
                 self.assertTrue(page_file.exists(), page_file)
+
+    def test_workflow_page_ships_diagrams_and_the_mermaid_library(self):
+        with tempfile.TemporaryDirectory() as out:
+            output_dir = Path(out) / "site"
+            call_command("export_userguide", output=str(output_dir))
+
+            content = (output_dir / "workflow" / "index.html").read_text()
+            self.assertIn('<pre class="mermaid">', content)
+            self.assertIn("static/vendor/mermaid-", content)
+            self.assertTrue(list((output_dir / "static" / "vendor").glob("mermaid-*.min.js")))
+            # Pages without diagrams don't load the large library.
+            self.assertNotIn(
+                "mermaid-", (output_dir / "getting-started" / "index.html").read_text()
+            )
 
     def test_internal_links_are_relative_in_exported_pages(self):
         with tempfile.TemporaryDirectory() as out:

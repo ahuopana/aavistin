@@ -52,11 +52,16 @@ class Command(BaseCommand):
                         "content_html": page.html,
                         "static_prefix": "../",
                         "page_slug": page.slug,
+                        "has_diagrams": page.has_diagrams,
                     },
                 )
             )
 
         shutil.copytree(STATIC_DIR / "css", out_dir / "static" / "css")
         shutil.copytree(STATIC_DIR / "img", out_dir / "static" / "img")
+        vendor_dir = out_dir / "static" / "vendor"
+        vendor_dir.mkdir()
+        for mermaid_js in (STATIC_DIR / "vendor").glob("mermaid-*.min.js"):
+            shutil.copy(mermaid_js, vendor_dir / mermaid_js.name)
 
         self.stdout.write(self.style.SUCCESS(f"Exported {len(pages)} pages to {out_dir}/"))

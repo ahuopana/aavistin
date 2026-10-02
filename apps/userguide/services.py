@@ -17,6 +17,7 @@ from pathlib import Path
 import mistune
 import nh3
 from django.conf import settings
+from mistune.util import escape as escape_html
 
 USERGUIDE_DIR = Path(settings.BASE_DIR) / "docs" / "userguide"
 _FILENAME_RE = re.compile(r"^\d+-(?P<slug>[a-z0-9-]+)\.md$")
@@ -49,6 +50,8 @@ ALLOWED_TAGS = {
 }
 ALLOWED_ATTRIBUTES = {
     "a": {"href", "title"},
+    # Only mermaid diagram blocks carry a class (see block_code below).
+    "pre": {"class"},
     "input": {"type", "checked", "disabled"},
 }
 
@@ -58,6 +61,10 @@ class Page:
     slug: str
     title: str
     html: str
+
+    @property
+    def has_diagrams(self) -> bool:
+        return 'class="mermaid"' in self.html
 
 
 class _InternalLinkRenderer(mistune.HTMLRenderer):
@@ -70,6 +77,14 @@ class _InternalLinkRenderer(mistune.HTMLRenderer):
         super().__init__(escape=False)
         self._known_slugs = known_slugs
         self._link_for = link_for
+
+    def block_code(self, code: str, info: str | None = None) -> str:
+        """```mermaid fences become <pre class="mermaid"> with the source
+        escaped, so it stays readable without JavaScript; the vendored
+        mermaid library draws the diagram in the browser."""
+        if info and info.split()[0] == "mermaid":
+            return f'<pre class="mermaid">{escape_html(code)}</pre>\n'
+        return super().block_code(code, info)
 
     def link(self, text: str, url: str, title: str | None = None) -> str:
         if url in self._known_slugs:

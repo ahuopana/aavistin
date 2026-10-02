@@ -32,6 +32,8 @@ both, or neither on a given product.
 
 ## Where to go next
 
+- [Intended workflow](workflow) — the order in which to fill in
+  information, with diagrams. Start here.
 - [Organisations and products](organisations-and-products) — the
   hierarchy Aavistin organises everything under.
 - [Requirement packages and assessments](requirement-packages-and-assessments) —

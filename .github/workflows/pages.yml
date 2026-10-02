@@ -9,6 +9,7 @@ on:
       - "templates/userguide/**"
       - "static/css/**"
       - "static/img/**"
+      - "static/vendor/mermaid-*.js"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 

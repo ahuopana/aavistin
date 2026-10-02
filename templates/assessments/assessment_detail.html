@@ -60,7 +60,8 @@
       <p>Assessment routes: {{ result.assessment_routes|join:", " }}</p>
     {% endif %}
   {% empty %}
-    <p>No active packages for this configuration's target markets.</p>
+    <p>No requirement packages are active for this configuration. Here is what is set up so far:</p>
+    {% include "core/_readiness.html" with checks=readiness %}
   {% endfor %}
 
   <h2>Findings</h2>

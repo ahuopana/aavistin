@@ -44,5 +44,14 @@
       </main>
     </div>
   </div>
+  {% if has_diagrams %}
+    <script src="{{ static_prefix }}static/vendor/mermaid-11.12.0.min.js"></script>
+    <script>
+      (function () {
+        const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "default" });
+      })();
+    </script>
+  {% endif %}
 </body>
 </html>
