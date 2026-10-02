@@ -10,15 +10,11 @@ Inputs:
 - Commission Delegated Regulation (EU) 2025/1535: excludes L-category vehicles (Regulation (EU) No 168/2013).
 - Overlap research on IEC 62443 and NIST SSDF (section 5).
 
-## 1. Goal and relation to `eu-cra-partial`
+## 1. Goal
 
-`eu-cra` is a new package with its own identity, as ADR 0012 (addendum) anticipates. It does not supersede `eu-cra-partial`, which keeps its meaning for anything that referenced it.
+`eu-cra` is the full CRA package. It replaces the current scaffold outright: Aavistin has no real users before version 1.0, so there is no migration, coexistence or withdrawal to design. The change that adds `eu-cra` deletes the scaffold package and moves its tests over. ADR 0012's rename addendum assumed the scaffold would live on beside a full package, so that addendum gets superseded in the same change.
 
-The two must not both be active: both target the EU, so both would ask questions and both would produce CRA results. When `eu-cra` is approved, `eu-cra-partial` has to be withdrawn from new assessments (open question 7.6).
-
-Answers carry over where the meaning is the same: `eu-cra` reuses the ids `is_free_and_open_source` and `is_commercial_activity`, moved into `packages/common` so the two packages cannot drift. The two self-declared booleans (`is_annex_iii_important_product`, `is_annex_iii_critical_product`) are replaced by a category question (3.3) and stay only in `eu-cra-partial`.
-
-**Time-sensitive:** the Article 14 reporting obligations have applied since **11 September 2026**, to every in-scope product, including those placed on the market before 11 December 2027, and they continue after the support period ends (G 9.1). `eu-cra-partial` doesn't model application dates per requirement, so today it understates what already applies. See 6.1.
+**Time-sensitive:** the Article 14 reporting obligations have applied since **11 September 2026**, to every in-scope product, including those placed on the market before 11 December 2027, and they continue after the support period ends (G 9.1). Today's package has only one, package-level application date, so it can't show this. See 6.1.
 
 ## 2. What the guidance changes for our model
 
@@ -27,7 +23,7 @@ Answers carry over where the meaning is the same: `eu-cra` reuses the ids `is_fr
 | G 2.2, 2.5 | Software executed on the user's side is a product; software only accessed remotely through a browser (web apps, websites) is not, unless it is RDPS of a product. A data connection means deliberately encoded digital data, not mere on/off signalling. | Scope questions 3.1 |
 | G 2.1 | Software variants that differ in components, configuration or features are distinct products; copies of one version are placed together. | Fits HW variant / SW release / option; no change |
 | G 2.4 | Companion software needed to operate the hardware (apps, drivers) is part of the product, even when delivered separately. | Guidance text on the product-form question |
-| G 2.6, 2.7 | Essential requirements apply through the risk assessment; a requirement can be not applicable or met by compensating measures, documented. Legacy designs need no redesign if the risk assessment shows adequate measures. | Requirement status "not applicable, justified" in assessments (6.8); info finding for legacy designs |
+| G 2.6, 2.7 | Essential requirements apply through the risk assessment; a requirement can be not applicable or met by compensating measures, documented. Legacy designs need no redesign if the risk assessment shows adequate measures. | Requirement status "not applicable, justified" in assessments (6.7); info finding for legacy designs |
 | G 3 | FOSS = OSS licence **and** publicly shared source; placed on the market only if monetised (price, monetising other services, data processing as a condition of use, donations that are de facto required). Stewards have Article 24 obligations. | FOSS and role questions 3.1, 3.2 |
 | G 4.2 | Spare-part exemption only when supplied for repair of an identified product **and** identical in security-relevant characteristics (algorithms, protocols, crypto, access control). | Two questions, one derived exclusion |
 | G 4.3 | Substantial modification of software: four tests (new threat vectors, new attack scenarios, changed likelihood, changed impact) plus a change of intended purpose, unless already covered by the risk assessment. Security updates generally aren't substantial. | Per-release questions 3.5; finding "new conformity assessment" |
@@ -53,7 +49,8 @@ Answers carry over where the meaning is the same: `eu-cra` reuses the ids `is_fr
 | `software_executes_on_user_side` | boolean | software | scope (web-only apps out) | `condition`: standalone software. G 2.2. |
 | `is_free_and_open_source` | boolean | product | scope, Art. 32(5) route | moved to common; guidance from G 3 (two-part test). |
 | `is_commercial_activity` | boolean | product | scope | moved to common; guidance from G 3.2. |
-| `is_unfinished_software_release` | boolean | software | Art. 4(3) caution | alpha/beta/RC made available only for testing. |
+| `is_unfinished_software_release` | boolean | software | Art. 4(3) caution | the whole build is alpha/beta/RC, made available only for testing, for a limited time, with a visible non-compliance notice. |
+| `release_has_preview_features` | boolean | software | caution | the release is a normal one but some features are labelled beta/experimental. Art. 4(3) does not cover these (see 4.4). |
 | `remote_processing_at_distance` | boolean | software | RDPS | G 8.1.1 |
 | `remote_processing_needed_for_function` | boolean | software | RDPS | G 8.1.2 (telemetry for statistics only: no) |
 | `remote_processing_designed_by_manufacturer` | boolean | software | RDPS | G 8.1.3 (own code on IaaS/PaaS: yes; third-party SaaS: no) |
@@ -61,9 +58,12 @@ Answers carry over where the meaning is the same: `eu-cra` reuses the ids `is_fr
 | `is_medical_device`, `is_in_vitro_diagnostic` | boolean | product | Art. 2(2) exclusions | common (RED, MDR, LVD reuse the exclusions below too). |
 | `is_exclusively_vehicle_component` | boolean | product | Art. 2(2)(c) + DA 2025/1535 | guidance: exclusively designed, channel matters (G 9.3.1). |
 | `is_civil_aviation_product`, `is_marine_equipment` | boolean | product | Art. 2(3), 2(4) exclusions | |
-| `is_national_security_or_defence_only` | boolean | product | Art. 2(7) | |
+| `is_exclusively_national_security_product` | boolean | product | Art. 2(7) | common: separate facts, because other legislation treats them differently (e.g. defence-only matters for dual-use and procurement rules). |
+| `is_exclusively_defence_product` | boolean | product | Art. 2(7) | common |
+| `processes_classified_information` | boolean | product | Art. 2(7) | common; "specifically designed to process classified information" is the third case in the same article. |
 | `supplied_as_spare_part`, `spare_part_security_identical` | boolean | hardware | Art. 2(6) | exclusion when both true (G 4.2). |
-| `first_placed_before_cra_application` | boolean | software (see 7.3) | Part II and Art. 69(2) | before 11.12.2027 |
+| `hardware_first_placed_on_market`, `hardware_last_placed_on_market` | date | hardware | Part II, Art. 69(2), reference dates for requirements (4.1.1) | common. Hardware units are placed one by one (G 2.1, Blue Guide), so a revision straddling 11.12.2027 has units on both sides; "last" stays empty while units still ship. Needs a `date` question type (6.8). |
+| `software_first_placed_on_market` | date | software | same | common. All copies of a version count as placed at its first offering (G 2.1), so one date per release is enough; a non-substantial release keeps the date of the release it updates (Example 2). |
 
 ### 3.2 Economic operator role
 
@@ -78,7 +78,7 @@ Answers carry over where the meaning is the same: `eu-cra` reuses the ids `is_fr
 | --- | --- | --- | --- |
 | `core_functionality_category` | choice: "none" + Annex III class I (19), class II (4), Annex IV (3) | product | classifications `default`, `important_class_i`, `important_class_ii`, `critical` via `in` |
 
-One choice, not a multi-select: G 6.1 (point 144) says a product has exactly one core functionality for this purpose. Category names are EU legal text and may be stored with attribution (`docs/architecture.md`, Copyright); the technical descriptions in Implementing Regulation 2025/2392 are linked, not copied. The guidance text carries the G 6.1 test: main purpose, not ancillary functions or integrated components; substantially exceeds or falls short → not that category; modules sold separately are classified separately.
+One choice, not a multi-select: G 6.1 (point 144) says a product has exactly one core functionality for this purpose. **Decided:** the choices use the full official category names (EU legal text, allowed with attribution per `docs/architecture.md`, Copyright); the attribution lives in the User Guide. The technical descriptions in Implementing Regulation 2025/2392 are linked, not copied. The guidance text carries the G 6.1 test: main purpose, not ancillary functions or integrated components; substantially exceeds or falls short → not that category; modules sold separately are classified separately.
 
 The category list must be checked against the Official Journal text when it is encoded. The plan's working list (class I: identity/privileged access management, browsers, password managers, anti-malware, VPN, network management, SIEM, boot managers, PKI, network interfaces, operating systems, routers/modems/switches, microprocessors, microcontrollers, ASIC/FPGA with security functions, smart home virtual assistants, smart home security products, connected toys, health and children's wearables; class II: hypervisors and container runtimes, firewalls/IDS/IPS, tamper-resistant microprocessors and microcontrollers; Annex IV: hardware devices with security boxes, smart meter gateways and secure cryptoprocessing devices, smartcards and secure elements) is from memory.
 
@@ -89,11 +89,11 @@ The category list must be checked against the Official Journal text when it is e
 | `harmonised_standards_cover_core_functionality` | boolean | product | class I may use module A (G 6.2, point 149) |
 | `has_prior_cybersecurity_type_exam_certificate` | boolean | hardware | info: RED DA / Machinery certificate usable until 11.6.2028 (G 9.3.2) |
 | `expected_use_time_years` | number (years) | product | support period findings |
-| `support_period_years` | number (years) | product | support period findings |
+| `support_period_end` | date | product | support period findings; Part II ends on it (4.1.1). The end date is what Art. 13(19) requires telling users anyway (at least month and year). |
 | `latest_version_remediation_only` | boolean | software | Art. 13(10), `condition`: software product |
 | `designed_before_cra_application` | boolean | product | info finding (G 2.7) |
 
-Support period findings: action required if `support_period_years` < 5 while `expected_use_time_years` ≥ 5, or if it is shorter than an expected use time under 5 years; caution if it is shorter than a longer expected use time (G 5, recital 60).
+Support period findings, with the support length = years from the placement date to `support_period_end` (needs date arithmetic, 6.8): action required if it is under 5 while `expected_use_time_years` ≥ 5, or shorter than an expected use time under 5 years; caution if it is shorter than a longer expected use time (G 5, recital 60).
 
 ### 3.5 Per software release: substantial modification
 
@@ -117,13 +117,37 @@ CRA Part I is risk-based ("where applicable"), so these questions don't decide c
 
 ### 3.7 Manufacturer process (Annex I Part II, Art. 13, Art. 14)
 
-Process facts: CVD policy, vulnerability contact point, SBOM production, security testing before release and regular review, advisories, free and separate security updates, secure update distribution, upstream reporting (Art. 13(6)), component due diligence (Art. 13(5)), documented risk assessment, readiness for the ENISA single reporting platform. These describe the manufacturer, not one product, and overlap most with IEC 62443-4-1 and SSDF (section 5). Where they live is open question 7.2.
+Process facts: CVD policy, vulnerability contact point, SBOM production, security testing before release and regular review, advisories, free and separate security updates, secure update distribution, upstream reporting (Art. 13(6)), component due diligence (Art. 13(5)), documented risk assessment, readiness for the ENISA single reporting platform. They overlap most with IEC 62443-4-1 and SSDF (section 5).
+
+**Decided:** answered per product (standing policies at `product` level, per-release activities at `software` level), not at organisation or family level. Different product teams run different processes; a new team may work more agile than a mature product line. No new answer level is needed.
 
 ## 4. Requirements, routes, findings, fixtures
 
 ### 4.1 Requirements
 
-Full coverage, each with `ref`, `roles`, classes, an application date and a condition (needs 6.1, 6.2):
+Full coverage, each with `ref`, `roles`, classes, application dates and a condition (needs 6.1, 6.2). **Decided:** all economic operator roles from the start, not manufacturer only.
+
+#### 4.1.1 Application dates: start, end, and against which date
+
+An end date is needed, but a start or end date alone is ambiguous: it matters which date it is compared with. Comparing everything with "today" would be wrong for half of the CRA.
+
+| Case | Example | Compare with |
+| --- | --- | --- |
+| Duty from a date on, whatever the product's age | Art. 14 reporting, from 11.9.2026, also for products placed earlier and after support ends (G 9.1) | assessment date |
+| Duty for products placed from a date on | Annex I essential requirements and Part II, from 11.12.2027; a unit placed in 2026 never becomes subject (only Art. 14 reaches it) | placement date |
+| A window that closes | Art. 69(1): RED delegated-act or Machinery certificates count for covered risks only until 11.6.2028 | placement date |
+| A standard replaced, fully or partly | When a revised harmonised standard is cited, the OJ notice gives the old version a date of cessation of presumption of conformity. Products placed before it keep the presumption under the old version; units placed later need the new one. | placement date |
+| Duty that ends with the product's own lifecycle | Part II ends when the support period ends | a condition on the product's support end date, not a fixed date |
+
+What this means for the design:
+
+- Each `applies_from` / `applies_until` (requirement and package level) says its **basis**: `placement` or `assessment`. The placement date comes from the questions in 3.1; for hardware, a requirement with a placement-based start applies if any units are placed on or after it (last placement empty or later).
+- **Partial supersession of a standard** (raised in review) is handled without new machinery. The old standard package keeps the clauses that weren't replaced, and the replaced ones get `applies_until` = cessation date, basis `placement`. The new package `amends` the old one. Products placed before cessation are still assessed against the old clauses. A whole-standard replacement uses the package-level `until` the same way.
+- **Why not just version the package?** Versioning covers law that changes going forward. It can't express "the same text stops counting on date D for products placed after D" (Art. 69(1), cessation of presumption) while older products keep it. So the requirement-level end date is cheap and does real work.
+- **Old assessments are not reinterpreted.** Approval freezes package versions and results (snapshots). But an assessment-date rule can change meaning while a product is still on the market: Art. 14 switched on in September 2026. The existing staleness job (ADR 0007) should flag approved assessments when a date they depend on passes.
+- **Show, don't hide.** A requirement that isn't in force yet, or no longer is, appears with its dates ("applies from 11.12.2027", "until 11.6.2028 for products placed by then"). Users plan for what is coming.
+
+Requirement groups:
 
 - Annex I Part I: (1) and (2)(a)–(m), 14 items.
 - Annex I Part II: (1)–(8). Not for products placed before 11.12.2027 or past their support period.
@@ -153,9 +177,12 @@ The Art. 8(1) and Art. 32 conditions need checking against the OJ text when enco
 - Action required or caution: support period (3.4).
 - Action required: substantial modification in this release (3.5).
 - Caution: unfinished software release (Art. 4(3)): only for the time needed for testing, with a visible notice.
+- Caution: preview (beta) features in a normal release. Our reading, to be checked in the legal review, since the guidance doesn't address it: Art. 4(3) covers unfinished *software* made available for testing (alpha/beta/RC builds), not a feature labelled beta inside a product that is placed on the market. That product is placed as a whole, so the beta feature must be in its risk assessment and meet the essential requirements like any other. Two ways that still work:
+  - Ship the beta feature in a separate test build, distributed only to testers, for a limited time and with the warning. That build is then the unfinished software.
+  - Ship it disabled, with its risks already assessed. Enabling it later is then not a substantial modification (Example 43). Disabled code is still attack surface (capability vs enablement).
 - Caution: hardware capability present but disabled (e.g. debug port) → attack surface if enabled later.
 - Info: legacy design (G 2.7); prior type-examination certificate (G 9.3.2).
-- Caution, carried over: monetisation changes FOSS scope (from `eu-cra-partial`).
+- Caution: monetisation changes FOSS scope.
 
 ### 4.5 Fixtures from guidance examples
 
@@ -168,10 +195,10 @@ Full research: [`eu-cra-standards-overlap.md`](eu-cra-standards-overlap.md) (can
 **The overlap splits in two.**
 
 - **Process facts overlap across all three** (CRA Part II and Art. 13, 62443-4-1, SSDF): `documented_secure_development_process`, `performs_cybersecurity_risk_assessment`, `performs_threat_modelling`, `scans_for_known_vulnerabilities`, `security_testing_before_release`, `penetration_testing_performed`, `blocks_release_with_known_exploitable_vulnerabilities`, `third_party_component_due_diligence`, `sbom_scope` (choice: none · top-level · full transitive), `protects_development_environment`, `signs_releases`, `monitors_component_vulnerabilities`, `has_cvd_policy`, `has_vulnerability_contact`, `vulnerability_remediation_process`, `publishes_security_advisories`, `provides_secure_use_documentation`. Two-way (62443-4-1 + SSDF): security roles and training, documented security requirements, design review, secure coding standard, code review or static analysis.
-- **Product facts overlap almost only between CRA Part I and 62443-4-2.** SSDF is process-only and touches products only through secure defaults (PW.9) and release integrity (PS.2). Candidates: `network_interface_capability`, `wireless_interface_capability`, `physical_debug_interface` (hardware capability choices: not present · present · present but disabled), `network_services_exposure`, `requires_user_authentication`, `default_credentials` (choice incl. "same default on every unit"), the existing MFA trio, `role_based_access_control`, `encrypts_data_in_transit`, `sensitive_data_at_rest`, `update_mechanism` (choice: none · manual · automatic on/off by default), `verifies_update_authenticity`, secure boot (split into hardware root of trust + software enablement, per capability vs enablement), `minimal_default_configuration`, `supports_factory_reset`, `security_event_logging`, `dos_resilience_measures`, `includes_third_party_components`.
+- **Product facts overlap almost only between CRA Part I and 62443-4-2.** SSDF is process-only and touches products only through secure defaults (PW.9) and release integrity (PS.2). Candidates: `network_interface_capability`, `wireless_interface_capability`, `physical_debug_interface` (hardware capability choices: not present · present · present but disabled), `inbound_exposure_default` and `inbound_exposure_max` (none · same device only · restricted by the product itself · any network; an operator's VPN or firewall is a separate deployment-assumption question, `relies_on_network_isolation`), `requires_user_authentication`, `default_credentials` (choice incl. "same default on every unit"), the existing MFA trio, `role_based_access_control`, `encrypts_data_in_transit`, `sensitive_data_at_rest`, `update_mechanism` (choice: none · manual · automatic on/off by default), `verifies_update_authenticity`, secure boot (split into hardware root of trust + software enablement, per capability vs enablement), `minimal_default_configuration`, `supports_reset_to_defaults` and `data_erasure_method` (none · logical delete, possibly recoverable · secure erase; CRA I.2(m) asks for permanent removal, so a reset alone or a logical delete falls short), `security_event_logging`, `dos_resilience_measures`, `includes_third_party_components`.
 - **Also common, though CRA-only among these three**, because RED, MDR, LVD and GDPR packages will reuse them: the scope exclusions, `economic_operator_role`, `is_free_and_open_source`, `is_commercial_activity`, `processes_personal_data` (data minimisation, GDPR).
 
-**`implied_by` rules (strict implications only):** `uses_mfa` ⇐ either MFA requirement; `requires_user_authentication` ⇐ `uses_mfa`; `has_data_connection` ⇐ an interface present or services listening (derive true only, never false); `security_testing_before_release` ⇐ `penetration_testing_performed`; `signs_releases` ⇐ `verifies_update_authenticity`. Not: risk assessment ⇐ threat model, due diligence ⇐ SBOM, secure defaults ⇐ no listening services. Derivation across levels works (resolution gathers all levels of a configuration before deriving).
+**`implied_by` rules (strict implications only):** `uses_mfa` ⇐ either MFA requirement; `requires_user_authentication` ⇐ `uses_mfa`; `has_data_connection` ⇐ an interface present or `inbound_exposure_max` not "none" (derive true only, never false); `security_testing_before_release` ⇐ `penetration_testing_performed`; `signs_releases` ⇐ `verifies_update_authenticity`. Not: risk assessment ⇐ threat model, due diligence ⇐ SBOM, secure defaults ⇐ no listening services. Derivation across levels works (resolution gathers all levels of a configuration before deriving).
 
 **CRA-specific refinements** sit in `eu-cra` with a `condition` on the common question, so shared labels stay neutral: automatic updates on by default with opt-out, logging opt-out, free security updates, security fixes separate from features, support period, Art. 14 reporting readiness. The same fact is judged differently: OT practice under 62443 has the operator apply patches, the CRA wants automatic updates by default. So `common` labels must not carry a judgement; packages raise the findings.
 
@@ -186,30 +213,44 @@ Full research: [`eu-cra-standards-overlap.md`](eu-cra-standards-overlap.md) (can
 
 ## 6. Engine and schema changes (each needs an ADR; next free number 0018)
 
-1. **Requirement `applies_when` and `applies_from`/`applies_until`.** Art. 14 since 11.9.2026; Part II not for pre-11.12.2027 placements. Needs an evaluation reference date (assessment date) and a UI that shows "applies from" rather than hiding future obligations.
+1. **Requirement `applies_when`, and `applies_from`/`applies_until` with a basis** (`placement` or `assessment`), also at package level (4.1.1). Requirements outside their dates are shown with them, not hidden. The staleness job flags approved assessments when an assessment-based date they depend on passes.
 2. **Role-aware evaluation.** Filter requirements by `economic_operator_role`; add `authorised_representative` and `steward` to the roles enum.
-3. **Process-level answers** (see 7.2).
+3. **Target markets on software too** (decision 7.1).
 4. **No copy-forward for per-release questions.** A question flag such as `carry_forward: false`, so release deltas start unanswered.
 5. **Fixture expectations for classifications and routes,** not just `in_scope` and findings.
 6. **Choice values with id and label** (optional). Annex III names are long and may be corrected later; ids keep answers stable.
-7. **Withdrawing a package** so `eu-cra-partial` stops applying once `eu-cra` is approved.
-8. **Requirement status in assessments:** met, not applicable (justified), compensating measures, open. G 2.6 and recital 55 make "not applicable, justified" a normal outcome. Likely shared with the Evidence milestone.
+7. **Requirement status in assessments:** met, not applicable (justified), compensating measures, open. G 2.6 and recital 55 make "not applicable, justified" a normal outcome. Likely shared with the Evidence milestone.
+8. **Date question type.** Placement dates and the support end date (3.1, 3.4), with date comparisons and a years-between operator in the rule engine. Reusable: every product law has its own application date, so one placement date per level beats a "placed before X?" boolean per regulation.
 
-## 7. Open questions
+## 7. Decisions and open questions
 
-1. **Software-only products.** Target markets live on the HW variant (open question in `docs/architecture.md`). Standalone software is a main CRA case, Aavistin itself included. Blocking for software-only use.
-2. **Where process answers live.** Organisation or product-family level (a new level in ADR 0004 precedence), or repeated per product?
-3. **Placing-on-market date per level.** For hardware, units straddle 11.12.2027; for software, each substantially modified version is a new placing. Per release, per HW revision, or both?
-4. **Category text.** Store official Annex III/IV category names (allowed with attribution) or our own short names with a link?
-5. **Harmonised standards.** None cited in the OJ yet; the question stays generic until they are. Track the CEN/CENELEC/ETSI work for later `harmonised_standard` packages.
-6. **Retiring `eu-cra-partial`.** Withdraw on approval of `eu-cra`, or keep both and deactivate per product?
-7. **First-version scope.** Manufacturer obligations only, or importer/distributor/steward from the start?
+Decided in review (2.10.2026):
+
+1. **Target markets on software releases too,** not only on HW variants. A software-only product sets its markets on the release. Proposal for configurations that have both: the effective markets are the intersection (a configuration is sold where both its hardware and its release are), and a release without markets inherits the HW variant's. Resolves the software-only open question in `docs/architecture.md`; needs an ADR.
+2. **Process answers per product,** not per organisation or family (3.7).
+3. **Placement dates on both HW revisions and SW releases** (3.1), as dates, not booleans (6.8).
+4. **Full official Annex III/IV category names,** with attribution in the User Guide (3.3).
+5. **`eu-cra` replaces the scaffold package;** no coexistence or withdrawal before version 1.0 (1).
+6. **All economic operator roles from the start** (4.1).
+7. **National security, defence and classified information are three separate questions** in `common` (3.1).
+
+Still open:
+
+1. **Effective markets rule** for configurations with both hardware and a release: intersection, as proposed above?
+2. **Harmonised standards.** None cited in the OJ yet; the question stays generic until they are. Track the CEN/CENELEC/ETSI work (EN 40000 series, EN IEC 62443-4-1/4-2 A11) for later `harmonised_standard` packages, which is where cessation dates (4.1.1) will first matter.
+3. **Legal review list:** category names against the OJ text, Art. 8(1)/32 routes, all `ref` citations, and our reading of preview features (4.4).
 
 ## 8. Phasing (proposed)
 
-0. Decide section 7 and write ADRs for section 6.
-1. Engine changes 6.1–6.5, tested with the demo packages.
-2. `packages/common` 1.1.0: shared questions from section 5, plus the moved FOSS/commercial questions.
-3. `eu-cra` 1: scope, roles, classification, routes, support period, substantial modification; fixtures from guidance examples.
+0. ADRs for section 6 and decision 7.1 (next free number 0018; `docs/adr/` has duplicate 0012 and 0015).
+1. Engine changes 6.1–6.5 and 6.8, tested with the demo packages.
+2. `packages/common` 1.1.0: shared questions from section 5, the scope exclusions, role and placement dates, and the FOSS/commercial questions.
+3. `eu-cra` 1, replacing the scaffold package in the same change: scope, roles, classification, routes, support period, substantial modification; fixtures from guidance examples.
 4. `eu-cra` 2: full requirements and findings (Annex I, Art. 13, 14, 18–20, 24) with the evidence crosswalk.
-5. Withdraw `eu-cra-partial`; update the user guide; legal review against the OJ text (category list, Art. 8(1)/32 routes, references).
+5. User Guide (category attribution, how to answer), legal review against the OJ text.
+
+Later, not part of this plan:
+
+- **Compare assessments** side by side, per product, HW revision and SW release, e.g. what changed between two releases or two revisions.
+- IEC 62443 and NIST SSDF packages, reusing the common questions (selected per product, not by market).
+- Requirement status and evidence links per requirement (6.7) with the Evidence milestone.
