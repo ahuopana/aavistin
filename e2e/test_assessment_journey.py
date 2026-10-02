@@ -47,6 +47,11 @@ def form_for(page, url_name, *args):
     return page.locator(f'form[action="{reverse(url_name, args=args)}"]')
 
 
+def open_tab(page, name):
+    """Switch the product page to a tab (each form submit returns to the default tab)."""
+    page.get_by_role("tab", name=re.compile(name)).click()
+
+
 def answer(page, question, value):
     """Set the answer to ``question`` through its row's form."""
     row = page.locator("tr", has_text=question)
@@ -98,17 +103,21 @@ def test_assessment_journey(page, live_server, world):
     expect(page.locator("tr:visible", has_text="Rev A")).to_have_count(1)
     revision = HardwareRevision.objects.get(hardware_variant=variant, label="A")
 
+    open_tab(page, "Software releases")
     form = form_for(page, "products:software_release_create", product_id)
     form.locator("[name=name]").fill("Firmware")
     form.locator("[name=version]").fill("1.0.0")
     submit(page, form)
 
     # Configuration combining the two.
+    open_tab(page, "Configurations")
+    page.locator("summary", has_text="Add configuration").click()
     form = form_for(page, "products:configuration_create", product_id)
     form.locator("[name=name]").fill("TempSense EU 1.0")
     form.locator("[name=hardware_revision]").select_option(value=str(revision.pk))
     form.locator("[name=software_release]").select_option(index=1)
     submit(page, form)
+    open_tab(page, "Configurations")
     expect(page.get_by_role("link", name="TempSense EU 1.0")).to_be_visible()
 
     # --- The editor answers the questionnaire ----------------------------------------
