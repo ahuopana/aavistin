@@ -1,6 +1,6 @@
 # Plan: full EU CRA package (`eu-cra`)
 
-Status: draft for review. Nothing here is decided until it lands as an ADR or in `docs/architecture.md`.
+Status: phases 0–3 implemented (ADRs 0018–0022, `packages/common` 1.1.0, `packages/eu-cra`). Phase 4's requirements and findings are in the package; the evidence crosswalk and the legal review remain. Where the build differs from this plan, "Implemented" notes say how.
 
 Inputs:
 
@@ -62,7 +62,7 @@ Inputs:
 | `is_exclusively_defence_product` | boolean | product | Art. 2(7) | common |
 | `processes_classified_information` | boolean | product | Art. 2(7) | common; "specifically designed to process classified information" is the third case in the same article. Out of CRA scope does not mean unregulated: national rules on handling classified information (security accreditation by the national security authority) apply instead, so this raises an info finding. |
 | `supplied_as_spare_part`, `spare_part_security_identical` | boolean | hardware | Art. 2(6) | exclusion when both true (G 4.2). |
-| `hardware_first_placed_on_market`, `hardware_last_placed_on_market` | date | hardware | Part II, Art. 69(2), reference dates for requirements (4.1.1) | common. Hardware units are placed one by one (G 2.1, Blue Guide), so a revision straddling 11.12.2027 has units on both sides; "last" stays empty while units still ship. Needs a `date` question type (6.8). |
+| `hardware_first_placed_on_market`, `hardware_still_placed_on_market`, `hardware_last_placed_on_market` | date, boolean, date | hardware | Part II, Art. 69(2), reference dates for requirements (4.1.1) | common. Hardware units are placed one by one (G 2.1, Blue Guide), so a revision straddling 11.12.2027 has units on both sides. *Implemented* with an explicit "still placed" answer rather than an empty "last" date, which would be indistinguishable from unanswered. |
 | `software_first_placed_on_market` | date | software | same | common. All copies of a version count as placed at its first offering (G 2.1), so one date per release is enough; a non-substantial release keeps the date of the release it updates (Example 2). |
 
 ### 3.2 Economic operator role
@@ -141,7 +141,8 @@ An end date is needed, but a start or end date alone is ambiguous: it matters wh
 
 What this means for the design:
 
-- Each `applies_from` / `applies_until` (requirement and package level) says its **basis**: `placement` or `assessment`. The placement date comes from the questions in 3.1; for hardware, a requirement with a placement-based start applies if any units are placed on or after it (last placement empty or later).
+- Each date rule has a **basis**: `placement` or `assessment`. The placement date comes from the questions in 3.1; for hardware, a requirement with a placement-based start applies if any units are placed on or after it.
+- *Implemented* (ADR 0019) with two mechanisms instead of a basis field. `applies_from`/`applies_until` are always compared with the assessment date. Placement rules are `applies_when` expressions over the placement-date questions, so the engine never needs to know which question holds a placement date. While no placement date is answered, nothing is hidden.
 - **Partial supersession of a standard** (raised in review) is handled without new machinery. The old standard package keeps the clauses that weren't replaced, and the replaced ones get `applies_until` = cessation date, basis `placement`. The new package `amends` the old one. Products placed before cessation are still assessed against the old clauses. A whole-standard replacement uses the package-level `until` the same way.
 - **Why not just version the package?** Versioning covers law that changes going forward. It can't express "the same text stops counting on date D for products placed after D" (Art. 69(1), cessation of presumption) while older products keep it. So the requirement-level end date is cheap and does real work.
 - **Old assessments are not reinterpreted.** Approval freezes package versions and results (snapshots). But an assessment-date rule can change meaning while a product is still on the market: Art. 14 switched on in September 2026. The existing staleness job (ADR 0007) should flag approved assessments when a date they depend on passes.
@@ -237,18 +238,24 @@ Decided in review (2.10.2026):
 
 Still open:
 
-1. **Effective markets rule** for configurations with both hardware and a release: intersection, as proposed above?
+1. **Effective markets rule** for configurations with both hardware and a release: implemented as the intersection (ADR 0020). Say if you want it otherwise.
 2. **Harmonised standards.** None cited in the OJ yet; the question stays generic until they are. Track the CEN/CENELEC/ETSI work (EN 40000 series, EN IEC 62443-4-1/4-2 A11) for later `harmonised_standard` packages, which is where cessation dates (4.1.1) will first matter.
 3. **Legal review list:** category names against the OJ text, Art. 8(1)/32 routes, all `ref` citations, and our reading of preview features (4.4).
 
 ## 8. Phasing (proposed)
 
-0. ADRs for section 6 and decision 7.1 (next free number 0018; `docs/adr/` has duplicate 0012 and 0015).
-1. Engine changes 6.1–6.5 and 6.8, tested with the demo packages.
-2. `packages/common` 1.1.0: shared questions from section 5, the scope exclusions, role and placement dates, and the FOSS/commercial questions.
-3. `eu-cra` 1, replacing the scaffold package in the same change: scope, roles, classification, routes, support period, substantial modification; fixtures from guidance examples.
-4. `eu-cra` 2: full requirements and findings (Annex I, Art. 13, 14, 18–20, 24) with the evidence crosswalk.
-5. User Guide (category attribution, how to answer), legal review against the OJ text.
+0. ✅ ADRs 0018–0022.
+1. ✅ Engine changes 6.1, 6.2, 6.3, 6.4, 6.5 and 6.8. A package's own `implied_by` rules are also applied in its fixtures.
+2. ✅ `packages/common` 1.1.0 (65 questions).
+3. ✅ `eu-cra`, replacing the scaffold package: scope, roles, classification, routes, support period, substantial modification; 34 fixtures, most from guidance examples.
+4. ✅ Requirements and findings (Annex I, Art. 13, 14, 18–20, 24). Open: the evidence crosswalk.
+5. ✅ User Guide (markets, roles, dates, category attribution). Open: legal review against the OJ text.
+
+Known gaps after implementation:
+
+- Part II ends with the product's support period, but rules can't compare with the assessment date (ADR 0018), so Part II stays listed after the support end date. Options: expose the assessment date to rules in a controlled way, or a requirement-level `ends_with` pointing at a date question.
+- A configuration still needs a hardware revision; standalone software uses a nominal hardware entry (ADR 0020).
+- 6.6 (choice ids with labels) and 6.7 (requirement status) are not done.
 
 Later, not part of this plan:
 

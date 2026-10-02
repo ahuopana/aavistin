@@ -1,0 +1,5090 @@
+{
+  "source": "eu-cra",
+  "type": "legislation",
+  "jurisdiction": "EU",
+  "version": "2024-2847@2026-10",
+  "title": "EU Cyber Resilience Act",
+  "legal_sources": [
+    {
+      "celex": "32024R2847"
+    }
+  ],
+  "dates_of_application": {
+    "from": "2026-06-11"
+  },
+  "redistributable": true,
+  "uses": [
+    "common:product_form",
+    "common:has_data_connection",
+    "common:processes_personal_data",
+    "common:economic_operator_role",
+    "common:places_under_own_name_or_modifies",
+    "common:is_free_and_open_source",
+    "common:is_commercial_activity",
+    "common:is_medical_device",
+    "common:is_in_vitro_diagnostic",
+    "common:is_exclusively_vehicle_component",
+    "common:is_civil_aviation_product",
+    "common:is_marine_equipment",
+    "common:is_exclusively_national_security_product",
+    "common:is_exclusively_defence_product",
+    "common:processes_classified_information",
+    "common:hardware_first_placed_on_market",
+    "common:hardware_still_placed_on_market",
+    "common:hardware_last_placed_on_market",
+    "common:software_first_placed_on_market",
+    "common:network_interface_capability",
+    "common:wireless_interface_capability",
+    "common:physical_debug_interface",
+    "common:inbound_exposure_default",
+    "common:inbound_exposure_max",
+    "common:relies_on_network_isolation",
+    "common:requires_user_authentication",
+    "common:default_credentials",
+    "common:uses_mfa",
+    "common:encrypts_data_in_transit",
+    "common:sensitive_data_at_rest",
+    "common:supports_reset_to_defaults",
+    "common:data_erasure_method",
+    "common:update_mechanism",
+    "common:verifies_update_authenticity",
+    "common:minimal_default_configuration",
+    "common:security_event_logging",
+    "common:dos_resilience_measures",
+    "common:includes_third_party_components",
+    "common:performs_cybersecurity_risk_assessment",
+    "common:third_party_component_due_diligence",
+    "common:blocks_release_with_known_exploitable_vulnerabilities",
+    "common:scans_for_known_vulnerabilities",
+    "common:security_testing_before_release",
+    "common:sbom_scope",
+    "common:monitors_component_vulnerabilities",
+    "common:has_cvd_policy",
+    "common:has_vulnerability_contact",
+    "common:vulnerability_remediation_process",
+    "common:publishes_security_advisories",
+    "common:provides_secure_use_documentation"
+  ],
+  "questions": [
+    {
+      "id": "software_executes_on_user_side",
+      "type": "boolean",
+      "level": "software",
+      "label": "Is the software supplied to the user and run on the user's own system (not only used remotely through a browser)?",
+      "condition": {
+        "==": [
+          {
+            "var": "product_form"
+          },
+          "standalone_software"
+        ]
+      },
+      "guidance": "Apps, desktop programs and browser extensions installed by the user are products. A web application or website used only through a browser is not, unless it supports a function of a product (see the remote data processing questions).",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "is_unfinished_software_release",
+      "type": "boolean",
+      "level": "software",
+      "label": "Is this release unfinished software (alpha, beta, release candidate) made available only for testing?",
+      "carry_forward": false,
+      "guidance": "Allowed without complying only for the time needed to test and gather feedback, with a visible notice that it does not comply and is not for other purposes. A normal release with some features labelled beta does not qualify: see the next question.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "release_has_preview_features",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does this normal release include features labelled beta, preview or experimental?",
+      "carry_forward": false,
+      "guidance": "The release as a whole is placed on the market, so these features need the same risk assessment and essential requirements as any other. Ship them in a separate tester-only build, or disabled with their risks already assessed."
+    },
+    {
+      "id": "remote_processing_at_distance",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does the product rely on data processing at a distance (cloud, back-end, on-premises server), outside the user's own environment?",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "remote_processing_needed_for_function",
+      "type": "boolean",
+      "level": "software",
+      "label": "Would any of the product's functions stop working without that remote processing?",
+      "condition": {
+        "==": [
+          {
+            "var": "remote_processing_at_distance"
+          },
+          true
+        ]
+      },
+      "guidance": "Functions include commands, synchronisation, onboarding, configuration, update distribution and identity management. Telemetry collected only for statistics or future development does not count.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "remote_processing_designed_by_manufacturer",
+      "type": "boolean",
+      "level": "software",
+      "label": "Is that remote processing software designed and developed by you or specifically for you?",
+      "condition": {
+        "==": [
+          {
+            "var": "remote_processing_at_distance"
+          },
+          true
+        ]
+      },
+      "guidance": "Your own code running on rented infrastructure or a platform (IaaS, PaaS) counts. A third-party SaaS application you only license does not, but its risks still belong in your risk assessment.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "has_remote_data_processing",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does the product include remote data processing solutions?",
+      "implied_by": {
+        "when": {
+          "and": [
+            {
+              "==": [
+                {
+                  "var": "remote_processing_at_distance"
+                },
+                true
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "remote_processing_needed_for_function"
+                },
+                true
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "remote_processing_designed_by_manufacturer"
+                },
+                true
+              ]
+            }
+          ]
+        },
+        "value": true
+      }
+    },
+    {
+      "id": "supplied_as_spare_part",
+      "type": "boolean",
+      "level": "hardware",
+      "label": "Is this hardware supplied as a spare part to repair or maintain an identified product already on the market?",
+      "guidance": "The repair purpose should be clear from the supply, e.g. the order names the product, or it goes through after-sales channels. Being technically usable as a replacement is not enough.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "spare_part_security_identical",
+      "type": "boolean",
+      "level": "hardware",
+      "label": "Is the spare part identical to the component it replaces in everything relevant to security (algorithms, protocols, cryptography, access control)?",
+      "condition": {
+        "==": [
+          {
+            "var": "supplied_as_spare_part"
+          },
+          true
+        ]
+      },
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "core_functionality_category",
+      "type": "choice",
+      "level": "product",
+      "label": "Which Annex III or Annex IV category matches the product's core functionality?",
+      "choices": [
+        "None of these",
+        "Annex III, class I (1): Identity management systems and privileged access management software and hardware, including authentication and access control readers, including biometric readers",
+        "Annex III, class I (2): Standalone and embedded browsers",
+        "Annex III, class I (3): Password managers",
+        "Annex III, class I (4): Software that searches for, removes, or quarantines malicious software",
+        "Annex III, class I (5): Products with digital elements with the function of virtual private network (VPN)",
+        "Annex III, class I (6): Network management systems",
+        "Annex III, class I (7): Security information and event management (SIEM) systems",
+        "Annex III, class I (8): Boot managers",
+        "Annex III, class I (9): Public key infrastructure and digital certificate issuance software",
+        "Annex III, class I (10): Physical and virtual network interfaces",
+        "Annex III, class I (11): Operating systems",
+        "Annex III, class I (12): Routers, modems intended for the connection to the internet, and switches",
+        "Annex III, class I (13): Microprocessors with security-related functionalities",
+        "Annex III, class I (14): Microcontrollers with security-related functionalities",
+        "Annex III, class I (15): Application specific integrated circuits (ASIC) and field-programmable gate arrays (FPGA) with security-related functionalities",
+        "Annex III, class I (16): Smart home general purpose virtual assistants",
+        "Annex III, class I (17): Smart home products with security functionalities, including smart door locks, security cameras, baby monitoring systems and alarm systems",
+        "Annex III, class I (18): Internet connected toys covered by Directive 2009/48/EC that have social interactive features (e.g. speaking or filming) or that have location tracking features",
+        "Annex III, class I (19): Personal wearable products to be worn or placed on a human body that have a health monitoring (such as tracking) purpose and to which Regulation (EU) 2017/745 or (EU) 2017/746 do not apply, or personal wearable products that are intended for the use by and for children",
+        "Annex III, class II (1): Hypervisors and container runtime systems that support virtualised execution of operating systems and similar environments",
+        "Annex III, class II (2): Firewalls, intrusion detection and prevention systems",
+        "Annex III, class II (3): Tamper-resistant microprocessors",
+        "Annex III, class II (4): Tamper-resistant microcontrollers",
+        "Annex IV (1): Hardware Devices with Security Boxes",
+        "Annex IV (2): Smart meter gateways within smart metering systems as defined in Article 2, point (23) of Directive (EU) 2019/944 and other devices for advanced security purposes, including for secure cryptoprocessing",
+        "Annex IV (3): Smartcards or similar devices, including secure elements"
+      ],
+      "guidance": "Pick by the product's core functionality: its main purpose, without which it would not meet its intended purpose. Ancillary functions and integrated components (e.g. an operating system inside a phone) do not change it. A product that substantially exceeds or falls short of a category is not in it. Modules also sold separately are classified separately. Exactly one choice applies. Category descriptions: Commission Implementing Regulation (EU) 2025/2392.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "harmonised_standards_cover_core_functionality",
+      "type": "boolean",
+      "level": "product",
+      "label": "Have you fully applied a harmonised standard, common specification or EU cybersecurity certificate (at least 'substantial') that covers all risks of the core functionality?",
+      "condition": {
+        "in": [
+          {
+            "var": "core_functionality_category"
+          },
+          [
+            "Annex III, class I (1): Identity management systems and privileged access management software and hardware, including authentication and access control readers, including biometric readers",
+            "Annex III, class I (2): Standalone and embedded browsers",
+            "Annex III, class I (3): Password managers",
+            "Annex III, class I (4): Software that searches for, removes, or quarantines malicious software",
+            "Annex III, class I (5): Products with digital elements with the function of virtual private network (VPN)",
+            "Annex III, class I (6): Network management systems",
+            "Annex III, class I (7): Security information and event management (SIEM) systems",
+            "Annex III, class I (8): Boot managers",
+            "Annex III, class I (9): Public key infrastructure and digital certificate issuance software",
+            "Annex III, class I (10): Physical and virtual network interfaces",
+            "Annex III, class I (11): Operating systems",
+            "Annex III, class I (12): Routers, modems intended for the connection to the internet, and switches",
+            "Annex III, class I (13): Microprocessors with security-related functionalities",
+            "Annex III, class I (14): Microcontrollers with security-related functionalities",
+            "Annex III, class I (15): Application specific integrated circuits (ASIC) and field-programmable gate arrays (FPGA) with security-related functionalities",
+            "Annex III, class I (16): Smart home general purpose virtual assistants",
+            "Annex III, class I (17): Smart home products with security functionalities, including smart door locks, security cameras, baby monitoring systems and alarm systems",
+            "Annex III, class I (18): Internet connected toys covered by Directive 2009/48/EC that have social interactive features (e.g. speaking or filming) or that have location tracking features",
+            "Annex III, class I (19): Personal wearable products to be worn or placed on a human body that have a health monitoring (such as tracking) purpose and to which Regulation (EU) 2017/745 or (EU) 2017/746 do not apply, or personal wearable products that are intended for the use by and for children"
+          ]
+        ]
+      },
+      "guidance": "Only then may a class I product use internal control instead of third-party assessment. The standard's reference must be published in the Official Journal; none is yet.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "has_prior_cybersecurity_type_exam_certificate",
+      "type": "boolean",
+      "level": "hardware",
+      "label": "Does the product hold an EU type-examination certificate covering cybersecurity under the Radio Equipment Directive's delegated act or the Machinery Regulation?",
+      "guidance": "It counts as evidence for the risks it covers until 11 June 2028, not beyond, and not for risks it does not cover.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "expected_use_time_years",
+      "type": "number",
+      "level": "product",
+      "label": "How long is the product expected to be in use?",
+      "unit": "years",
+      "guidance": "Consider reasonable user expectations, the nature of the product, hardware durability, comparable products and the support periods of integrated components.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "support_period_end",
+      "type": "date",
+      "level": "product",
+      "label": "When does the support period (security updates and vulnerability handling) end?",
+      "guidance": "At least five years from placing on the market, unless the product is expected to be used for less; longer when it is expected to be used longer. Users must be told the end date (at least month and year) at purchase.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "latest_version_remediation_only",
+      "type": "boolean",
+      "level": "software",
+      "label": "Do you fix vulnerabilities only in the latest version, with users able to upgrade free of charge and without extra costs?",
+      "condition": {
+        "in": [
+          {
+            "var": "product_form"
+          },
+          [
+            "standalone_software",
+            "software_component"
+          ]
+        ]
+      },
+      "guidance": "Allowed for software. 'Extra costs' means e.g. buying new hardware or replacing infrastructure, not the normal effort of applying updates.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "designed_before_cra_application",
+      "type": "boolean",
+      "level": "product",
+      "label": "Was the product's type or model designed before 11 December 2027?"
+    },
+    {
+      "id": "release_changes_intended_purpose",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does this release change the product's intended purpose?",
+      "carry_forward": false,
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "release_adds_threat_vectors",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does this release add new interfaces, communication channels, execution environments or external dependencies?",
+      "carry_forward": false,
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "release_enables_new_attack_scenarios",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does this release enable new ways to gain unauthorised access to, manipulate or misuse the product or its data?",
+      "carry_forward": false,
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "release_changes_attack_likelihood",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does this release make known attack scenarios more likely (less effort or expertise needed, more exposure, weaker safeguards)?",
+      "carry_forward": false,
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "release_changes_attack_impact",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does this release make known attack scenarios more harmful (more data or functions affected, worse consequences, harder to detect or recover)?",
+      "carry_forward": false,
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "release_changes_covered_by_risk_assessment",
+      "type": "boolean",
+      "level": "software",
+      "label": "Were the changes in this release, and their risks, already foreseen and mitigated in the risk assessment?",
+      "carry_forward": false,
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456",
+      "guidance": "Example: a feature shipped disabled whose activation was already assessed. Security updates that only reduce risk are generally not substantial modifications."
+    },
+    {
+      "id": "is_substantial_modification",
+      "type": "boolean",
+      "level": "software",
+      "label": "Is this release a substantial modification?",
+      "carry_forward": false,
+      "implied_by": {
+        "when": {
+          "and": [
+            {
+              "or": [
+                {
+                  "==": [
+                    {
+                      "var": "release_changes_intended_purpose"
+                    },
+                    true
+                  ]
+                },
+                {
+                  "==": [
+                    {
+                      "var": "release_adds_threat_vectors"
+                    },
+                    true
+                  ]
+                },
+                {
+                  "==": [
+                    {
+                      "var": "release_enables_new_attack_scenarios"
+                    },
+                    true
+                  ]
+                },
+                {
+                  "==": [
+                    {
+                      "var": "release_changes_attack_likelihood"
+                    },
+                    true
+                  ]
+                },
+                {
+                  "==": [
+                    {
+                      "var": "release_changes_attack_impact"
+                    },
+                    true
+                  ]
+                }
+              ]
+            },
+            {
+              "!=": [
+                {
+                  "var": "release_changes_covered_by_risk_assessment"
+                },
+                true
+              ]
+            }
+          ]
+        },
+        "value": true
+      }
+    },
+    {
+      "id": "security_updates_free_of_charge",
+      "type": "boolean",
+      "level": "product",
+      "label": "Are security updates provided free of charge during the support period?"
+    },
+    {
+      "id": "security_updates_separate_from_features",
+      "type": "boolean",
+      "level": "product",
+      "label": "Where technically feasible, are security updates provided separately from feature updates?"
+    },
+    {
+      "id": "logging_user_opt_out",
+      "type": "boolean",
+      "level": "software",
+      "label": "Can the user opt out of the security logging and monitoring?",
+      "condition": {
+        "==": [
+          {
+            "var": "security_event_logging"
+          },
+          true
+        ]
+      }
+    },
+    {
+      "id": "supports_secure_data_export",
+      "type": "boolean",
+      "level": "software",
+      "label": "Can users transfer their data securely to other products or systems?"
+    },
+    {
+      "id": "limits_data_to_what_is_necessary",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does the product process only the data needed for its intended purpose?"
+    },
+    {
+      "id": "reporting_process_in_place",
+      "type": "boolean",
+      "level": "product",
+      "label": "Can you report actively exploited vulnerabilities and severe incidents through the ENISA single reporting platform within 24 hours?"
+    }
+  ],
+  "scope": {
+    "include": {
+      "and": [
+        {
+          "!=": [
+            {
+              "var": "has_data_connection"
+            },
+            false
+          ]
+        },
+        {
+          "or": [
+            {
+              "!=": [
+                {
+                  "var": "product_form"
+                },
+                "standalone_software"
+              ]
+            },
+            {
+              "!=": [
+                {
+                  "var": "software_executes_on_user_side"
+                },
+                false
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "exclude": [
+      {
+        "id": "not_commercial_activity",
+        "when": {
+          "and": [
+            {
+              "==": [
+                {
+                  "var": "is_commercial_activity"
+                },
+                false
+              ]
+            },
+            {
+              "!=": [
+                {
+                  "var": "economic_operator_role"
+                },
+                "steward"
+              ]
+            }
+          ]
+        },
+        "ref": "Art. 2(1), Art. 3(22); recitals 15, 18"
+      },
+      {
+        "id": "medical_devices",
+        "when": {
+          "==": [
+            {
+              "var": "is_medical_device"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 2(2)(a)"
+      },
+      {
+        "id": "in_vitro_diagnostics",
+        "when": {
+          "==": [
+            {
+              "var": "is_in_vitro_diagnostic"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 2(2)(b)"
+      },
+      {
+        "id": "type_approved_vehicles",
+        "when": {
+          "==": [
+            {
+              "var": "is_exclusively_vehicle_component"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 2(2)(c); Delegated Regulation (EU) 2025/1535"
+      },
+      {
+        "id": "civil_aviation",
+        "when": {
+          "==": [
+            {
+              "var": "is_civil_aviation_product"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 2(3)"
+      },
+      {
+        "id": "marine_equipment",
+        "when": {
+          "==": [
+            {
+              "var": "is_marine_equipment"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 2(4)"
+      },
+      {
+        "id": "identical_spare_parts",
+        "when": {
+          "and": [
+            {
+              "==": [
+                {
+                  "var": "supplied_as_spare_part"
+                },
+                true
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "spare_part_security_identical"
+                },
+                true
+              ]
+            }
+          ]
+        },
+        "ref": "Art. 2(6)"
+      },
+      {
+        "id": "national_security",
+        "when": {
+          "==": [
+            {
+              "var": "is_exclusively_national_security_product"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 2(7)"
+      },
+      {
+        "id": "defence",
+        "when": {
+          "==": [
+            {
+              "var": "is_exclusively_defence_product"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 2(7)"
+      },
+      {
+        "id": "classified_information",
+        "when": {
+          "==": [
+            {
+              "var": "processes_classified_information"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 2(7)"
+      }
+    ]
+  },
+  "role": {
+    "if": [
+      {
+        "and": [
+          {
+            "in": [
+              {
+                "var": "economic_operator_role"
+              },
+              [
+                "importer",
+                "distributor"
+              ]
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "places_under_own_name_or_modifies"
+              },
+              true
+            ]
+          }
+        ]
+      },
+      "manufacturer",
+      {
+        "var": "economic_operator_role"
+      }
+    ]
+  },
+  "classifications": [
+    {
+      "id": "critical",
+      "label": "Critical (Annex IV)",
+      "when": {
+        "in": [
+          {
+            "var": "core_functionality_category"
+          },
+          [
+            "Annex IV (1): Hardware Devices with Security Boxes",
+            "Annex IV (2): Smart meter gateways within smart metering systems as defined in Article 2, point (23) of Directive (EU) 2019/944 and other devices for advanced security purposes, including for secure cryptoprocessing",
+            "Annex IV (3): Smartcards or similar devices, including secure elements"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "important_class_ii",
+      "label": "Important, class II (Annex III)",
+      "when": {
+        "in": [
+          {
+            "var": "core_functionality_category"
+          },
+          [
+            "Annex III, class II (1): Hypervisors and container runtime systems that support virtualised execution of operating systems and similar environments",
+            "Annex III, class II (2): Firewalls, intrusion detection and prevention systems",
+            "Annex III, class II (3): Tamper-resistant microprocessors",
+            "Annex III, class II (4): Tamper-resistant microcontrollers"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "important_class_i",
+      "label": "Important, class I (Annex III)",
+      "when": {
+        "in": [
+          {
+            "var": "core_functionality_category"
+          },
+          [
+            "Annex III, class I (1): Identity management systems and privileged access management software and hardware, including authentication and access control readers, including biometric readers",
+            "Annex III, class I (2): Standalone and embedded browsers",
+            "Annex III, class I (3): Password managers",
+            "Annex III, class I (4): Software that searches for, removes, or quarantines malicious software",
+            "Annex III, class I (5): Products with digital elements with the function of virtual private network (VPN)",
+            "Annex III, class I (6): Network management systems",
+            "Annex III, class I (7): Security information and event management (SIEM) systems",
+            "Annex III, class I (8): Boot managers",
+            "Annex III, class I (9): Public key infrastructure and digital certificate issuance software",
+            "Annex III, class I (10): Physical and virtual network interfaces",
+            "Annex III, class I (11): Operating systems",
+            "Annex III, class I (12): Routers, modems intended for the connection to the internet, and switches",
+            "Annex III, class I (13): Microprocessors with security-related functionalities",
+            "Annex III, class I (14): Microcontrollers with security-related functionalities",
+            "Annex III, class I (15): Application specific integrated circuits (ASIC) and field-programmable gate arrays (FPGA) with security-related functionalities",
+            "Annex III, class I (16): Smart home general purpose virtual assistants",
+            "Annex III, class I (17): Smart home products with security functionalities, including smart door locks, security cameras, baby monitoring systems and alarm systems",
+            "Annex III, class I (18): Internet connected toys covered by Directive 2009/48/EC that have social interactive features (e.g. speaking or filming) or that have location tracking features",
+            "Annex III, class I (19): Personal wearable products to be worn or placed on a human body that have a health monitoring (such as tracking) purpose and to which Regulation (EU) 2017/745 or (EU) 2017/746 do not apply, or personal wearable products that are intended for the use by and for children"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "default",
+      "label": "Default",
+      "when": {
+        "==": [
+          {
+            "var": "core_functionality_category"
+          },
+          "None of these"
+        ]
+      }
+    }
+  ],
+  "requirements": [
+    {
+      "id": "annex_i_1_appropriate_cybersecurity",
+      "label": "Design, develop and produce the product to ensure cybersecurity appropriate to its risks",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(1)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2a_no_known_exploitable_vulnerabilities",
+      "label": "Place the product on the market without known exploitable vulnerabilities",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(2)(a)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2b_secure_by_default",
+      "label": "Ship a secure-by-default configuration, with the possibility to reset to the original state",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(2)(b)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2c_security_updates",
+      "label": "Make vulnerabilities fixable through security updates, automatic by default with an opt-out where applicable",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(2)(c)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2d_protection_from_unauthorised_access",
+      "label": "Protect against unauthorised access (authentication, identity and access management) and report possible unauthorised access",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(2)(d)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2e_confidentiality",
+      "label": "Protect the confidentiality of stored, transmitted and processed data, e.g. by encryption",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(2)(e)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2f_integrity",
+      "label": "Protect the integrity of data, commands, programs and configuration, and report corruption",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(2)(f)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2g_data_minimisation",
+      "label": "Process only data that is adequate, relevant and limited to the intended purpose",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(2)(g)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2h_availability",
+      "label": "Protect the availability of essential functions, including resilience against denial of service",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(2)(h)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2i_impact_on_other_devices",
+      "label": "Minimise the product's negative impact on the availability of other devices or networks",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(2)(i)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2j_limit_attack_surfaces",
+      "label": "Limit attack surfaces, including external interfaces",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(2)(j)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2k_reduce_incident_impact",
+      "label": "Reduce the impact of incidents with exploitation mitigation mechanisms",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(2)(k)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2l_security_monitoring",
+      "label": "Record and monitor security-relevant internal activity, with a user opt-out",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(2)(l)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2m_data_removal_and_transfer",
+      "label": "Let users securely remove all data and settings permanently, and transfer data securely",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part I(2)(m)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_ii_1_components_and_sbom",
+      "label": "Identify and document vulnerabilities and components, including a software bill of materials of at least top-level dependencies",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part II(1)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_ii_2_remediate_vulnerabilities",
+      "label": "Remediate vulnerabilities without delay, with security updates separate from feature updates where feasible",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part II(2)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_ii_3_regular_security_testing",
+      "label": "Apply effective and regular security tests and reviews",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part II(3)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_ii_4_disclose_fixed_vulnerabilities",
+      "label": "Publicly disclose fixed vulnerabilities once an update is available",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part II(4)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_ii_5_cvd_policy",
+      "label": "Put in place and enforce a coordinated vulnerability disclosure policy",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part II(5)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_ii_6_vulnerability_contact",
+      "label": "Facilitate sharing information about vulnerabilities, including a contact address for reports",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part II(6)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_ii_7_secure_update_distribution",
+      "label": "Distribute updates securely",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part II(7)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_ii_8_timely_free_updates",
+      "label": "Disseminate security updates without delay and free of charge, with advisory messages",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I Part II(8)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_13_2_risk_assessment",
+      "label": "Carry out a cybersecurity risk assessment, document it and keep it up to date",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 13(2), 13(3)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_13_5_component_due_diligence",
+      "label": "Exercise due diligence on integrated third-party components",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 13(5)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_13_6_report_upstream",
+      "label": "Report vulnerabilities in integrated components to their maintainer and share fixes",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 13(6)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_13_8_support_period",
+      "label": "Determine a support period of at least five years, or the expected use time if shorter",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 13(8)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_13_19_support_end_date",
+      "label": "State the end date of the support period at purchase, at least month and year",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 13(19)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_13_18_user_information",
+      "label": "Provide the information and instructions to the user in Annex II",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 13(18), Annex II",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_31_technical_documentation",
+      "label": "Draw up the technical documentation in Annex VII and keep it up to date",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 31, Annex VII",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_32_conformity_assessment",
+      "label": "Carry out the applicable conformity assessment procedure before placing on the market",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 32",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_28_declaration_of_conformity",
+      "label": "Draw up the EU declaration of conformity",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 28, Annex V",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_30_ce_marking",
+      "label": "Affix the CE marking",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 30",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_13_13_retain_documentation",
+      "label": "Keep the technical documentation and declaration of conformity for at least 10 years, or the support period if longer",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 13(13)",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_14_report_exploited_vulnerabilities",
+      "label": "Notify actively exploited vulnerabilities to the coordinating CSIRT and ENISA: early warning within 24 h, notification within 72 h, final report within 14 days after a fix",
+      "roles": [
+        "manufacturer",
+        "steward"
+      ],
+      "ref": "Art. 14(1)-(2), Art. 24(3)",
+      "applies_from": "2026-09-11"
+    },
+    {
+      "id": "art_14_report_severe_incidents",
+      "label": "Notify severe incidents affecting the product's security: early warning within 24 h, notification within 72 h, final report within one month",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 14(3)-(4)",
+      "applies_from": "2026-09-11"
+    },
+    {
+      "id": "art_14_8_inform_users",
+      "label": "Inform impacted users about actively exploited vulnerabilities and severe incidents, and about mitigations",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 14(8)",
+      "applies_from": "2026-09-11"
+    },
+    {
+      "id": "art_18_authorised_representative_tasks",
+      "label": "Keep the declaration of conformity and technical documentation available to market surveillance authorities and cooperate with them, as mandated",
+      "roles": [
+        "authorised_representative"
+      ],
+      "ref": "Art. 18",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_19_importer_checks",
+      "label": "Place only conforming products: check the conformity assessment, technical documentation, CE marking and user information",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 19",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_19_importer_identification",
+      "label": "Indicate your name and contact address on the product, its packaging or documentation",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 19",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_19_importer_vulnerabilities",
+      "label": "Inform the manufacturer of vulnerabilities, and market surveillance authorities where the risk is significant",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 19",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_20_distributor_checks",
+      "label": "Before making the product available, check the CE marking and the manufacturer's and importer's documentation",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 20",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_20_distributor_vulnerabilities",
+      "label": "Inform the manufacturer of vulnerabilities, and market surveillance authorities where the risk is significant",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 20",
+      "applies_from": "2027-12-11",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "software_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2027-12-11"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "software_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_24_steward_policy",
+      "label": "Put in place and document a cybersecurity policy for the free and open-source software you support",
+      "roles": [
+        "steward"
+      ],
+      "ref": "Art. 24(1)",
+      "applies_from": "2027-12-11"
+    },
+    {
+      "id": "art_24_steward_cooperation",
+      "label": "Cooperate with market surveillance authorities on request",
+      "roles": [
+        "steward"
+      ],
+      "ref": "Art. 24(2)",
+      "applies_from": "2027-12-11"
+    }
+  ],
+  "assessment_routes": [
+    {
+      "id": "module_a_internal_control",
+      "label": "Internal control (module A)",
+      "allowed_when": {
+        "or": [
+          {
+            "var": "class__default"
+          },
+          {
+            "and": [
+              {
+                "var": "class__important_class_i"
+              },
+              {
+                "==": [
+                  {
+                    "var": "harmonised_standards_cover_core_functionality"
+                  },
+                  true
+                ]
+              }
+            ]
+          },
+          {
+            "and": [
+              {
+                "or": [
+                  {
+                    "var": "class__important_class_i"
+                  },
+                  {
+                    "var": "class__important_class_ii"
+                  }
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "is_free_and_open_source"
+                  },
+                  true
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "module_b_c_type_examination",
+      "label": "EU-type examination with conformity to type (modules B and C)",
+      "allowed_when": {
+        "or": [
+          {
+            "var": "class__default"
+          },
+          {
+            "var": "class__important_class_i"
+          },
+          {
+            "var": "class__important_class_ii"
+          },
+          {
+            "var": "class__critical"
+          }
+        ]
+      }
+    },
+    {
+      "id": "module_h_full_quality_assurance",
+      "label": "Full quality assurance (module H)",
+      "allowed_when": {
+        "or": [
+          {
+            "var": "class__default"
+          },
+          {
+            "var": "class__important_class_i"
+          },
+          {
+            "var": "class__important_class_ii"
+          },
+          {
+            "var": "class__critical"
+          }
+        ]
+      }
+    },
+    {
+      "id": "eucc_certification",
+      "label": "European cybersecurity certification, at least 'substantial'",
+      "allowed_when": {
+        "or": [
+          {
+            "var": "class__important_class_i"
+          },
+          {
+            "var": "class__important_class_ii"
+          },
+          {
+            "var": "class__critical"
+          }
+        ]
+      }
+    }
+  ],
+  "finding_rules": [
+    {
+      "id": "class_i_needs_third_party",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "var": "class__important_class_i"
+          },
+          {
+            "!=": [
+              {
+                "var": "harmonised_standards_cover_core_functionality"
+              },
+              true
+            ]
+          },
+          {
+            "!": {
+              "==": [
+                {
+                  "var": "is_free_and_open_source"
+                },
+                true
+              ]
+            }
+          }
+        ]
+      },
+      "message": "Important class I without full harmonised-standard coverage: a third-party conformity assessment (modules B+C, H or EUCC) is required.",
+      "ref": "Art. 32(2)"
+    },
+    {
+      "id": "class_ii_or_critical_needs_third_party",
+      "level": "action_required",
+      "when": {
+        "or": [
+          {
+            "var": "class__critical"
+          },
+          {
+            "and": [
+              {
+                "var": "class__important_class_ii"
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_free_and_open_source"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "message": "Important class II or critical: a third-party conformity assessment is required (critical products may need European cybersecurity certification under a delegated act).",
+      "ref": "Art. 8(1), Art. 32(3)-(4)"
+    },
+    {
+      "id": "support_period_too_short",
+      "level": "action_required",
+      "when": {
+        "or": [
+          {
+            "and": [
+              {
+                ">=": [
+                  {
+                    "var": "expected_use_time_years"
+                  },
+                  5
+                ]
+              },
+              {
+                "<": [
+                  {
+                    "years_between": [
+                      {
+                        "if": [
+                          {
+                            "!=": [
+                              {
+                                "var": "hardware_first_placed_on_market"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "var": "hardware_first_placed_on_market"
+                          },
+                          {
+                            "var": "software_first_placed_on_market"
+                          }
+                        ]
+                      },
+                      {
+                        "var": "support_period_end"
+                      }
+                    ]
+                  },
+                  5
+                ]
+              }
+            ]
+          },
+          {
+            "and": [
+              {
+                "<": [
+                  {
+                    "var": "expected_use_time_years"
+                  },
+                  5
+                ]
+              },
+              {
+                "<": [
+                  {
+                    "years_between": [
+                      {
+                        "if": [
+                          {
+                            "!=": [
+                              {
+                                "var": "hardware_first_placed_on_market"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "var": "hardware_first_placed_on_market"
+                          },
+                          {
+                            "var": "software_first_placed_on_market"
+                          }
+                        ]
+                      },
+                      {
+                        "var": "support_period_end"
+                      }
+                    ]
+                  },
+                  {
+                    "var": "expected_use_time_years"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "message": "The support period is shorter than the minimum: at least five years, or the whole expected use time if that is shorter.",
+      "ref": "Art. 13(8)"
+    },
+    {
+      "id": "support_period_shorter_than_use",
+      "level": "caution",
+      "when": {
+        "and": [
+          {
+            ">=": [
+              {
+                "years_between": [
+                  {
+                    "if": [
+                      {
+                        "!=": [
+                          {
+                            "var": "hardware_first_placed_on_market"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "var": "hardware_first_placed_on_market"
+                      },
+                      {
+                        "var": "software_first_placed_on_market"
+                      }
+                    ]
+                  },
+                  {
+                    "var": "support_period_end"
+                  }
+                ]
+              },
+              5
+            ]
+          },
+          {
+            "<": [
+              {
+                "years_between": [
+                  {
+                    "if": [
+                      {
+                        "!=": [
+                          {
+                            "var": "hardware_first_placed_on_market"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "var": "hardware_first_placed_on_market"
+                      },
+                      {
+                        "var": "software_first_placed_on_market"
+                      }
+                    ]
+                  },
+                  {
+                    "var": "support_period_end"
+                  }
+                ]
+              },
+              {
+                "var": "expected_use_time_years"
+              }
+            ]
+          }
+        ]
+      },
+      "message": "The support period meets the five-year minimum but is shorter than the expected use time; a longer period is expected for products used longer.",
+      "ref": "Art. 13(8), recital 60"
+    },
+    {
+      "id": "substantial_modification",
+      "level": "action_required",
+      "when": {
+        "==": [
+          {
+            "var": "is_substantial_modification"
+          },
+          true
+        ]
+      },
+      "message": "This release is a substantial modification: it is placed on the market anew, needs a new conformity assessment (focused on the changed parts) and its own support period.",
+      "ref": "Art. 3(30), recital 39-41"
+    },
+    {
+      "id": "unfinished_software_release",
+      "level": "caution",
+      "when": {
+        "==": [
+          {
+            "var": "is_unfinished_software_release"
+          },
+          true
+        ]
+      },
+      "message": "Unfinished software may be made available without complying only for the time needed for testing, with a visible notice that it does not comply.",
+      "ref": "Art. 4(3)"
+    },
+    {
+      "id": "preview_features_in_release",
+      "level": "caution",
+      "when": {
+        "==": [
+          {
+            "var": "release_has_preview_features"
+          },
+          true
+        ]
+      },
+      "message": "Preview or beta features in a normal release are part of the product placed on the market: include them in the risk assessment and essential requirements, or move them to a separate test build.",
+      "ref": "Art. 4(3) (our reading, pending legal review)"
+    },
+    {
+      "id": "open_debug_interface",
+      "level": "caution",
+      "when": {
+        "==": [
+          {
+            "var": "physical_debug_interface"
+          },
+          "present_open"
+        ]
+      },
+      "message": "An open debug interface in shipped units is attack surface.",
+      "ref": "Annex I Part I(2)(d), (2)(j)"
+    },
+    {
+      "id": "shared_default_credentials",
+      "level": "action_required",
+      "when": {
+        "==": [
+          {
+            "var": "default_credentials"
+          },
+          "shared_default"
+        ]
+      },
+      "message": "The same default password on every unit is not a secure-by-default configuration.",
+      "ref": "Annex I Part I(2)(b), (2)(d)"
+    },
+    {
+      "id": "no_update_mechanism",
+      "level": "action_required",
+      "when": {
+        "==": [
+          {
+            "var": "update_mechanism"
+          },
+          "none"
+        ]
+      },
+      "message": "Without an update mechanism, vulnerabilities cannot be addressed through security updates.",
+      "ref": "Annex I Part I(2)(c)"
+    },
+    {
+      "id": "updates_not_automatic_by_default",
+      "level": "caution",
+      "when": {
+        "in": [
+          {
+            "var": "update_mechanism"
+          },
+          [
+            "manual",
+            "automatic_default_off"
+          ]
+        ]
+      },
+      "message": "Security updates should install automatically by default, with an opt-out, where applicable to the product.",
+      "ref": "Annex I Part I(2)(c)"
+    },
+    {
+      "id": "updates_not_verified",
+      "level": "action_required",
+      "when": {
+        "==": [
+          {
+            "var": "verifies_update_authenticity"
+          },
+          false
+        ]
+      },
+      "message": "Updates installed without verifying their authenticity undermine integrity and secure distribution.",
+      "ref": "Annex I Part I(2)(f), Part II(7)"
+    },
+    {
+      "id": "data_in_transit_not_fully_protected",
+      "level": "caution",
+      "when": {
+        "in": [
+          {
+            "var": "encrypts_data_in_transit"
+          },
+          [
+            "some_channels",
+            "none"
+          ]
+        ]
+      },
+      "message": "Data on some external channels is not protected; justify it in the risk assessment or encrypt it.",
+      "ref": "Annex I Part I(2)(e)"
+    },
+    {
+      "id": "sensitive_data_unencrypted_at_rest",
+      "level": "caution",
+      "when": {
+        "==": [
+          {
+            "var": "sensitive_data_at_rest"
+          },
+          "stored_unencrypted"
+        ]
+      },
+      "message": "Secrets or confidential data are stored unencrypted.",
+      "ref": "Annex I Part I(2)(e)"
+    },
+    {
+      "id": "data_removal_not_permanent",
+      "level": "caution",
+      "when": {
+        "in": [
+          {
+            "var": "data_erasure_method"
+          },
+          [
+            "none",
+            "logical_delete"
+          ]
+        ]
+      },
+      "message": "Users cannot remove their data permanently; a logical delete may leave it recoverable.",
+      "ref": "Annex I Part I(2)(m)"
+    },
+    {
+      "id": "no_sbom",
+      "level": "action_required",
+      "when": {
+        "==": [
+          {
+            "var": "sbom_scope"
+          },
+          "none"
+        ]
+      },
+      "message": "No software bill of materials for this release; at least top-level dependencies are required.",
+      "ref": "Annex I Part II(1)"
+    },
+    {
+      "id": "no_cvd_policy",
+      "level": "action_required",
+      "when": {
+        "==": [
+          {
+            "var": "has_cvd_policy"
+          },
+          false
+        ]
+      },
+      "message": "A coordinated vulnerability disclosure policy is required.",
+      "ref": "Annex I Part II(5)"
+    },
+    {
+      "id": "no_vulnerability_contact",
+      "level": "action_required",
+      "when": {
+        "==": [
+          {
+            "var": "has_vulnerability_contact"
+          },
+          false
+        ]
+      },
+      "message": "A contact address for reporting vulnerabilities is required.",
+      "ref": "Annex I Part II(6)"
+    },
+    {
+      "id": "no_reporting_process",
+      "level": "action_required",
+      "when": {
+        "==": [
+          {
+            "var": "reporting_process_in_place"
+          },
+          false
+        ]
+      },
+      "message": "Reporting of actively exploited vulnerabilities and severe incidents has applied since 11 September 2026, also to products placed on the market earlier.",
+      "ref": "Art. 14, Art. 71(2)"
+    },
+    {
+      "id": "relies_on_network_isolation",
+      "level": "info",
+      "when": {
+        "==": [
+          {
+            "var": "relies_on_network_isolation"
+          },
+          true
+        ]
+      },
+      "message": "Restricting use to protected networks is allowed if the risk assessment covers it and the user information states it clearly.",
+      "ref": "Art. 13(2), Annex II"
+    },
+    {
+      "id": "monetisation_changes_scope",
+      "level": "caution",
+      "when": {
+        "and": [
+          {
+            "==": [
+              {
+                "var": "is_free_and_open_source"
+              },
+              true
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "is_commercial_activity"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Offering paid support or other monetisation changes CRA scope and requires re-assessment.",
+      "ref": "Recital 15, 18"
+    },
+    {
+      "id": "legacy_design",
+      "level": "info",
+      "when": {
+        "==": [
+          {
+            "var": "designed_before_cra_application"
+          },
+          true
+        ]
+      },
+      "message": "A design from before 11 December 2027 needs no redesign if a current risk assessment shows adequate measures, but conformity assessment, CE marking and vulnerability handling still apply.",
+      "ref": "Commission guidance, section 2.7"
+    },
+    {
+      "id": "prior_certificate_until_2028",
+      "level": "info",
+      "when": {
+        "==": [
+          {
+            "var": "has_prior_cybersecurity_type_exam_certificate"
+          },
+          true
+        ]
+      },
+      "message": "The existing certificate counts as evidence for the risks it covers until 11 June 2028; other risks must be assessed under the CRA.",
+      "ref": "Art. 69(1)"
+    },
+    {
+      "id": "classified_information_national_rules",
+      "level": "info",
+      "when": {
+        "==": [
+          {
+            "var": "processes_classified_information"
+          },
+          true
+        ]
+      },
+      "message": "Outside the CRA, but national rules on classified information apply instead (e.g. security accreditation); check with the national security authority.",
+      "ref": "Art. 2(7)"
+    },
+    {
+      "id": "remote_data_processing_in_scope",
+      "level": "info",
+      "when": {
+        "==": [
+          {
+            "var": "has_remote_data_processing"
+          },
+          true
+        ]
+      },
+      "message": "The remote data processing solution is part of the product: cover it in the risk assessment, essential requirements and reporting.",
+      "ref": "Art. 3(1)-(2)"
+    },
+    {
+      "id": "operator_becomes_manufacturer",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "in": [
+              {
+                "var": "economic_operator_role"
+              },
+              [
+                "importer",
+                "distributor"
+              ]
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "places_under_own_name_or_modifies"
+              },
+              true
+            ]
+          }
+        ]
+      },
+      "message": "An importer or distributor that places the product under its own name or substantially modifies it has the manufacturer's obligations.",
+      "ref": "Art. 21, Art. 22"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "ex03-installed-mobile-app-in-scope",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer"
+      },
+      "expected": {
+        "in_scope": true
+      }
+    },
+    {
+      "id": "ex05-web-app-only-out-of-scope",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": false,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "guidance-2.5-no-data-connection-out-of-scope",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": false,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "ex20-foss-donations-only-out-of-scope",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": false,
+        "economic_operator_role": "manufacturer",
+        "is_free_and_open_source": true
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "monetisation_changes_scope"
+        ]
+      }
+    },
+    {
+      "id": "ex17-paid-foss-edition-in-scope",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "is_free_and_open_source": true
+      },
+      "expected": {
+        "in_scope": true
+      }
+    },
+    {
+      "id": "ex25-steward-of-foss-library",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": false,
+        "economic_operator_role": "steward",
+        "is_free_and_open_source": true
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "monetisation_changes_scope"
+        ],
+        "requirements": [
+          "art_14_report_exploited_vulnerabilities",
+          "art_24_steward_policy",
+          "art_24_steward_cooperation"
+        ]
+      },
+      "as_of": "2028-01-01"
+    },
+    {
+      "id": "ex36-identical-spare-part-excluded",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "supplied_as_spare_part": true,
+        "spare_part_security_identical": true
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "ex37-non-identical-spare-part-in-scope",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "supplied_as_spare_part": true,
+        "spare_part_security_identical": false
+      },
+      "expected": {
+        "in_scope": true
+      }
+    },
+    {
+      "id": "medical-device-excluded",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "is_medical_device": true
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "classified-information-national-rules",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "processes_classified_information": true
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "classified_information_national_rules"
+        ]
+      }
+    },
+    {
+      "id": "ex58-smartphone-default-category",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "core_functionality_category": "None of these"
+      },
+      "expected": {
+        "classifications": [
+          "default"
+        ],
+        "assessment_routes": [
+          "module_a_internal_control",
+          "module_b_c_type_examination",
+          "module_h_full_quality_assurance"
+        ],
+        "findings": []
+      }
+    },
+    {
+      "id": "ex61-siem-module-class-i-without-standard",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "core_functionality_category": "Annex III, class I (7): Security information and event management (SIEM) systems"
+      },
+      "expected": {
+        "classifications": [
+          "important_class_i"
+        ],
+        "findings": [
+          "class_i_needs_third_party"
+        ],
+        "assessment_routes": [
+          "module_b_c_type_examination",
+          "module_h_full_quality_assurance",
+          "eucc_certification"
+        ]
+      }
+    },
+    {
+      "id": "ex62-antivirus-class-i-with-standard",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "core_functionality_category": "Annex III, class I (4): Software that searches for, removes, or quarantines malicious software",
+        "harmonised_standards_cover_core_functionality": true
+      },
+      "expected": {
+        "classifications": [
+          "important_class_i"
+        ],
+        "findings": [],
+        "assessment_routes": [
+          "module_a_internal_control",
+          "module_b_c_type_examination",
+          "module_h_full_quality_assurance",
+          "eucc_certification"
+        ]
+      }
+    },
+    {
+      "id": "ex61-ids-module-class-ii",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "core_functionality_category": "Annex III, class II (2): Firewalls, intrusion detection and prevention systems"
+      },
+      "expected": {
+        "classifications": [
+          "important_class_ii"
+        ],
+        "findings": [
+          "class_ii_or_critical_needs_third_party"
+        ],
+        "assessment_routes": [
+          "module_b_c_type_examination",
+          "module_h_full_quality_assurance",
+          "eucc_certification"
+        ]
+      }
+    },
+    {
+      "id": "art-32-5-foss-class-ii-may-self-assess",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "core_functionality_category": "Annex III, class II (1): Hypervisors and container runtime systems that support virtualised execution of operating systems and similar environments",
+        "is_free_and_open_source": true
+      },
+      "expected": {
+        "classifications": [
+          "important_class_ii"
+        ],
+        "findings": [],
+        "assessment_routes": [
+          "module_a_internal_control",
+          "module_b_c_type_examination",
+          "module_h_full_quality_assurance",
+          "eucc_certification"
+        ]
+      }
+    },
+    {
+      "id": "critical-smartcard-no-foss-exception",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "core_functionality_category": "Annex IV (3): Smartcards or similar devices, including secure elements",
+        "is_free_and_open_source": true
+      },
+      "expected": {
+        "classifications": [
+          "critical"
+        ],
+        "findings": [
+          "class_ii_or_critical_needs_third_party"
+        ]
+      }
+    },
+    {
+      "id": "ex54-support-period-matches-use-time",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "hardware_first_placed_on_market": "2028-01-01",
+        "support_period_end": "2038-01-01",
+        "expected_use_time_years": 10
+      },
+      "expected": {
+        "findings": []
+      }
+    },
+    {
+      "id": "support-period-below-five-years",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "hardware_first_placed_on_market": "2028-01-01",
+        "support_period_end": "2031-06-01",
+        "expected_use_time_years": 8
+      },
+      "expected": {
+        "findings": [
+          "support_period_too_short"
+        ]
+      }
+    },
+    {
+      "id": "support-period-five-years-but-longer-use",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "hardware_first_placed_on_market": "2028-01-01",
+        "support_period_end": "2033-01-01",
+        "expected_use_time_years": 10
+      },
+      "expected": {
+        "findings": [
+          "support_period_shorter_than_use"
+        ]
+      }
+    },
+    {
+      "id": "short-expected-use-time",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "software_first_placed_on_market": "2028-01-01",
+        "support_period_end": "2031-01-01",
+        "expected_use_time_years": 3
+      },
+      "expected": {
+        "findings": []
+      }
+    },
+    {
+      "id": "ex44-persistent-login-is-substantial",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "release_enables_new_attack_scenarios": true,
+        "release_changes_covered_by_risk_assessment": false
+      },
+      "expected": {
+        "findings": [
+          "substantial_modification"
+        ]
+      }
+    },
+    {
+      "id": "ex42-foreseen-group-chat-not-substantial",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "release_adds_threat_vectors": true,
+        "release_changes_covered_by_risk_assessment": true
+      },
+      "expected": {
+        "findings": []
+      }
+    },
+    {
+      "id": "ex46-security-fix-not-substantial",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "release_changes_intended_purpose": false,
+        "release_adds_threat_vectors": false,
+        "release_enables_new_attack_scenarios": false,
+        "release_changes_attack_likelihood": false,
+        "release_changes_attack_impact": false
+      },
+      "expected": {
+        "findings": []
+      }
+    },
+    {
+      "id": "reporting-applies-to-earlier-products",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "hardware_first_placed_on_market": "2025-03-01",
+        "hardware_still_placed_on_market": false,
+        "hardware_last_placed_on_market": "2027-06-30"
+      },
+      "expected": {
+        "in_scope": true,
+        "requirements": [
+          "art_14_report_exploited_vulnerabilities",
+          "art_14_report_severe_incidents",
+          "art_14_8_inform_users"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "reporting-not-before-september-2026",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "hardware_first_placed_on_market": "2025-03-01"
+      },
+      "expected": {
+        "requirements": []
+      },
+      "as_of": "2026-06-01"
+    },
+    {
+      "id": "manufacturer-after-application",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "software_first_placed_on_market": "2028-02-01"
+      },
+      "expected": {
+        "requirements": [
+          "annex_i_1_appropriate_cybersecurity",
+          "annex_i_2a_no_known_exploitable_vulnerabilities",
+          "annex_i_2b_secure_by_default",
+          "annex_i_2c_security_updates",
+          "annex_i_2d_protection_from_unauthorised_access",
+          "annex_i_2e_confidentiality",
+          "annex_i_2f_integrity",
+          "annex_i_2g_data_minimisation",
+          "annex_i_2h_availability",
+          "annex_i_2i_impact_on_other_devices",
+          "annex_i_2j_limit_attack_surfaces",
+          "annex_i_2k_reduce_incident_impact",
+          "annex_i_2l_security_monitoring",
+          "annex_i_2m_data_removal_and_transfer",
+          "annex_i_ii_1_components_and_sbom",
+          "annex_i_ii_2_remediate_vulnerabilities",
+          "annex_i_ii_3_regular_security_testing",
+          "annex_i_ii_4_disclose_fixed_vulnerabilities",
+          "annex_i_ii_5_cvd_policy",
+          "annex_i_ii_6_vulnerability_contact",
+          "annex_i_ii_7_secure_update_distribution",
+          "annex_i_ii_8_timely_free_updates",
+          "art_13_2_risk_assessment",
+          "art_13_5_component_due_diligence",
+          "art_13_6_report_upstream",
+          "art_13_8_support_period",
+          "art_13_19_support_end_date",
+          "art_13_18_user_information",
+          "art_31_technical_documentation",
+          "art_32_conformity_assessment",
+          "art_28_declaration_of_conformity",
+          "art_30_ce_marking",
+          "art_13_13_retain_documentation",
+          "art_14_report_exploited_vulnerabilities",
+          "art_14_report_severe_incidents",
+          "art_14_8_inform_users"
+        ]
+      },
+      "as_of": "2028-03-01"
+    },
+    {
+      "id": "still-shipping-hardware-gets-everything",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "hardware_first_placed_on_market": "2026-01-01",
+        "hardware_still_placed_on_market": true
+      },
+      "expected": {
+        "requirements": [
+          "annex_i_1_appropriate_cybersecurity",
+          "annex_i_2a_no_known_exploitable_vulnerabilities",
+          "annex_i_2b_secure_by_default",
+          "annex_i_2c_security_updates",
+          "annex_i_2d_protection_from_unauthorised_access",
+          "annex_i_2e_confidentiality",
+          "annex_i_2f_integrity",
+          "annex_i_2g_data_minimisation",
+          "annex_i_2h_availability",
+          "annex_i_2i_impact_on_other_devices",
+          "annex_i_2j_limit_attack_surfaces",
+          "annex_i_2k_reduce_incident_impact",
+          "annex_i_2l_security_monitoring",
+          "annex_i_2m_data_removal_and_transfer",
+          "annex_i_ii_1_components_and_sbom",
+          "annex_i_ii_2_remediate_vulnerabilities",
+          "annex_i_ii_3_regular_security_testing",
+          "annex_i_ii_4_disclose_fixed_vulnerabilities",
+          "annex_i_ii_5_cvd_policy",
+          "annex_i_ii_6_vulnerability_contact",
+          "annex_i_ii_7_secure_update_distribution",
+          "annex_i_ii_8_timely_free_updates",
+          "art_13_2_risk_assessment",
+          "art_13_5_component_due_diligence",
+          "art_13_6_report_upstream",
+          "art_13_8_support_period",
+          "art_13_19_support_end_date",
+          "art_13_18_user_information",
+          "art_31_technical_documentation",
+          "art_32_conformity_assessment",
+          "art_28_declaration_of_conformity",
+          "art_30_ce_marking",
+          "art_13_13_retain_documentation",
+          "art_14_report_exploited_vulnerabilities",
+          "art_14_report_severe_incidents",
+          "art_14_8_inform_users"
+        ]
+      },
+      "as_of": "2028-03-01"
+    },
+    {
+      "id": "unanswered-placement-hides-nothing",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer"
+      },
+      "expected": {
+        "requirements": [
+          "annex_i_1_appropriate_cybersecurity",
+          "annex_i_2a_no_known_exploitable_vulnerabilities",
+          "annex_i_2b_secure_by_default",
+          "annex_i_2c_security_updates",
+          "annex_i_2d_protection_from_unauthorised_access",
+          "annex_i_2e_confidentiality",
+          "annex_i_2f_integrity",
+          "annex_i_2g_data_minimisation",
+          "annex_i_2h_availability",
+          "annex_i_2i_impact_on_other_devices",
+          "annex_i_2j_limit_attack_surfaces",
+          "annex_i_2k_reduce_incident_impact",
+          "annex_i_2l_security_monitoring",
+          "annex_i_2m_data_removal_and_transfer",
+          "annex_i_ii_1_components_and_sbom",
+          "annex_i_ii_2_remediate_vulnerabilities",
+          "annex_i_ii_3_regular_security_testing",
+          "annex_i_ii_4_disclose_fixed_vulnerabilities",
+          "annex_i_ii_5_cvd_policy",
+          "annex_i_ii_6_vulnerability_contact",
+          "annex_i_ii_7_secure_update_distribution",
+          "annex_i_ii_8_timely_free_updates",
+          "art_13_2_risk_assessment",
+          "art_13_5_component_due_diligence",
+          "art_13_6_report_upstream",
+          "art_13_8_support_period",
+          "art_13_19_support_end_date",
+          "art_13_18_user_information",
+          "art_31_technical_documentation",
+          "art_32_conformity_assessment",
+          "art_28_declaration_of_conformity",
+          "art_30_ce_marking",
+          "art_13_13_retain_documentation",
+          "art_14_report_exploited_vulnerabilities",
+          "art_14_report_severe_incidents",
+          "art_14_8_inform_users"
+        ]
+      },
+      "as_of": "2028-03-01"
+    },
+    {
+      "id": "importer-obligations",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "importer",
+        "hardware_still_placed_on_market": true
+      },
+      "expected": {
+        "requirements": [
+          "art_19_importer_checks",
+          "art_19_importer_identification",
+          "art_19_importer_vulnerabilities"
+        ]
+      },
+      "as_of": "2028-03-01"
+    },
+    {
+      "id": "importer-under-own-name-is-manufacturer",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "importer",
+        "places_under_own_name_or_modifies": true,
+        "hardware_still_placed_on_market": true
+      },
+      "expected": {
+        "requirements": [
+          "annex_i_1_appropriate_cybersecurity",
+          "annex_i_2a_no_known_exploitable_vulnerabilities",
+          "annex_i_2b_secure_by_default",
+          "annex_i_2c_security_updates",
+          "annex_i_2d_protection_from_unauthorised_access",
+          "annex_i_2e_confidentiality",
+          "annex_i_2f_integrity",
+          "annex_i_2g_data_minimisation",
+          "annex_i_2h_availability",
+          "annex_i_2i_impact_on_other_devices",
+          "annex_i_2j_limit_attack_surfaces",
+          "annex_i_2k_reduce_incident_impact",
+          "annex_i_2l_security_monitoring",
+          "annex_i_2m_data_removal_and_transfer",
+          "annex_i_ii_1_components_and_sbom",
+          "annex_i_ii_2_remediate_vulnerabilities",
+          "annex_i_ii_3_regular_security_testing",
+          "annex_i_ii_4_disclose_fixed_vulnerabilities",
+          "annex_i_ii_5_cvd_policy",
+          "annex_i_ii_6_vulnerability_contact",
+          "annex_i_ii_7_secure_update_distribution",
+          "annex_i_ii_8_timely_free_updates",
+          "art_13_2_risk_assessment",
+          "art_13_5_component_due_diligence",
+          "art_13_6_report_upstream",
+          "art_13_8_support_period",
+          "art_13_19_support_end_date",
+          "art_13_18_user_information",
+          "art_31_technical_documentation",
+          "art_32_conformity_assessment",
+          "art_28_declaration_of_conformity",
+          "art_30_ce_marking",
+          "art_13_13_retain_documentation",
+          "art_14_report_exploited_vulnerabilities",
+          "art_14_report_severe_incidents",
+          "art_14_8_inform_users"
+        ],
+        "findings": [
+          "operator_becomes_manufacturer"
+        ]
+      },
+      "as_of": "2028-03-01"
+    },
+    {
+      "id": "distributor-obligations",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "distributor",
+        "hardware_still_placed_on_market": true
+      },
+      "expected": {
+        "requirements": [
+          "art_20_distributor_checks",
+          "art_20_distributor_vulnerabilities"
+        ]
+      },
+      "as_of": "2028-03-01"
+    },
+    {
+      "id": "security-gaps-raise-findings",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "default_credentials": "shared_default",
+        "update_mechanism": "none",
+        "sbom_scope": "none",
+        "has_cvd_policy": false,
+        "physical_debug_interface": "present_open"
+      },
+      "expected": {
+        "findings": [
+          "shared_default_credentials",
+          "no_update_mechanism",
+          "no_sbom",
+          "no_cvd_policy",
+          "open_debug_interface"
+        ]
+      }
+    },
+    {
+      "id": "rdps-detected",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "remote_processing_at_distance": true,
+        "remote_processing_needed_for_function": true,
+        "remote_processing_designed_by_manufacturer": true
+      },
+      "expected": {
+        "findings": [
+          "remote_data_processing_in_scope"
+        ]
+      }
+    },
+    {
+      "id": "third-party-saas-is-not-rdps",
+      "answers": {
+        "product_form": "standalone_software",
+        "software_executes_on_user_side": true,
+        "has_data_connection": true,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "remote_processing_at_distance": true,
+        "remote_processing_needed_for_function": true,
+        "remote_processing_designed_by_manufacturer": false
+      },
+      "expected": {
+        "findings": []
+      }
+    }
+  ]
+}

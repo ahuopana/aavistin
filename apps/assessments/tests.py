@@ -229,9 +229,10 @@ class CarryForwardTests(ConfigurationFixture):
 
 
 class EuCraConfigurationFixture(TestCase):
-    """Mirrors ConfigurationFixture but approves the real eu-cra-partial
-    package, to exercise its classification -> assessment_routes/finding_rules
-    wiring (the class__ synthetic vars) through evaluate_configuration.
+    """Mirrors ConfigurationFixture but approves the shared question library
+    and the real eu-cra package, to exercise library questions, derived
+    answers, classifications, roles and dated requirements end to end
+    through evaluate_configuration.
     """
 
     def setUp(self):
@@ -254,7 +255,10 @@ class EuCraConfigurationFixture(TestCase):
             software_release=self.release,
         )
 
-        self.package = import_package(load_package("eu-cra-partial", "1.0.0"), is_official=True)
+        approve_package(
+            import_package(load_package("common", "1.1.0"), kind="question_set", is_official=True)
+        )
+        self.package = import_package(load_package("eu-cra", "1.0.0"), is_official=True)
         approve_package(self.package)
 
     def _answer(self, **values):
@@ -263,44 +267,86 @@ class EuCraConfigurationFixture(TestCase):
                 question_id=question_id, value=value, hardware_revision=self.revision
             )
 
+    def _category(self, fragment):
+        question = next(
+            q
+            for q in self.package.content["questions"]
+            if q["id"] == "core_functionality_category"
+        )
+        return next(choice for choice in question["choices"] if fragment in choice)
+
+    def _manufacturer(self, **extra):
+        self._answer(
+            product_form="hardware_with_software",
+            has_data_connection=True,
+            is_commercial_activity=True,
+            economic_operator_role="manufacturer",
+            **extra,
+        )
+
+    def _result(self, evaluation):
+        return next(r for r in evaluation["results"] if r["source"] == "eu-cra")
+
 
 class EuCraEvaluationTests(EuCraConfigurationFixture):
-    def test_default_classification_gets_internal_control_route(self):
-        self._answer(
-            is_free_and_open_source=False,
-            is_commercial_activity=True,
-            is_annex_iii_important_product=False,
-            is_annex_iii_critical_product=False,
-        )
+    def test_default_category_allows_internal_control(self):
+        self._manufacturer(core_functionality_category="None of these")
         evaluation = evaluate_configuration(self.configuration)
-        result = evaluation["results"][0]
+        result = self._result(evaluation)
         self.assertTrue(result["in_scope"])
         self.assertEqual(result["classifications"], ["default"])
-        self.assertEqual(result["assessment_routes"], ["internal_control"])
+        self.assertIn("module_a_internal_control", result["assessment_routes"])
         self.assertEqual(evaluation["findings"], [])
 
-    def test_important_classification_gets_third_party_route_and_finding(self):
-        self._answer(
-            is_free_and_open_source=False,
-            is_commercial_activity=True,
-            is_annex_iii_important_product=True,
-            is_annex_iii_critical_product=False,
-        )
+    def test_class_i_without_standard_needs_third_party(self):
+        self._manufacturer(core_functionality_category=self._category("(SIEM)"))
         evaluation = evaluate_configuration(self.configuration)
-        result = evaluation["results"][0]
-        self.assertTrue(result["in_scope"])
-        self.assertEqual(result["classifications"], ["important"])
-        self.assertEqual(result["assessment_routes"], ["third_party_assessment"])
-        finding_ids = [f["id"] for f in evaluation["findings"]]
-        self.assertIn("important_or_critical_needs_third_party", finding_ids)
+        result = self._result(evaluation)
+        self.assertEqual(result["classifications"], ["important_class_i"])
+        self.assertNotIn("module_a_internal_control", result["assessment_routes"])
+        self.assertIn("class_i_needs_third_party", [f["id"] for f in evaluation["findings"]])
 
     def test_foss_non_commercial_is_out_of_scope(self):
         self._answer(is_free_and_open_source=True, is_commercial_activity=False)
         evaluation = evaluate_configuration(self.configuration)
-        result = evaluation["results"][0]
-        self.assertFalse(result["in_scope"])
-        finding_ids = [f["id"] for f in evaluation["findings"]]
-        self.assertIn("monetisation_changes_scope", finding_ids)
+        self.assertFalse(self._result(evaluation)["in_scope"])
+        self.assertIn("monetisation_changes_scope", [f["id"] for f in evaluation["findings"]])
+
+    def test_radio_capability_derives_data_connection_from_the_library(self):
+        self._answer(wireless_interface_capability="present")
+        resolved, _ = resolve_answers(self.configuration)
+        self.assertEqual(resolved["has_data_connection"].value, True)
+        self.assertEqual(resolved["has_data_connection"].origin, "derived")
+
+    def test_reporting_in_force_before_the_main_obligations(self):
+        from datetime import date
+
+        self._manufacturer()
+        result = self._result(evaluate_configuration(self.configuration, as_of=date(2026, 10, 1)))
+        self.assertEqual(
+            sorted(result["requirements"]),
+            [
+                "art_14_8_inform_users",
+                "art_14_report_exploited_vulnerabilities",
+                "art_14_report_severe_incidents",
+            ],
+        )
+        upcoming = {r["id"]: r["applies_from"] for r in result["upcoming_requirements"]}
+        self.assertEqual(upcoming["annex_i_2a_no_known_exploitable_vulnerabilities"], "2027-12-11")
+
+    def test_importer_role_selects_importer_obligations(self):
+        from datetime import date
+
+        self._answer(
+            product_form="hardware_with_software",
+            has_data_connection=True,
+            is_commercial_activity=True,
+            economic_operator_role="importer",
+            hardware_still_placed_on_market=True,
+        )
+        result = self._result(evaluate_configuration(self.configuration, as_of=date(2028, 3, 1)))
+        self.assertEqual(result["role"], "importer")
+        self.assertTrue(all(r.startswith("art_19_") for r in result["requirements"]))
 
     def test_confirm_answers_clears_flag(self):
         Answer.objects.create(
@@ -314,10 +360,32 @@ class EuCraEvaluationTests(EuCraConfigurationFixture):
         self.assertFalse(Answer.objects.get().needs_confirmation)
 
 
+class EuCraResultsPageTests(EuCraConfigurationFixture):
+    def test_assessment_page_lists_requirements_not_in_force_yet(self):
+        from datetime import date
+        from unittest import mock
+
+        editor = User.objects.create_user(username="edna", password="x")
+        RoleAssignment.objects.create(role=Role.EDITOR, user=editor, product_family=self.family)
+        self._manufacturer()
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        self.client.force_login(editor)
+        with mock.patch("django.utils.timezone.localdate", return_value=date(2026, 10, 1)):
+            response = self.client.get(
+                reverse("assessments:assessment_detail", args=[assessment.pk])
+            )
+        self.assertContains(response, "Economic operator role: manufacturer")
+        self.assertContains(response, "art_14_report_exploited_vulnerabilities")
+        self.assertContains(response, "Not in force yet:")
+        self.assertContains(
+            response, "annex_i_2a_no_known_exploitable_vulnerabilities (from 2027-12-11)"
+        )
+
+
 class EuCraGuidanceRenderingTests(EuCraConfigurationFixture):
-    """The eu-cra-partial package's self-assessed questions (FOSS status,
-    Annex III/IV) carry guidance text precisely because the package can't
-    reproduce those lists itself -- check it actually reaches the page."""
+    """The eu-cra package's self-assessed questions (core functionality,
+    FOSS status, remote data processing) carry guidance text, because the
+    answer depends on a test the user applies -- check it reaches the page."""
 
     def setUp(self):
         super().setUp()
