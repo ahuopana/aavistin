@@ -7,9 +7,10 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 
 from apps.accounts.models import User
+from apps.assessments.models import Answer
 from apps.orgs.models import Organisation, ProductFamily, Role, RoleAssignment
 from apps.packages.importer import approve_package, import_package
-from apps.packages.models import PackageKind
+from apps.packages.models import PackageKind, PackageStatus, RequirementPackage
 from apps.products.models import (
     Configuration,
     HardwareRevision,
@@ -671,3 +672,46 @@ class RegisterViewTests(RiskFixture):
         foreign = RiskEntry.objects.create(product=other, entry_type=EntryType.ASSET, label="X")
         response = self.client.get(f"{self.url}entries/{foreign.pk}/")
         self.assertEqual(response.status_code, 404)
+
+
+class EmptyRegisterReadinessTests(RiskFixture):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        self.url = f"/risk/configurations/{self.configuration.pk}/"
+
+    def test_empty_register_lists_what_is_configured(self):
+        response = self.client.get(self.url)
+        self.assertContains(response, "No register entries yet")
+        self.assertContains(response, "Target markets set (EU)")
+        self.assertContains(response, "A risk method is available")
+        self.assertContains(response, "A risk catalog is available")
+        self.assertContains(response, "Suggestions from your answers")
+        self.assertNotContains(response, "Ask an administrator")
+
+    def test_missing_target_markets_links_to_product(self):
+        self.variant.target_markets.clear()
+        response = self.client.get(self.url)
+        self.assertContains(response, "Open the product")
+        self.assertContains(response, f'href="/products/{self.product.pk}/"')
+
+    def test_missing_method_and_catalog_ask_an_administrator(self):
+        RequirementPackage.objects.filter(
+            kind__in=[PackageKind.METHOD, PackageKind.CATALOG]
+        ).update(status=PackageStatus.DRAFT)
+        response = self.client.get(self.url)
+        self.assertContains(response, "Ask an administrator to import and approve one.", count=2)
+        self.assertNotContains(response, "Suggestions from your answers")
+
+    def test_pending_suggestions_are_counted(self):
+        Answer.objects.create(
+            question_id="has_wireless", value=True, software_release=self.release
+        )
+        response = self.client.get(self.url)
+        self.assertContains(response, "suggested entries are waiting for review")
+
+    def test_filter_with_no_match_is_not_the_empty_state(self):
+        self.make_asset()
+        response = self.client.get(self.url, {"q": "zzz"})
+        self.assertContains(response, "No register entries match the current filter.")
+        self.assertNotContains(response, "No register entries yet")

@@ -90,6 +90,13 @@
       </tbody>
     </table>
   {% empty %}
-    <p>No register entries match{% if not total %} — this product has none yet{% endif %}.</p>
+    {% if total %}
+      <p>No register entries match the current filter.</p>
+    {% else %}
+      <h2>No register entries yet</h2>
+      <p>This product's register is empty. Here is what is set up so far:</p>
+      {% include "core/_readiness.html" with checks=readiness %}
+      <p class="field-hint">Entries can also be added by hand once you have a risk method.</p>
+    {% endif %}
   {% endfor %}
 {% endblock %}

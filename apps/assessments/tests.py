@@ -579,6 +579,19 @@ class ViewTests(ConfigurationFixture):
         payload.update(overrides)
         return payload
 
+    def test_assessment_without_active_packages_explains_why(self):
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        self.client.force_login(self.editor)
+        self.package.__class__.objects.update(status="superseded")
+        response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
+        self.assertContains(response, "No requirement packages are active")
+        self.assertContains(response, "An approved requirement package exists for EU")
+        self.assertContains(response, "Ask an administrator")
+
+        self.variant.target_markets.clear()
+        response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
+        self.assertContains(response, "Open the product")
+
     def test_configuration_detail_requires_login(self):
         response = self.client.get(
             reverse("assessments:configuration_detail", args=[self.configuration.pk])
