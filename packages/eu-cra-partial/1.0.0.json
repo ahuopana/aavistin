@@ -1,9 +1,9 @@
 {
-  "source": "eu-cra",
+  "source": "eu-cra-partial",
   "type": "legislation",
   "jurisdiction": "EU",
-  "version": "2024-2847@2026-09",
-  "title": "EU Cyber Resilience Act",
+  "version": "2024-2847@2026-10",
+  "title": "EU Cyber Resilience Act (partial scaffold, not full coverage)",
   "legal_sources": [{ "celex": "32024R2847" }],
   "dates_of_application": { "from": "2027-12-11" },
   "redistributable": true,
@@ -12,25 +12,33 @@
       "id": "is_free_and_open_source",
       "type": "boolean",
       "level": "product",
-      "label": "Is the product free and open-source software?"
+      "label": "Is the product free and open-source software?",
+      "guidance": "Two things both have to be true: the software is licensed to allow free use, modification and redistribution, AND its source code is openly shared -- publicly, not only with paying customers or a restricted group. If either is missing, it does not count as FOSS for this purpose.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
     },
     {
       "id": "is_commercial_activity",
       "type": "boolean",
       "level": "product",
-      "label": "Is the product supplied in the course of a commercial activity (e.g. paid support, hosting, or other monetisation)?"
+      "label": "Is the product supplied in the course of a commercial activity (e.g. paid support, hosting, or other monetisation)?",
+      "guidance": "Ask whether access to the software itself (not just optional paid support around it) is conditioned on payment, used to monetise other products/services, requires personal-data processing unrelated to security/compatibility, or makes donations a de facto condition of access. Plain donations, third-party-sponsored development, and not-for-profit entities reinvesting earnings generally do not count as commercial activity on their own.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
     },
     {
       "id": "is_annex_iii_important_product",
       "type": "boolean",
       "level": "product",
-      "label": "Does the product fall into one of the 'important' product categories listed in Annex III? Assess this yourself against Annex III -- this package does not reproduce that list."
+      "label": "Does the product fall into one of the 'important' product categories listed in Annex III? Assess this yourself against Annex III -- this package does not reproduce that list.",
+      "guidance": "Identify the product's core functionality -- its main purpose, not every feature it happens to have -- and compare that (not any ancillary feature, and not a component merely integrated into it) against the Annex III categories and their technical descriptions in Commission Implementing Regulation (EU) 2025/2392.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
     },
     {
       "id": "is_annex_iii_critical_product",
       "type": "boolean",
       "level": "product",
-      "label": "Does the product fall into one of the 'critical' product categories listed in Annex III/IV? Assess this yourself -- this package does not reproduce that list."
+      "label": "Does the product fall into one of the 'critical' product categories listed in Annex III/IV? Assess this yourself -- this package does not reproduce that list.",
+      "guidance": "Same core-functionality test as the 'important' question above, but checked against Annex IV: the product only qualifies if its main purpose -- not an integrated component or an ancillary feature -- matches one of the Annex IV critical categories.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
     }
   ],
   "scope": {

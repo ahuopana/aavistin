@@ -20,6 +20,15 @@
             {{ row.question.label|default:row.question.id }}
             {% if row.question.used_by|length > 1 %}<span class="field-hint">also used by: {{ row.question.used_by|join:", " }}</span>{% endif %}
             {% if row.needs_confirmation %}<span class="message message-warning">needs confirmation</span>{% endif %}
+            {% if row.question.guidance %}
+              <details class="question-guidance">
+                <summary>Good to understand before you answer</summary>
+                <p>{{ row.question.guidance }}</p>
+                {% if row.question.guidance_url %}
+                  <p><a href="{{ row.question.guidance_url }}" target="_blank" rel="noopener noreferrer">Read more</a></p>
+                {% endif %}
+              </details>
+            {% endif %}
           </td>
           <td>{{ row.value }}</td>
           <td>{% if row.origin == "derived" %}derived from other answers{% else %}{{ row.origin|default:"unanswered" }}{% endif %}</td>

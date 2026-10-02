@@ -14,4 +14,4 @@ stored with attribution.
 It declares questions once; requirement packages reference them with
 `"uses": ["common:uses_mfa"]` instead of redeclaring them. A question may
 declare `implied_by` to derive its value from other answers. See
-`docs/adr/0014-shared-question-library.md`.
+`docs/adr/0015-shared-question-library.md`.

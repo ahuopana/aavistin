@@ -1,11 +1,11 @@
 """Shared question library: questions declared once, used by many packages.
 
 A ``question_set`` package holds canonical question definitions (type,
-level, label, help) so that requirement packages reference them with
+level, label, guidance) so that requirement packages reference them with
 ``uses: ["<set-source>:<question_id>"]`` instead of redeclaring them. A
 question may also declare ``implied_by``: when no explicit answer exists,
 its value is derived from other answers (see
-apps/assessments/resolution.py). See docs/adr/0014-shared-question-library.md.
+apps/assessments/resolution.py). See docs/adr/0015-shared-question-library.md.
 """
 
 from .models import PackageKind, PackageStatus, RequirementPackage

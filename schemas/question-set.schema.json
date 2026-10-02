@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aavistin.example/schemas/question-set.schema.json",
   "title": "Shared question set",
-  "description": "A library of questions shared by several requirement packages (see docs/adr/0014-shared-question-library.md).",
+  "description": "A library of questions shared by several requirement packages (see docs/adr/0015-shared-question-library.md).",
   "type": "object",
   "required": [
     "source",
@@ -98,11 +98,17 @@
         "condition": {
           "$ref": "#/$defs/expression"
         },
-        "help": {
-          "type": "string"
-        },
         "implied_by": {
           "$ref": "#/$defs/impliedBy"
+        },
+        "guidance": {
+          "type": "string",
+          "description": "Plain text shown to the user before they answer, e.g. how to assess the question themselves. Our own summary only -- never standards/legal text verbatim."
+        },
+        "guidance_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional link to an authoritative source for further reading."
         }
       },
       "allOf": [
