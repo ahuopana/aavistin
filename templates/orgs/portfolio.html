@@ -11,14 +11,20 @@
         <p class="tree-sublabel">{{ family.organisation.name }}</p>
         <h2>{{ family.name }}</h2>
         {% if family.visible_products %}
-          <ul class="dashboard-products">
-            {% for product in family.visible_products %}
-              <li>
-                <a href="{% url 'products:product_detail' product.pk %}">{{ product.name }}</a>
-                <span class="badge badge-{{ product.status }}">{{ product.get_status_display }}</span>
-              </li>
-            {% endfor %}
-          </ul>
+          <table>
+            <thead>
+              <tr><th>Product</th><th>Status</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              {% for product in family.visible_products %}
+                <tr>
+                  <td><a href="{% url 'products:product_detail' product.pk %}">{{ product.name }}</a></td>
+                  <td><span class="badge badge-{{ product.status }}">{{ product.get_status_display }}</span></td>
+                  <td>{{ product.description|default:"—"|truncatechars:100 }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         {% else %}
           <p>No products yet.</p>
         {% endif %}

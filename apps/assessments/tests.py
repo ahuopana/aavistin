@@ -579,6 +579,18 @@ class ViewTests(ConfigurationFixture):
         payload.update(overrides)
         return payload
 
+    def test_assessment_detail_links_to_questions_and_lists_answers(self):
+        Answer.objects.create(
+            question_id="has_power_source", value=True, hardware_revision=self.revision
+        )
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
+        config_url = reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        self.assertContains(response, f'href="{config_url}#questions"')
+        self.assertContains(response, f'href="{config_url}#q-has_power_source"')
+        self.assertContains(response, "Does the widget have a power source?")
+
     def test_assessment_without_active_packages_explains_why(self):
         assessment = Assessment.objects.create(configuration=self.configuration)
         self.client.force_login(self.editor)

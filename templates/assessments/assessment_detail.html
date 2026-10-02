@@ -10,11 +10,37 @@
     {% if assessment.sod_warning %}<span class="message message-warning">approved despite separation-of-duties warning</span>{% endif %}
   </p>
 
+  <p>
+    <a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}#questions">{% if assessment.status == "draft" %}Answer questions{% else %}View questions{% endif %} &rarr;</a>
+    · <a href="{% url 'risk:register' assessment.configuration.pk %}">Risk register</a>
+  </p>
+
   {% if assessment.status == "draft" and can_approve %}
     <form method="post" action="{% url 'assessments:assessment_approve' assessment.pk %}">
       {% csrf_token %}
       <button type="submit">Approve (freezes a snapshot)</button>
     </form>
+  {% endif %}
+
+  <h2>Answers</h2>
+  {% if answer_rows %}
+    <table>
+      <thead><tr><th>Question</th><th>Answer</th><th>Origin</th></tr></thead>
+      <tbody>
+        {% for row in answer_rows %}
+          <tr>
+            <td>
+              <a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}#q-{{ row.id }}">{{ row.label }}</a>
+              {% if row.needs_confirmation %}<span class="badge badge-warning">needs confirmation</span>{% endif %}
+            </td>
+            <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% else %}{{ row.value }}{% endif %}</td>
+            <td><span class="badge badge-{{ row.origin|default:'unanswered' }}">{{ row.origin|default:"unanswered" }}</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No questions apply to this configuration.</p>
   {% endif %}
 
   <h2>Results</h2>
