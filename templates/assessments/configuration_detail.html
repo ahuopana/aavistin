@@ -58,6 +58,8 @@
                   {% elif row.question.type == "number" %}
                     <input type="number" step="any" name="value" value="{{ row.value|default_if_none:'' }}" aria-label="Answer">
                     {% if row.question.unit %}<span class="field-hint">{{ row.question.unit }}</span>{% endif %}
+                  {% elif row.question.type == "date" %}
+                    <input type="date" name="value" value="{{ row.value|default_if_none:'' }}" aria-label="Answer">
                   {% else %}
                     <input type="text" name="value" value="{{ row.value|default_if_none:'' }}" placeholder="value" aria-label="Answer">
                   {% endif %}

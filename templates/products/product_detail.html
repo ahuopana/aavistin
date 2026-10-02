@@ -277,7 +277,10 @@
         {% for release in product.sw_releases.all %}
           <tbody x-data="{ editingRelease: false, editingOption: null }">
             <tr>
-              <td>{{ release.name }} {{ release.version }}</td>
+              <td>
+                {{ release.name }} {{ release.version }}
+                <span class="field-hint">Markets: {% for tm in release.target_markets.all %}{{ tm.code }}{% if not forloop.last %}, {% endif %}{% empty %}as hardware variant{% endfor %}</span>
+              </td>
               <td>{{ release.released_at|default:"unreleased" }}</td>
               <td>
                 {% if release.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
@@ -313,6 +316,15 @@
                     <div class="field"><label>Name<input type="text" name="name" value="{{ release.name }}" required></label></div>
                     <div class="field"><label>Version<input type="text" name="version" value="{{ release.version }}" required></label></div>
                     <div class="field"><label>Released<input type="date" name="released_at" value="{{ release.released_at|date:'Y-m-d' }}"></label></div>
+                    <div class="field">
+                      <label for="id_release_{{ release.pk }}_target_markets">Target markets</label>
+                      <select id="id_release_{{ release.pk }}_target_markets" name="target_markets" multiple size="{{ target_markets|length }}">
+                        {% for tm in target_markets %}
+                          <option value="{{ tm.id }}" {% if tm in release.target_markets.all %}selected{% endif %}>{{ tm.code }} — {{ tm.name }}</option>
+                        {% endfor %}
+                      </select>
+                      <span class="field-hint">Leave empty to use the hardware variant's markets. When both are set, a configuration is sold only where both are.</span>
+                    </div>
                     <button type="submit" class="button-primary">Save</button>
                   </form>
                 </td>

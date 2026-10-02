@@ -202,9 +202,11 @@ def clone_software_release(release: SoftwareRelease) -> SoftwareRelease:
     """Copy a release as a new, unreleased version under the same name."""
     siblings = SoftwareRelease.objects.filter(product=release.product, name=release.name)
     version = _unique_copy(siblings, "version", release.version)
-    return SoftwareRelease.objects.create(
+    clone = SoftwareRelease.objects.create(
         product=release.product, name=release.name, version=version
     )
+    clone.target_markets.set(release.target_markets.all())
+    return clone
 
 
 def clone_software_option(option: SoftwareOption) -> SoftwareOption:

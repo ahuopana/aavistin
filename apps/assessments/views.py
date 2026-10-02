@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib import messages as django_messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -38,6 +40,12 @@ def _coerce_value(raw: str, question_type: str = ""):
             return raw
     if question_type == "choice":
         return raw
+    if question_type == "date":
+        # Stored as an ISO string (ADR 0018); the date input already sends one.
+        try:
+            return date.fromisoformat(raw).isoformat()
+        except ValueError:
+            return None
     # No (or unrecognised) declared type: best-effort guess, kept for
     # backward compatibility with callers that don't send question_type.
     if raw in ("true", "True"):
@@ -121,6 +129,9 @@ def answer_question(request, pk):
     owner_field = f"{owner_type}_id"
     question_type = request.POST.get("question_type", "")
     value = _coerce_value(request.POST.get("value", ""), question_type)
+    if question_type == "date" and value is None:
+        django_messages.error(request, "Enter the date as YYYY-MM-DD.")
+        return redirect("assessments:configuration_detail", pk=pk)
     justification = request.POST.get("justification", "")
 
     try:

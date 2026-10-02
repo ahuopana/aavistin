@@ -728,3 +728,23 @@ class SeedDevRolesCommandTests(TestCase):
             RoleAssignment.objects.filter(role=Role.EDITOR, organisation__slug="default").count(),
             1,
         )
+
+
+class ReleaseTargetMarketTests(ProductAuthoringFixture):
+    """ADR 0020: markets on software releases are edited and cloned like a variant's."""
+
+    def test_editing_a_release_sets_its_markets(self):
+        eu, us = TargetMarket.objects.get(code="EU"), TargetMarket.objects.get(code="US")
+        self.client.force_login(self.editor)
+        self.client.post(
+            reverse("products:software_release_edit", args=[self.release.pk]),
+            {"name": "Firmware", "version": "1.0", "target_markets": [eu.pk, us.pk]},
+        )
+        self.assertEqual(
+            set(self.release.target_markets.values_list("code", flat=True)), {"EU", "US"}
+        )
+
+    def test_clone_copies_release_markets(self):
+        self.release.target_markets.set(TargetMarket.objects.filter(code="EU"))
+        clone = clone_software_release(self.release)
+        self.assertEqual(list(clone.target_markets.values_list("code", flat=True)), ["EU"])

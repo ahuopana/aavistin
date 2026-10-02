@@ -71,6 +71,10 @@
       "items": { "$ref": "#/$defs/question" }
     },
     "scope": { "$ref": "#/$defs/scope" },
+    "role": {
+      "$ref": "#/$defs/expression",
+      "description": "Expression yielding the economic operator role for a configuration; requirements are filtered by it (ADR 0019)."
+    },
     "classifications": {
       "type": "array",
       "items": { "$ref": "#/$defs/classification" },
@@ -113,7 +117,7 @@
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-        "type": { "type": "string", "enum": ["boolean", "choice", "number"] },
+        "type": { "type": "string", "enum": ["boolean", "choice", "number", "date"] },
         "level": {
           "type": "string",
           "enum": ["product", "hardware", "software", "option"]
@@ -134,6 +138,11 @@
           "type": "string",
           "format": "uri",
           "description": "Optional link to an authoritative source for further reading."
+        },
+        "carry_forward": {
+          "type": "boolean",
+          "default": true,
+          "description": "False for questions about one release's change: a new release starts them unanswered (ADR 0021)."
         }
       },
       "allOf": [
@@ -201,12 +210,29 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["manufacturer", "importer", "distributor"]
+            "enum": [
+              "manufacturer",
+              "importer",
+              "distributor",
+              "authorised_representative",
+              "steward"
+            ]
           }
         },
         "applies_to_classes": {
           "type": "array",
           "items": { "type": "string" }
+        },
+        "applies_when": { "$ref": "#/$defs/expression" },
+        "applies_from": {
+          "type": "string",
+          "format": "date",
+          "description": "In force from this date, compared with the assessment date (ADR 0019)."
+        },
+        "applies_until": {
+          "type": "string",
+          "format": "date",
+          "description": "No longer in force from this date (exclusive), compared with the assessment date."
         },
         "ref": { "type": "string" }
       }
@@ -240,15 +266,20 @@
       "properties": {
         "id": { "type": "string" },
         "answers": { "type": "object" },
+        "as_of": {
+          "type": "string",
+          "format": "date",
+          "description": "Assessment date for calendar-dated requirements; required when expecting requirements."
+        },
         "expected": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
             "in_scope": { "type": "boolean" },
-            "findings": {
-              "type": "array",
-              "items": { "type": "string" }
-            }
+            "findings": { "type": "array", "items": { "type": "string" } },
+            "classifications": { "type": "array", "items": { "type": "string" } },
+            "assessment_routes": { "type": "array", "items": { "type": "string" } },
+            "requirements": { "type": "array", "items": { "type": "string" } }
           }
         }
       }

@@ -2,8 +2,8 @@
 
 Walks the precedence chain (option -> SW release -> HW revision ->
 product) per docs/architecture.md, "Answer inheritance", and filters the
-questionnaire by target market (only packages for the hardware variant's
-selected markets are active) and by each question's own condition
+questionnaire by target market (only packages for the configuration's effective
+markets are active, see Configuration.effective_market_codes) and by each question's own condition
 (evaluated against answers already resolved).
 """
 
@@ -50,11 +50,7 @@ class ResolvedAnswer:
 
 def active_packages(configuration):
     """Approved packages whose jurisdiction matches the configuration's target markets."""
-    market_codes = set(
-        configuration.hardware_revision.hardware_variant.target_markets.values_list(
-            "code", flat=True
-        )
-    )
+    market_codes = configuration.effective_market_codes()
     if not market_codes:
         return RequirementPackage.objects.none()
     return RequirementPackage.objects.filter(

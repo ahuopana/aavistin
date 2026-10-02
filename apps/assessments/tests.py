@@ -775,3 +775,134 @@ class SharedQuestionTests(ConfigurationFixture):
         )
         admin = resolve_answers(self.configuration)[0]["mfa_for_admin_access"]
         self.assertEqual((admin.value, admin.origin), (False, "software_release"))
+
+
+def _import_approved(content):
+    package = import_package(content, is_official=True)
+    approve_package(package)
+    return package
+
+
+DATED_PACKAGE = {
+    "source": "demo-dated",
+    "type": "legislation",
+    "jurisdiction": "EU",
+    "version": "1",
+    "questions": [
+        {
+            "id": "release_adds_interfaces",
+            "type": "boolean",
+            "level": "software",
+            "carry_forward": False,
+        },
+        {"id": "first_shipped", "type": "date", "level": "software"},
+    ],
+    "scope": {"include": True},
+    "requirements": [{"id": "reporting", "roles": ["manufacturer"], "applies_from": "2026-09-11"}],
+    "fixtures": [{"id": "in_scope", "answers": {}, "expected": {"in_scope": True}}],
+}
+
+
+class ReleaseMarketTests(ConfigurationFixture):
+    """ADR 0020: effective markets of a configuration."""
+
+    def active_sources(self):
+        from .resolution import active_packages
+
+        return {p.source for p in active_packages(self.configuration)}
+
+    def test_variant_markets_apply_when_release_sets_none(self):
+        self.assertEqual(self.configuration.effective_market_codes(), {"EU"})
+        self.assertIn("demo-widget-safety", self.active_sources())
+
+    def test_release_markets_intersect_with_variant_markets(self):
+        self.release.target_markets.set(TargetMarket.objects.filter(code__in=["EU", "US"]))
+        self.assertEqual(self.configuration.effective_market_codes(), {"EU"})
+        self.release.target_markets.set(TargetMarket.objects.filter(code="US"))
+        self.assertEqual(self.configuration.effective_market_codes(), set())
+        self.assertEqual(self.active_sources(), set())
+
+    def test_release_markets_alone_apply_to_software_only_setups(self):
+        self.variant.target_markets.clear()
+        self.release.target_markets.set(TargetMarket.objects.filter(code="EU"))
+        self.assertEqual(self.configuration.effective_market_codes(), {"EU"})
+        self.assertIn("demo-widget-safety", self.active_sources())
+
+
+class CarryForwardFlagTests(ConfigurationFixture):
+    """ADR 0021: per-release questions start unanswered on a new release."""
+
+    def test_questions_with_carry_forward_false_are_not_copied(self):
+        _import_approved(DATED_PACKAGE)
+        Answer.objects.create(
+            question_id="release_adds_interfaces", value=True, software_release=self.release
+        )
+        Answer.objects.create(
+            question_id="first_shipped", value="2028-01-01", software_release=self.release
+        )
+        new_release = SoftwareRelease.objects.create(product=self.product, version="2.0")
+
+        created = copy_answers_forward(self.release, new_release)
+
+        self.assertEqual([a.question_id for a in created], ["first_shipped"])
+
+
+class DatedRequirementTests(ConfigurationFixture):
+    """ADR 0019: calendar dates compare with the assessment date, and staleness follows."""
+
+    def setUp(self):
+        super().setUp()
+        _import_approved(DATED_PACKAGE)
+
+    def dated_result(self, evaluation):
+        return next(r for r in evaluation["results"] if r["source"] == "demo-dated")
+
+    def test_requirement_not_in_force_yet_is_reported_as_upcoming(self):
+        from datetime import date
+
+        result = self.dated_result(
+            evaluate_configuration(self.configuration, as_of=date(2026, 1, 1))
+        )
+        self.assertEqual(result["requirements"], [])
+        self.assertEqual(
+            result["upcoming_requirements"], [{"id": "reporting", "applies_from": "2026-09-11"}]
+        )
+
+    def test_assessment_goes_stale_when_a_date_brings_a_requirement_into_force(self):
+        from datetime import date
+        from unittest import mock
+
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        with mock.patch("django.utils.timezone.localdate", return_value=date(2026, 1, 1)):
+            approve_assessment(assessment, actor=self.approver)
+            self.assertFalse(recompute_staleness(assessment))
+        with mock.patch("django.utils.timezone.localdate", return_value=date(2026, 10, 1)):
+            self.assertTrue(recompute_staleness(assessment))
+
+
+class DateAnswerViewTests(ConfigurationFixture):
+    def setUp(self):
+        super().setUp()
+        _import_approved(DATED_PACKAGE)
+        self.client.force_login(self.editor)
+
+    def post(self, value):
+        return self.client.post(
+            reverse("assessments:answer_question", args=[self.configuration.pk]),
+            {
+                "question_id": "first_shipped",
+                "owner_type": "software_release",
+                "owner_id": str(self.release.pk),
+                "question_type": "date",
+                "value": value,
+                "justification": "",
+            },
+        )
+
+    def test_date_answer_is_stored_as_iso_string(self):
+        self.post("2028-01-15")
+        self.assertEqual(Answer.objects.get(question_id="first_shipped").value, "2028-01-15")
+
+    def test_invalid_date_is_rejected(self):
+        self.post("15.1.2028")
+        self.assertFalse(Answer.objects.filter(question_id="first_shipped").exists())

@@ -548,6 +548,17 @@ class SharedQuestionLibraryTests(TestCase):
         self.assertTrue(all(r["passed"] for r in package.fixture_report))
         self.assertEqual(package.status, PackageStatus.APPROVED)
 
+    def test_common_1_1_question_set_passes_lint_and_fixtures(self):
+        self.import_common()
+        package = import_package(
+            load_package("common", "1.1.0"), kind=PackageKind.QUESTION_SET, is_official=True
+        )
+        self.assertEqual(package.lint_report, [])
+        failed = [r for r in package.fixture_report if not r["passed"]]
+        self.assertEqual(failed, [])
+        approve_package(package)
+        self.assertEqual(package.status, PackageStatus.APPROVED)
+
     def test_package_can_use_library_question_without_declaring_it(self):
         self.import_common()
         package = import_package(_mfa_package("spec-a"))
@@ -615,3 +626,268 @@ class SharedQuestionLibraryTests(TestCase):
         }
         package = import_package(dup, kind=PackageKind.QUESTION_SET)
         self.assertIn("duplicate_library_question", {i["code"] for i in package.lint_report})
+
+
+class DateRuleTests(TestCase):
+    """ADR 0018: date questions are ISO strings compared as dates."""
+
+    def test_dates_compare_as_dates(self):
+        data = {"placed": "2027-12-11"}
+        self.assertTrue(evaluate({">=": [{"var": "placed"}, "2027-12-11"]}, data))
+        self.assertFalse(evaluate({"<": [{"var": "placed"}, "2027-12-11"]}, data))
+
+    def test_date_compared_with_number_is_an_error(self):
+        with self.assertRaises(RuleEngineError):
+            evaluate({">": ["2027-12-11", 3]}, {})
+
+    def test_non_date_string_is_an_error(self):
+        with self.assertRaises(RuleEngineError):
+            evaluate({">": ["soon", "2027-12-11"]}, {})
+
+    def test_unanswered_date_comparison_is_false(self):
+        self.assertFalse(evaluate({">=": [{"var": "placed"}, "2027-12-11"]}, {}))
+
+    def test_years_between_counts_complete_calendar_years(self):
+        expr = {"years_between": [{"var": "start"}, {"var": "end"}]}
+        self.assertEqual(evaluate(expr, {"start": "2028-03-15", "end": "2033-03-15"}), 5)
+        self.assertEqual(evaluate(expr, {"start": "2028-03-15", "end": "2033-03-14"}), 4)
+        self.assertEqual(evaluate(expr, {"start": "2028-02-29", "end": "2033-02-28"}), 4)
+        self.assertEqual(evaluate(expr, {"start": "2033-03-15", "end": "2028-03-15"}), -5)
+        self.assertIsNone(evaluate(expr, {"start": "2028-03-15"}))
+
+
+def _lint(content):
+    base = {"source": "x", "version": "1.0.0", "scope": {"include": True}}
+    return lint_package(
+        {**base, **content}, is_official=False, existing_packages=RequirementPackage.objects.none()
+    )
+
+
+def _codes(issues):
+    return {i["code"] for i in issues}
+
+
+DATE_Q = {"id": "placed", "type": "date", "level": "software"}
+NUM_Q = {"id": "years", "type": "number", "level": "product"}
+
+
+class ApplicabilityLintTests(TestCase):
+    """ADRs 0018 and 0019: typed operator contexts, applies_when, role, dates, fixtures."""
+
+    def test_date_question_allowed_in_comparison_and_years_between(self):
+        issues = _lint(
+            {
+                "questions": [DATE_Q],
+                "finding_rules": [
+                    {
+                        "id": "f",
+                        "level": "info",
+                        "message": "m",
+                        "when": {
+                            "and": [
+                                {">=": [{"var": "placed"}, "2027-12-11"]},
+                                {">": [{"years_between": [{"var": "placed"}, "2030-01-01"]}, 1]},
+                            ]
+                        },
+                    }
+                ],
+            }
+        )
+        self.assertNotIn("type_mismatch", _codes(issues))
+
+    def test_date_question_under_arithmetic_is_type_mismatch(self):
+        issues = _lint(
+            {
+                "questions": [DATE_Q],
+                "scope": {"include": {">": [{"+": [{"var": "placed"}, 1]}, 2]}},
+            }
+        )
+        self.assertIn("type_mismatch", _codes(issues))
+
+    def test_number_under_years_between_is_type_mismatch(self):
+        issues = _lint(
+            {
+                "questions": [NUM_Q],
+                "scope": {
+                    "include": {">": [{"years_between": [{"var": "years"}, "2030-01-01"]}, 1]}
+                },
+            }
+        )
+        self.assertIn("type_mismatch", _codes(issues))
+
+    def test_applies_when_and_role_are_checked_for_unknown_questions(self):
+        issues = _lint(
+            {
+                "questions": [DATE_Q],
+                "role": {"var": "nobody_declares_this"},
+                "requirements": [
+                    {"id": "r", "roles": ["manufacturer"], "applies_when": {"var": "missing"}}
+                ],
+            }
+        )
+        paths = {i["path"] for i in issues if i["code"] == "unknown_question"}
+        self.assertIn("role", paths)
+        self.assertIn("requirements[0].applies_when", paths)
+
+    def test_classification_vars_allowed_in_applies_when(self):
+        issues = _lint(
+            {
+                "questions": [DATE_Q],
+                "classifications": [{"id": "important", "label": "Important"}],
+                "requirements": [
+                    {
+                        "id": "r",
+                        "roles": ["manufacturer"],
+                        "applies_when": {"var": "class__important"},
+                    }
+                ],
+            }
+        )
+        self.assertEqual(issues, [])
+
+    def test_requirement_dates_must_be_valid_and_ordered(self):
+        issues = _lint(
+            {
+                "questions": [DATE_Q],
+                "requirements": [
+                    {"id": "a", "roles": ["manufacturer"], "applies_from": "2027-13-01"},
+                    {
+                        "id": "b",
+                        "roles": ["manufacturer"],
+                        "applies_from": "2028-01-01",
+                        "applies_until": "2027-01-01",
+                    },
+                ],
+            }
+        )
+        self.assertIn("bad_date", _codes(issues))
+        self.assertIn("date_order", _codes(issues))
+
+    def test_fixture_expecting_requirements_needs_as_of(self):
+        issues = _lint(
+            {
+                "questions": [DATE_Q],
+                "fixtures": [{"id": "f", "answers": {}, "expected": {"requirements": []}}],
+            }
+        )
+        self.assertIn("fixture_needs_as_of", _codes(issues))
+
+
+APPLICABILITY_PACKAGE = {
+    "source": "demo-applicability",
+    "version": "1",
+    "questions": [
+        {"id": "placed", "type": "date", "level": "software"},
+        {
+            "id": "operator_role",
+            "type": "choice",
+            "level": "product",
+            "choices": ["manufacturer", "importer"],
+        },
+        {"id": "own_brand", "type": "boolean", "level": "product"},
+        {"id": "critical", "type": "boolean", "level": "product"},
+    ],
+    "scope": {"include": True},
+    "role": {"if": [{"var": "own_brand"}, "manufacturer", {"var": "operator_role"}]},
+    "classifications": [{"id": "critical", "label": "Critical", "when": {"var": "critical"}}],
+    "requirements": [
+        {"id": "always", "roles": ["manufacturer", "importer"]},
+        {"id": "manufacturer_only", "roles": ["manufacturer"]},
+        {"id": "importer_only", "roles": ["importer"]},
+        {
+            "id": "placed_after_cut_off",
+            "roles": ["manufacturer"],
+            "applies_when": {">=": [{"var": "placed"}, "2027-12-11"]},
+        },
+        {"id": "reporting", "roles": ["manufacturer"], "applies_from": "2026-09-11"},
+        {"id": "transitional", "roles": ["manufacturer"], "applies_until": "2028-06-11"},
+        {
+            "id": "critical_only",
+            "roles": ["manufacturer"],
+            "applies_when": {"var": "class__critical"},
+        },
+    ],
+    "assessment_routes": [
+        {"id": "self", "label": "Self", "allowed_when": {"!": {"var": "class__critical"}}},
+        {"id": "third_party", "label": "Third party"},
+    ],
+}
+
+
+class ApplicabilityEvaluationTests(TestCase):
+    """ADR 0019, through the shared evaluator used by fixtures and assessments."""
+
+    def evaluate(self, answers, as_of=None):
+        from datetime import date
+
+        from .evaluator import evaluate_package
+
+        return evaluate_package(
+            APPLICABILITY_PACKAGE, answers, as_of=date.fromisoformat(as_of) if as_of else None
+        )
+
+    def test_unknown_role_hides_nothing(self):
+        result = self.evaluate({"placed": "2028-01-01"})
+        self.assertIsNone(result["role"])
+        self.assertIn("importer_only", result["requirements"])
+        self.assertIn("manufacturer_only", result["requirements"])
+
+    def test_role_filters_requirements(self):
+        result = self.evaluate({"operator_role": "importer"})
+        self.assertEqual(result["role"], "importer")
+        self.assertEqual(result["requirements"], ["always", "importer_only"])
+
+    def test_role_expression_can_override_the_answer(self):
+        result = self.evaluate({"operator_role": "importer", "own_brand": True})
+        self.assertEqual(result["role"], "manufacturer")
+        self.assertNotIn("importer_only", result["requirements"])
+
+    def test_placement_rule_lives_in_applies_when(self):
+        before = self.evaluate({"operator_role": "manufacturer", "placed": "2027-06-01"})
+        after = self.evaluate({"operator_role": "manufacturer", "placed": "2028-01-01"})
+        self.assertNotIn("placed_after_cut_off", before["requirements"])
+        self.assertIn("placed_after_cut_off", after["requirements"])
+
+    def test_calendar_dates_compare_with_the_assessment_date(self):
+        early = self.evaluate({"operator_role": "manufacturer"}, as_of="2026-01-01")
+        self.assertNotIn("reporting", early["requirements"])
+        self.assertEqual(
+            early["upcoming_requirements"], [{"id": "reporting", "applies_from": "2026-09-11"}]
+        )
+        later = self.evaluate({"operator_role": "manufacturer"}, as_of="2028-06-11")
+        self.assertIn("reporting", later["requirements"])
+        self.assertEqual(
+            later["ended_requirements"], [{"id": "transitional", "applies_until": "2028-06-11"}]
+        )
+
+    def test_classification_drives_applies_when_and_routes(self):
+        result = self.evaluate({"operator_role": "manufacturer", "critical": True})
+        self.assertIn("critical_only", result["requirements"])
+        self.assertEqual(result["assessment_routes"], ["third_party"])
+
+    def test_fixture_runner_checks_classifications_routes_and_requirements(self):
+        content = {
+            **APPLICABILITY_PACKAGE,
+            "fixtures": [
+                {
+                    "id": "passes",
+                    "as_of": "2027-01-01",
+                    "answers": {"operator_role": "importer", "critical": True},
+                    "expected": {
+                        "classifications": ["critical"],
+                        "assessment_routes": ["third_party"],
+                        "requirements": ["always", "importer_only"],
+                    },
+                },
+                {
+                    "id": "fails",
+                    "as_of": "2027-01-01",
+                    "answers": {"operator_role": "importer"},
+                    "expected": {"assessment_routes": ["third_party"]},
+                },
+            ],
+        }
+        reports = {r["id"]: r for r in run_fixtures(content)}
+        self.assertTrue(reports["passes"]["passed"], reports["passes"]["errors"])
+        self.assertFalse(reports["fails"]["passed"])
+        self.assertIn("assessment_routes", reports["fails"]["errors"][0])

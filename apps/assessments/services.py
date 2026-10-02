@@ -90,6 +90,13 @@ def _requirement_evidence_snapshot(results) -> dict:
     return {(r["source"], r["version"]): r.get("requirement_evidence", {}) for r in results}
 
 
+def _in_force_requirements(results) -> dict:
+    """(source, version) -> requirements in force. Calendar-dated
+    requirements change with the assessment date alone, so a passing date
+    must flag an approved assessment (docs/adr/0019-requirement-applicability.md)."""
+    return {(r["source"], r["version"]): sorted(r.get("requirements", [])) for r in results}
+
+
 def recompute_staleness(assessment: Assessment) -> bool:
     """Recomputes and persists Assessment.stale; returns the new value.
 
@@ -114,6 +121,8 @@ def recompute_staleness(assessment: Assessment) -> bool:
         or current_packages != snapshot_packages
         or _requirement_evidence_snapshot(current["results"])
         != _requirement_evidence_snapshot(assessment.snapshot.get("results", []))
+        or _in_force_requirements(current["results"])
+        != _in_force_requirements(assessment.snapshot.get("results", []))
     )
     if is_stale != assessment.stale:
         assessment.stale = is_stale

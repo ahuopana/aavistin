@@ -13,6 +13,7 @@ unary operators). ``{"var": "question_id"}`` looks the id up in the data
 dict passed to :func:`evaluate`.
 """
 
+from datetime import date
 from numbers import Number
 from typing import Any
 
@@ -88,11 +89,24 @@ def _arithmetic(op):
             raise RuleEngineError("arithmetic operators take exactly two arguments")
         a, b = (evaluate(v, data) for v in values)
         for v in (a, b):
-            if not isinstance(v, Number) or isinstance(v, bool):
+            if not _is_number(v):
                 raise RuleEngineError(f"expected a number, got {v!r}")
         return op(a, b)
 
     return handler
+
+
+def _is_number(value) -> bool:
+    return isinstance(value, Number) and not isinstance(value, bool)
+
+
+def _as_date(value) -> date:
+    if isinstance(value, str):
+        try:
+            return date.fromisoformat(value)
+        except ValueError:
+            pass
+    raise RuleEngineError(f"expected an ISO date (YYYY-MM-DD), got {value!r}")
 
 
 def _comparison(op):
@@ -101,17 +115,40 @@ def _comparison(op):
         if len(values) != 2:
             raise RuleEngineError("comparison operators take exactly two arguments")
         a, b = (evaluate(v, data) for v in values)
-        # An unanswered question (None) fails a numeric threshold rather
-        # than raising: "rated_power_watts > 80" is simply not yet true
-        # when the question hasn't been answered.
+        # An unanswered question (None) fails a threshold rather than
+        # raising: "rated_power_watts > 80" is simply not yet true when the
+        # question hasn't been answered.
         if a is None or b is None:
             return False
-        for v in (a, b):
-            if not isinstance(v, Number) or isinstance(v, bool):
-                raise RuleEngineError(f"expected a number, got {v!r}")
-        return op(a, b)
+        if _is_number(a) and _is_number(b):
+            return op(a, b)
+        # Dates are ISO strings (ADR 0018); compare them as dates.
+        if isinstance(a, str) and isinstance(b, str):
+            return op(_as_date(a), _as_date(b))
+        raise RuleEngineError(f"cannot compare {a!r} with {b!r}: need two numbers or two dates")
 
     return handler
+
+
+def _eval_years_between(args, data):
+    """Complete calendar years from start to end (negative if end is earlier)."""
+    values = _as_list(args)
+    if len(values) != 2:
+        raise RuleEngineError("'years_between' takes exactly [start, end]")
+    start, end = (evaluate(v, data) for v in values)
+    if start is None or end is None:
+        return None
+    start, end = _as_date(start), _as_date(end)
+    if end < start:
+        return -_complete_years(end, start)
+    return _complete_years(start, end)
+
+
+def _complete_years(start: date, end: date) -> int:
+    years = end.year - start.year
+    if (end.month, end.day) < (start.month, start.day):
+        years -= 1
+    return years
 
 
 def _eval_in(args, data):
@@ -139,6 +176,7 @@ OPERATORS = {
     "-": _arithmetic(lambda a, b: a - b),
     "*": _arithmetic(lambda a, b: a * b),
     "/": _arithmetic(lambda a, b: a / b),
+    "years_between": _eval_years_between,
 }
 
 

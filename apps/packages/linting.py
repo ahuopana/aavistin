@@ -11,15 +11,21 @@ and "Risk assessment: methods and catalogs" for the method/catalog kinds.
 
 from datetime import date
 
-NUMERIC_OPS = {"<", "<=", ">", ">=", "+", "-", "*", "/"}
+ARITHMETIC_OPS = {"+", "-", "*", "/"}
+COMPARISON_OPS = {"<", "<=", ">", ">="}
+# Which question types each operator context accepts (docs/adr/0018-date-questions.md).
+ALLOWED_TYPES = {
+    "arithmetic": {"number"},
+    "comparison": {"number", "date"},
+    "years_between": {"date"},
+}
 
 CLASSIFICATION_VAR_PREFIX = "class__"
-# apps.assessments.evaluation.evaluate_configuration injects
-# class__<classification_id> synthetic vars into "extended_data" only
-# for these two expression kinds -- scope/questions/classifications
-# expressions run before any classification is computed, so class__
-# vars aren't meaningful (and wouldn't resolve) there.
-EXTENDED_DATA_PATH_PREFIXES = ("assessment_routes", "finding_rules")
+# apps.packages.evaluator injects class__<classification_id> synthetic vars
+# only for these expression kinds -- scope/questions/classifications/role
+# expressions run before any classification is computed, so class__ vars
+# aren't meaningful (and wouldn't resolve) there.
+EXTENDED_DATA_PATH_PREFIXES = ("assessment_routes", "finding_rules", "requirements")
 
 
 def _issue(severity, code, message, path=""):
@@ -49,22 +55,41 @@ def _iter_expressions(content):
     for i, f in enumerate(content.get("finding_rules", [])):
         yield f"finding_rules[{i}].when", f.get("when")
 
+    for i, r in enumerate(content.get("requirements", [])):
+        if "applies_when" in r:
+            yield f"requirements[{i}].applies_when", r["applies_when"]
 
-def _referenced_vars(expression, *, under_numeric_op=False):
-    """Yield (question_id, under_numeric_op) for every {"var": ...} node."""
+    if "role" in content:
+        yield "role", content["role"]
+
+
+def _operator_context(op):
+    if op in ARITHMETIC_OPS:
+        return "arithmetic"
+    if op in COMPARISON_OPS:
+        return "comparison"
+    if op == "years_between":
+        return "years_between"
+    return None
+
+
+def _referenced_vars(expression, *, context=None):
+    """Yield (question_id, context) for every {"var": ...} node, where
+    context names the enclosing typed operator ('arithmetic', 'comparison',
+    'years_between') or is None."""
     if isinstance(expression, dict) and len(expression) == 1:
         op, args = next(iter(expression.items()))
         if op == "var":
             name = args[0] if isinstance(args, list) else args
             if isinstance(name, str):
-                yield name, under_numeric_op
+                yield name, context
             return
         arg_list = args if isinstance(args, list) else [args]
         for sub in arg_list:
-            yield from _referenced_vars(sub, under_numeric_op=(op in NUMERIC_OPS))
+            yield from _referenced_vars(sub, context=_operator_context(op))
     elif isinstance(expression, list):
         for sub in expression:
-            yield from _referenced_vars(sub, under_numeric_op=under_numeric_op)
+            yield from _referenced_vars(sub, context=context)
 
 
 def _date_issues(content: dict) -> list[dict]:
@@ -97,6 +122,55 @@ def _date_issues(content: dict) -> list[dict]:
                 )
         except ValueError:
             pass  # already reported above
+    return issues
+
+
+def _valid_iso(value) -> bool:
+    try:
+        date.fromisoformat(value)
+    except (TypeError, ValueError):
+        return False
+    return True
+
+
+def _requirement_date_issues(content: dict) -> list[dict]:
+    issues: list[dict] = []
+    for i, r in enumerate(content.get("requirements", [])):
+        path = f"requirements[{i}]"
+        start, end = r.get("applies_from"), r.get("applies_until")
+        for label, value in (("applies_from", start), ("applies_until", end)):
+            if value is not None and not _valid_iso(value):
+                issues.append(
+                    _issue(
+                        "error", "bad_date", f"{label} is not a valid ISO date: {value!r}", path
+                    )
+                )
+        if start and end and _valid_iso(start) and _valid_iso(end) and start >= end:
+            issues.append(
+                _issue("error", "date_order", "applies_from must be before applies_until", path)
+            )
+    return issues
+
+
+def _fixture_issues(content: dict) -> list[dict]:
+    issues: list[dict] = []
+    for i, fixture in enumerate(content.get("fixtures", [])):
+        path = f"fixtures[{i}]"
+        as_of = fixture.get("as_of")
+        if as_of is not None and not _valid_iso(as_of):
+            issues.append(
+                _issue("error", "bad_date", f"as_of is not a valid ISO date: {as_of!r}", path)
+            )
+        if "requirements" in fixture.get("expected", {}) and as_of is None:
+            issues.append(
+                _issue(
+                    "error",
+                    "fixture_needs_as_of",
+                    "a fixture that expects requirements must set as_of, or its outcome "
+                    "changes as dates pass",
+                    path,
+                )
+            )
     return issues
 
 
@@ -216,7 +290,7 @@ def lint_package(
         if expr is None:
             continue
         allows_classification_vars = path.startswith(EXTENDED_DATA_PATH_PREFIXES)
-        for question_id, under_numeric_op in _referenced_vars(expr):
+        for question_id, context in _referenced_vars(expr):
             if allows_classification_vars and question_id.startswith(CLASSIFICATION_VAR_PREFIX):
                 classification_id = question_id[len(CLASSIFICATION_VAR_PREFIX) :]
                 if classification_id not in classification_ids:
@@ -241,18 +315,21 @@ def lint_package(
                         path,
                     )
                 )
-            elif under_numeric_op and qtype != "number":
+            elif context is not None and qtype not in ALLOWED_TYPES[context]:
                 issues.append(
                     _issue(
                         "error",
                         "type_mismatch",
-                        f"question '{question_id}' is '{qtype}', not usable in a numeric "
-                        "comparison",
+                        f"question '{question_id}' is '{qtype}', not usable under "
+                        f"{context.replace('_', ' ')} (needs "
+                        f"{' or '.join(sorted(ALLOWED_TYPES[context]))})",
                         path,
                     )
                 )
 
     issues.extend(_date_issues(content))
+    issues.extend(_requirement_date_issues(content))
+    issues.extend(_fixture_issues(content))
     issues.extend(
         _namespace_shadow_issues(
             content, is_official=is_official, existing_packages=existing_packages

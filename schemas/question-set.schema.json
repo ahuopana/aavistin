@@ -71,7 +71,8 @@
           "enum": [
             "boolean",
             "choice",
-            "number"
+            "number",
+            "date"
           ]
         },
         "level": {
@@ -109,6 +110,11 @@
           "type": "string",
           "format": "uri",
           "description": "Optional link to an authoritative source for further reading."
+        },
+        "carry_forward": {
+          "type": "boolean",
+          "default": true,
+          "description": "False for questions about one release's change: a new release starts them unanswered (ADR 0021)."
         }
       },
       "allOf": [
