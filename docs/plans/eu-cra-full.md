@@ -48,7 +48,7 @@ Answers carry over where the meaning is the same: `eu-cra` reuses the ids `is_fr
 
 | id | type | level | drives | notes |
 | --- | --- | --- | --- | --- |
-| `has_data_connection` | boolean | product | scope include | common. Guidance: G 2.5 (encoded data vs on/off signalling). |
+| `has_data_connection` | boolean | software | scope include | common; `implied_by` an interface present (true only). Guidance: G 2.5 (encoded data vs on/off signalling). |
 | `product_form` | choice: standalone software · hardware with software · hardware component · software component | product | scope; Art. 13(10) | common (62443 and SSDF also distinguish component vs product). |
 | `software_executes_on_user_side` | boolean | software | scope (web-only apps out) | `condition`: standalone software. G 2.2. |
 | `is_free_and_open_source` | boolean | product | scope, Art. 32(5) route | moved to common; guidance from G 3 (two-part test). |
@@ -58,7 +58,7 @@ Answers carry over where the meaning is the same: `eu-cra` reuses the ids `is_fr
 | `remote_processing_needed_for_function` | boolean | software | RDPS | G 8.1.2 (telemetry for statistics only: no) |
 | `remote_processing_designed_by_manufacturer` | boolean | software | RDPS | G 8.1.3 (own code on IaaS/PaaS: yes; third-party SaaS: no) |
 | `has_remote_data_processing` | boolean | software | requirements cover RDPS | derived: `implied_by` the three above. |
-| `is_medical_device`, `is_in_vitro_diagnostic` | boolean | product | Art. 2(2) exclusions | `is_medical_device` already in the architecture example. |
+| `is_medical_device`, `is_in_vitro_diagnostic` | boolean | product | Art. 2(2) exclusions | common (RED, MDR, LVD reuse the exclusions below too). |
 | `is_exclusively_vehicle_component` | boolean | product | Art. 2(2)(c) + DA 2025/1535 | guidance: exclusively designed, channel matters (G 9.3.1). |
 | `is_civil_aviation_product`, `is_marine_equipment` | boolean | product | Art. 2(3), 2(4) exclusions | |
 | `is_national_security_or_defence_only` | boolean | product | Art. 2(7) | |
@@ -69,7 +69,7 @@ Answers carry over where the meaning is the same: `eu-cra` reuses the ids `is_fr
 
 | id | type | level | drives |
 | --- | --- | --- | --- |
-| `economic_operator_role` | choice: manufacturer · importer · distributor · authorised representative · open-source steward | product | which requirements apply (needs 6.2) |
+| `economic_operator_role` | choice: manufacturer · importer · distributor · authorised representative · open-source steward | product | which requirements apply (needs 6.2); common, shared by all EU product-legislation packages |
 | `places_under_own_name_or_modifies` | boolean | product | Art. 21/22: importer or distributor becomes manufacturer |
 
 ### 3.3 Classification
@@ -163,7 +163,26 @@ Turn the guidance's worked examples into package fixtures, so each outcome trace
 
 ## 5. Shared questions with IEC 62443 and NIST SSDF
 
-Pending: research running in parallel. This section will list the candidate `common` questions, a requirement crosswalk (CRA Annex I ↔ 62443-4-1/4-2 ↔ SSDF) for evidence reuse, and what doesn't map. IEC 62443 appears only by part and requirement id with our own summaries.
+Full research: [`eu-cra-standards-overlap.md`](eu-cra-standards-overlap.md) (candidate questions with references, a CRA Annex I ↔ 62443-4-1/4-2 ↔ SSDF crosswalk for evidence reuse, spec-specific facts, pitfalls). WebFetch was blocked, so most requirement ids there are from memory and marked †; the crosswalk must be checked against the ENISA/JRC "CRA Requirements Standards Mapping" (2024) before use.
+
+**The overlap splits in two.**
+
+- **Process facts overlap across all three** (CRA Part II and Art. 13, 62443-4-1, SSDF): `documented_secure_development_process`, `performs_cybersecurity_risk_assessment`, `performs_threat_modelling`, `scans_for_known_vulnerabilities`, `security_testing_before_release`, `penetration_testing_performed`, `blocks_release_with_known_exploitable_vulnerabilities`, `third_party_component_due_diligence`, `sbom_scope` (choice: none · top-level · full transitive), `protects_development_environment`, `signs_releases`, `monitors_component_vulnerabilities`, `has_cvd_policy`, `has_vulnerability_contact`, `vulnerability_remediation_process`, `publishes_security_advisories`, `provides_secure_use_documentation`. Two-way (62443-4-1 + SSDF): security roles and training, documented security requirements, design review, secure coding standard, code review or static analysis.
+- **Product facts overlap almost only between CRA Part I and 62443-4-2.** SSDF is process-only and touches products only through secure defaults (PW.9) and release integrity (PS.2). Candidates: `network_interface_capability`, `wireless_interface_capability`, `physical_debug_interface` (hardware capability choices: not present · present · present but disabled), `network_services_exposure`, `requires_user_authentication`, `default_credentials` (choice incl. "same default on every unit"), the existing MFA trio, `role_based_access_control`, `encrypts_data_in_transit`, `sensitive_data_at_rest`, `update_mechanism` (choice: none · manual · automatic on/off by default), `verifies_update_authenticity`, secure boot (split into hardware root of trust + software enablement, per capability vs enablement), `minimal_default_configuration`, `supports_factory_reset`, `security_event_logging`, `dos_resilience_measures`, `includes_third_party_components`.
+- **Also common, though CRA-only among these three**, because RED, MDR, LVD and GDPR packages will reuse them: the scope exclusions, `economic_operator_role`, `is_free_and_open_source`, `is_commercial_activity`, `processes_personal_data` (data minimisation, GDPR).
+
+**`implied_by` rules (strict implications only):** `uses_mfa` ⇐ either MFA requirement; `requires_user_authentication` ⇐ `uses_mfa`; `has_data_connection` ⇐ an interface present or services listening (derive true only, never false); `security_testing_before_release` ⇐ `penetration_testing_performed`; `signs_releases` ⇐ `verifies_update_authenticity`. Not: risk assessment ⇐ threat model, due diligence ⇐ SBOM, secure defaults ⇐ no listening services. Derivation across levels works (resolution gathers all levels of a configuration before deriving).
+
+**CRA-specific refinements** sit in `eu-cra` with a `condition` on the common question, so shared labels stay neutral: automatic updates on by default with opt-out, logging opt-out, free security updates, security fixes separate from features, support period, Art. 14 reporting readiness. The same fact is judged differently: OT practice under 62443 has the operator apply patches, the CRA wants automatic updates by default. So `common` labels must not carry a judgement; packages raise the findings.
+
+**Constraints this surfaced:**
+
+- `choice` is single-valued and comparisons are number-only. Ordinal facts (62443 security level 1–4, 4-1 maturity level) must be `number`; multi-valued facts (which interfaces, which 62443 component types) need one question each.
+- Levels of library questions must be right before `common` 1.1.0 is approved: the linter rejects the same id at a different level, so changing a level later is breaking.
+- The demo's `has_wireless` (boolean) is the same fact as `wireless_interface_capability` (choice). Use the new id; leave or migrate the demo.
+- Same words, different meanings: "component", "risk assessment", "secure by default", "SBOM" vs runtime inventory (62443-4-2 component inventory is not an SBOM).
+- Process answers are self-attested; each should link to evidence (ADR 0011), with the crosswalk as the reuse key.
+- 62443 and SSDF are not market-bound: they are selected per product (customer requirement, or harmonised standard once EN IEC 62443-4-1/A11 and 4-2/A11 are cited), not activated by target market.
 
 ## 6. Engine and schema changes (each needs an ADR; next free number 0018)
 
