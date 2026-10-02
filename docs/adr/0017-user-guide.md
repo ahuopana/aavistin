@@ -1,4 +1,4 @@
-# 12. User Guide: single-sourced Markdown, in-app and GitHub Pages
+# 17. User Guide: single-sourced Markdown, in-app and GitHub Pages
 
 Status: Accepted
 
