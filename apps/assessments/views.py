@@ -165,12 +165,21 @@ def assessment_detail(request, pk):
         evaluation = assessment.snapshot
     else:
         evaluation = evaluate_configuration(assessment.configuration)
+    labels = {
+        question_id: resolved.question.get("label") or question_id
+        for question_id, resolved in resolve_answers(assessment.configuration)[0].items()
+    }
+    answer_rows = [
+        {"id": question_id, "label": labels.get(question_id, question_id), **answer}
+        for question_id, answer in sorted(evaluation.get("resolved_answers", {}).items())
+    ]
     return render(
         request,
         "assessments/assessment_detail.html",
         {
             "assessment": assessment,
             "evaluation": evaluation,
+            "answer_rows": answer_rows,
             "can_approve": has_role(request.user, Role.APPROVER, product_family=family),
         },
     )

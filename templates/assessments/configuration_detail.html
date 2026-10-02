@@ -8,14 +8,14 @@
 
   <p><a href="{% url 'risk:register' configuration.pk %}">Risk register for this configuration &rarr;</a></p>
 
-  <h2>Questions</h2>
+  <h2 id="questions">Questions</h2>
   <table>
     <thead>
       <tr><th>Question</th><th>Value</th><th>Origin</th>{% if can_edit %}<th>Set answer</th>{% endif %}</tr>
     </thead>
     <tbody>
       {% for row in rows %}
-        <tr>
+        <tr id="q-{{ row.question.id }}">
           <td class="cell-question">
             {{ row.question.label|default:row.question.id }}
             {% if row.question.used_by|length > 1 %}<span class="field-hint">also used by: {{ row.question.used_by|join:", " }}</span>{% endif %}
