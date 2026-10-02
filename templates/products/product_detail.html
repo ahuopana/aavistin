@@ -134,13 +134,13 @@
     },
   }">
     <div class="tab-list" role="tablist">
-      <button type="button" role="tab" :class="{ active: tab === 'hardware' }" @click="setTab('hardware')">
+      <button type="button" role="tab" class="tab-button" :class="{ active: tab === 'hardware' }" :aria-selected="tab === 'hardware'" @click="setTab('hardware')">
         Hardware variants <span class="tab-count">{{ product.hw_variants.count }}</span>
       </button>
-      <button type="button" role="tab" :class="{ active: tab === 'software' }" @click="setTab('software')">
+      <button type="button" role="tab" class="tab-button" :class="{ active: tab === 'software' }" :aria-selected="tab === 'software'" @click="setTab('software')">
         Software releases <span class="tab-count">{{ product.sw_releases.count }}</span>
       </button>
-      <button type="button" role="tab" :class="{ active: tab === 'configurations' }" @click="setTab('configurations')">
+      <button type="button" role="tab" class="tab-button" :class="{ active: tab === 'configurations' }" :aria-selected="tab === 'configurations'" @click="setTab('configurations')">
         Configurations <span class="tab-count">{{ configurations|length }}</span>
       </button>
     </div>
