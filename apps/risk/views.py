@@ -8,6 +8,7 @@ views only present what ``resolution`` and ``rating`` already compute.
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 
+from apps.core.readiness import register_readiness
 from apps.orgs.models import Role
 from apps.orgs.services import has_role
 from apps.packages.models import PackageKind, PackageStatus, RequirementPackage
@@ -104,16 +105,20 @@ def register(request, pk):
     ]
     counts = {t.value: sum(1 for e in entries if e.entry_type == t) for t in TYPE_ORDER}
 
+    pending_count = len(pending_suggestions(configuration))
     return render(
         request,
         "risk/register.html",
         {
+            "readiness": register_readiness(configuration, pending_suggestions=pending_count)
+            if not entries
+            else [],
             "configuration": configuration,
             "product": product,
             "sections": [s for s in sections if s["rows"]],
             "counts": counts,
             "total": len(entries),
-            "pending_suggestions": len(pending_suggestions(configuration)),
+            "pending_suggestions": pending_count,
             "must_treat": sum(
                 1 for r in rows for c in r["ratings"] if c["acceptance"] == "must_treat"
             ),
