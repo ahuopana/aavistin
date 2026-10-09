@@ -429,6 +429,23 @@ class ProductViewTests(ProductAuthoringFixture):
         self.assertContains(response, "Software releases")
         self.assertContains(response, "Configurations")
 
+    def test_configurations_tab_is_default_when_configurations_exist(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("products:product_detail", args=[self.product.pk]))
+        self.assertContains(response, "|| 'configurations',")
+
+    def test_tabs_are_styled_and_expose_the_selected_one(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("products:product_detail", args=[self.product.pk]))
+        self.assertContains(response, 'role="tab" class="tab-button"', count=3)
+        self.assertContains(response, ":aria-selected=\"tab === 'configurations'\"")
+
+    def test_hardware_tab_is_default_when_there_are_no_configurations(self):
+        self.client.force_login(self.editor)
+        bare = Product.objects.create(product_family=self.family, name="Bare", slug="bare")
+        response = self.client.get(reverse("products:product_detail", args=[bare.pk]))
+        self.assertContains(response, "|| 'hardware',")
+
     def test_editor_can_create_product(self):
         self.client.force_login(self.editor)
         response = self.client.post(

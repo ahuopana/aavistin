@@ -916,14 +916,22 @@ input[type="date"] {
 }
 
 .tab-button:hover {
+  background: var(--color-surface);
+  border-color: transparent;
   color: var(--color-text);
 }
 
 .tab-button.active {
-  color: var(--color-accent);
+  color: var(--color-text);
   border-color: var(--color-border);
+  border-top: 3px solid var(--color-gold-fill);
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-bg);
+}
+
+.tab-button.active .tab-count {
+  background: var(--color-gold-fill);
+  color: var(--color-on-gold);
 }
 
 .tab-count {
