@@ -33,6 +33,22 @@ def library_questions(*, exclude_source: str | None = None, approved_only: bool 
     return questions
 
 
+def not_carried_forward() -> set[str]:
+    """Ids of approved questions declaring ``carry_forward: false`` (ADR 0021)."""
+    ids = {
+        qid
+        for qid, q in library_questions(approved_only=True).items()
+        if q.get("carry_forward") is False
+    }
+    for content in RequirementPackage.objects.filter(
+        kind=PackageKind.REQUIREMENT, status=PackageStatus.APPROVED
+    ).values_list("content", flat=True):
+        ids.update(
+            q["id"] for q in content.get("questions", []) if q.get("carry_forward") is False
+        )
+    return ids
+
+
 def derive_value(question: dict, data: dict):
     """The value ``question.implied_by`` derives from ``data``, or None."""
     implied = question.get("implied_by")

@@ -26,12 +26,16 @@ A **Product** belongs to a product family. Under it:
 
 - **Hardware variants** are physical variants of the product (e.g.
   different enclosures or radio options). Each variant has one or more
-  **hardware revisions**, and each revision can be set against one or
+  **hardware revisions**, and each variant can be set against one or
   more **target markets** (e.g. EU, US) — this is what determines which
   requirement packages apply.
 - **Software releases** are versions of the product's firmware or
   software. Each release can have **software options** (e.g. optional
-  feature packs) that change what applies.
+  feature packs) that change what applies. A release can also set its own
+  target markets, e.g. an app distributed in fewer markets than the
+  hardware, or standalone software with no real hardware. A configuration
+  is sold only where both its hardware variant and its release are; a
+  release without markets uses the variant's.
 - **Configurations** tie a specific hardware revision to a specific
   software release, with optional software options — this is the unit
   an assessment is actually performed against.

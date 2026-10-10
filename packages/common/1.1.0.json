@@ -1,0 +1,706 @@
+{
+  "source": "common",
+  "version": "1.1.0",
+  "title": "Common questions shared across requirement packages",
+  "questions": [
+    {
+      "id": "product_form",
+      "type": "choice",
+      "level": "product",
+      "label": "What kind of product is this?",
+      "choices": [
+        "standalone_software",
+        "hardware_with_software",
+        "hardware_component",
+        "software_component"
+      ],
+      "guidance": "Software that is needed to operate the hardware (apps, drivers) is part of the product even when delivered separately. A component is placed on the market on its own for others to integrate."
+    },
+    {
+      "id": "has_data_connection",
+      "type": "boolean",
+      "level": "software",
+      "label": "Can the product exchange digital data with another device or network, directly or indirectly?",
+      "guidance": "A data connection means deliberately encoded digital information is sent and read, by cable, radio or through other software. Merely switching a signal on and off to trigger or power something is not a data connection.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456",
+      "implied_by": {
+        "when": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "network_interface_capability"
+                },
+                "present"
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "wireless_interface_capability"
+                },
+                "present"
+              ]
+            },
+            {
+              "in": [
+                {
+                  "var": "inbound_exposure_max"
+                },
+                [
+                  "restricted_by_product",
+                  "any_network"
+                ]
+              ]
+            }
+          ]
+        },
+        "value": true
+      }
+    },
+    {
+      "id": "processes_personal_data",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does the product process personal data?"
+    },
+    {
+      "id": "economic_operator_role",
+      "type": "choice",
+      "level": "product",
+      "label": "What is your role for this product?",
+      "choices": [
+        "manufacturer",
+        "importer",
+        "distributor",
+        "authorised_representative",
+        "steward"
+      ],
+      "guidance": "Manufacturer: develops or has it developed and markets it under its own name. Importer: places a product from outside the EU on the EU market. Distributor: makes it available further down the supply chain. Authorised representative: acts for a manufacturer under a written mandate. Steward: a legal person that systematically supports free and open-source software it does not itself place on the market."
+    },
+    {
+      "id": "places_under_own_name_or_modifies",
+      "type": "boolean",
+      "level": "product",
+      "label": "Do you place the product under your own name or trademark, or substantially modify it?",
+      "condition": {
+        "in": [
+          {
+            "var": "economic_operator_role"
+          },
+          [
+            "importer",
+            "distributor"
+          ]
+        ]
+      },
+      "guidance": "An importer or distributor that does either takes on the manufacturer's obligations."
+    },
+    {
+      "id": "is_free_and_open_source",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product free and open-source software?",
+      "guidance": "Two things both have to be true: the software is licensed to allow free use, modification and redistribution, AND its source code is openly shared -- publicly, not only with paying customers or a restricted group.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "is_commercial_activity",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product supplied in the course of a commercial activity?",
+      "guidance": "Ask whether access to the software itself (not just optional paid support around it) is conditioned on payment, used to monetise other products or services, requires personal-data processing unrelated to security or compatibility, or makes donations a de facto condition of access. Plain donations, sponsored development and not-for-profit entities reinvesting earnings generally do not count on their own.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "is_medical_device",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product a medical device under Regulation (EU) 2017/745?"
+    },
+    {
+      "id": "is_in_vitro_diagnostic",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product an in-vitro diagnostic medical device under Regulation (EU) 2017/746?"
+    },
+    {
+      "id": "is_exclusively_vehicle_component",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product designed and built exclusively for vehicles type-approved under Regulation (EU) 2019/2144 or (EU) No 168/2013?",
+      "guidance": "Only parts suitable solely for those vehicles count. Selling through channels open to anyone (retail, public web shop) shows the product is not exclusively for vehicles; restricted business channels in the automotive supply chain point the other way.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "is_civil_aviation_product",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product certified under the EU civil aviation rules, Regulation (EU) 2018/1139?"
+    },
+    {
+      "id": "is_marine_equipment",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product marine equipment under Directive 2014/90/EU?"
+    },
+    {
+      "id": "is_exclusively_national_security_product",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product developed or modified exclusively for national security purposes?"
+    },
+    {
+      "id": "is_exclusively_defence_product",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product developed or modified exclusively for defence purposes?"
+    },
+    {
+      "id": "processes_classified_information",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product specifically designed to process classified information?",
+      "guidance": "Such products may fall outside product legislation, but national rules on classified information (for example security accreditation by the national security authority) then apply instead."
+    },
+    {
+      "id": "hardware_first_placed_on_market",
+      "type": "date",
+      "level": "hardware",
+      "label": "When were the first units of this hardware revision placed on the market?",
+      "guidance": "Placing on the market is the first time a unit is made available for distribution or use in the market. Hardware units count one by one."
+    },
+    {
+      "id": "hardware_still_placed_on_market",
+      "type": "boolean",
+      "level": "hardware",
+      "label": "Are units of this hardware revision still being placed on the market?"
+    },
+    {
+      "id": "hardware_last_placed_on_market",
+      "type": "date",
+      "level": "hardware",
+      "label": "When was the last unit of this hardware revision placed on the market?",
+      "condition": {
+        "==": [
+          {
+            "var": "hardware_still_placed_on_market"
+          },
+          false
+        ]
+      }
+    },
+    {
+      "id": "software_first_placed_on_market",
+      "type": "date",
+      "level": "software",
+      "label": "When was this software release first placed on the market?",
+      "guidance": "All copies of one version count as placed when it is first offered. A release that only updates an earlier one without substantially modifying it keeps that earlier release's date.",
+      "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
+    },
+    {
+      "id": "network_interface_capability",
+      "type": "choice",
+      "level": "hardware",
+      "label": "Does the hardware have a wired data interface (Ethernet, fieldbus, USB data, serial)?",
+      "choices": [
+        "not_present",
+        "present",
+        "present_physically_disabled"
+      ]
+    },
+    {
+      "id": "wireless_interface_capability",
+      "type": "choice",
+      "level": "hardware",
+      "label": "Does the hardware have a radio (Wi-Fi, Bluetooth, cellular, other)?",
+      "choices": [
+        "not_present",
+        "present",
+        "present_physically_disabled"
+      ]
+    },
+    {
+      "id": "physical_debug_interface",
+      "type": "choice",
+      "level": "hardware",
+      "label": "Does the hardware expose debug or test ports (JTAG, SWD, UART console), and how are they protected in shipped units?",
+      "choices": [
+        "not_present",
+        "present_open",
+        "present_access_controlled",
+        "disabled_in_production"
+      ]
+    },
+    {
+      "id": "inbound_exposure_default",
+      "type": "choice",
+      "level": "software",
+      "label": "In the shipped configuration, from where can the product accept inbound connections?",
+      "choices": [
+        "none",
+        "same_device_only",
+        "restricted_by_product",
+        "any_network"
+      ],
+      "guidance": "Answer for the most exposed service (listening port, API, remote administration). 'Restricted by product' means the product itself limits who can connect, e.g. binds to one interface, allow-lists peers or only accepts connections through a tunnel it terminates. A VPN or firewall the operator puts in front is not a product property; see the network isolation question."
+    },
+    {
+      "id": "inbound_exposure_max",
+      "type": "choice",
+      "level": "software",
+      "label": "At most, once the user configures it, from where can the product accept inbound connections?",
+      "choices": [
+        "none",
+        "same_device_only",
+        "restricted_by_product",
+        "any_network"
+      ]
+    },
+    {
+      "id": "relies_on_network_isolation",
+      "type": "boolean",
+      "level": "product",
+      "label": "Does the intended use assume deployment on an isolated or protected network (behind the operator's VPN or firewall, or in a trusted environment)?",
+      "guidance": "This is allowed when the risk assessment covers it and the user information states the assumption clearly."
+    },
+    {
+      "id": "requires_user_authentication",
+      "type": "boolean",
+      "level": "software",
+      "label": "Must a person or system authenticate before using or configuring the product?",
+      "implied_by": {
+        "when": {
+          "==": [
+            {
+              "var": "uses_mfa"
+            },
+            true
+          ]
+        },
+        "value": true
+      }
+    },
+    {
+      "id": "default_credentials",
+      "type": "choice",
+      "level": "software",
+      "label": "How are initial credentials provided?",
+      "choices": [
+        "none",
+        "unique_per_unit",
+        "set_by_user_at_first_use",
+        "shared_default"
+      ],
+      "condition": {
+        "!=": [
+          {
+            "var": "requires_user_authentication"
+          },
+          false
+        ]
+      },
+      "guidance": "'Shared default' means the same initial password on every unit."
+    },
+    {
+      "id": "uses_mfa",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does the product support multi-factor authentication?",
+      "guidance": "Answer once; every package that asks about MFA reads this answer.",
+      "implied_by": {
+        "when": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "mfa_for_admin_access"
+                },
+                true
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "mfa_for_all_users"
+                },
+                true
+              ]
+            }
+          ]
+        },
+        "value": true
+      }
+    },
+    {
+      "id": "mfa_for_admin_access",
+      "type": "boolean",
+      "level": "software",
+      "label": "Is multi-factor authentication required for administrative access?",
+      "implied_by": {
+        "when": {
+          "==": [
+            {
+              "var": "mfa_for_all_users"
+            },
+            true
+          ]
+        },
+        "value": true
+      }
+    },
+    {
+      "id": "mfa_for_all_users",
+      "type": "boolean",
+      "level": "software",
+      "label": "Is multi-factor authentication required for all users?"
+    },
+    {
+      "id": "role_based_access_control",
+      "type": "boolean",
+      "level": "software",
+      "label": "Can access rights be limited per role or user, following least privilege?"
+    },
+    {
+      "id": "encrypts_data_in_transit",
+      "type": "choice",
+      "level": "software",
+      "label": "Is data sent over external interfaces protected (encryption and integrity, e.g. TLS)?",
+      "choices": [
+        "all_external_channels",
+        "some_channels",
+        "none"
+      ],
+      "condition": {
+        "!=": [
+          {
+            "var": "has_data_connection"
+          },
+          false
+        ]
+      }
+    },
+    {
+      "id": "sensitive_data_at_rest",
+      "type": "choice",
+      "level": "software",
+      "label": "Does the product store secrets, credentials or personal or confidential data, and is it encrypted at rest?",
+      "choices": [
+        "none_stored",
+        "stored_encrypted",
+        "stored_unencrypted"
+      ]
+    },
+    {
+      "id": "supports_reset_to_defaults",
+      "type": "boolean",
+      "level": "software",
+      "label": "Can the user restore the original secure configuration (settings back to the shipped state)?"
+    },
+    {
+      "id": "data_erasure_method",
+      "type": "choice",
+      "level": "software",
+      "label": "When the user removes their data and settings, how is it done?",
+      "choices": [
+        "none",
+        "logical_delete",
+        "secure_erase"
+      ],
+      "guidance": "'Logical delete' removes data from use but it may be recoverable from storage. 'Secure erase' makes it unrecoverable, e.g. by destroying the key of encrypted storage. On flash memory, overwriting is unreliable because of wear levelling. A reset to defaults alone does not erase data."
+    },
+    {
+      "id": "update_mechanism",
+      "type": "choice",
+      "level": "software",
+      "label": "How does the product receive software updates?",
+      "choices": [
+        "none",
+        "manual",
+        "automatic_default_on",
+        "automatic_default_off"
+      ]
+    },
+    {
+      "id": "verifies_update_authenticity",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does the product verify an update's signature or integrity before installing it?",
+      "condition": {
+        "!=": [
+          {
+            "var": "update_mechanism"
+          },
+          "none"
+        ]
+      }
+    },
+    {
+      "id": "has_hardware_root_of_trust",
+      "type": "boolean",
+      "level": "hardware",
+      "label": "Does the hardware provide a root of trust for verifying software at boot?"
+    },
+    {
+      "id": "secure_boot_enabled",
+      "type": "boolean",
+      "level": "software",
+      "label": "Is secure boot enabled, so the device only runs software it has verified?"
+    },
+    {
+      "id": "minimal_default_configuration",
+      "type": "boolean",
+      "level": "software",
+      "label": "In the shipped configuration, are non-essential services, ports, accounts and features turned off?"
+    },
+    {
+      "id": "security_event_logging",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does the product record security-relevant events (logins, configuration changes, failures)?"
+    },
+    {
+      "id": "dos_resilience_measures",
+      "type": "boolean",
+      "level": "software",
+      "label": "Do essential functions keep working under flooding or resource exhaustion (rate limits, quotas, degraded mode)?"
+    },
+    {
+      "id": "includes_third_party_components",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does the software include third-party or open-source components?"
+    },
+    {
+      "id": "documented_secure_development_process",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product developed under a documented secure development process that is actually followed?"
+    },
+    {
+      "id": "security_roles_and_training",
+      "type": "boolean",
+      "level": "product",
+      "label": "Are security responsibilities assigned, and do developers get security training for their role?"
+    },
+    {
+      "id": "performs_cybersecurity_risk_assessment",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is a cybersecurity risk assessment for this product documented and kept up to date over its lifecycle?"
+    },
+    {
+      "id": "performs_threat_modelling",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is there a threat model for the product, reviewed when the design changes?"
+    },
+    {
+      "id": "security_requirements_documented",
+      "type": "boolean",
+      "level": "product",
+      "label": "Are the product's security requirements written down and traced to design and tests?"
+    },
+    {
+      "id": "secure_coding_standard",
+      "type": "boolean",
+      "level": "product",
+      "label": "Do developers follow a documented secure coding standard?"
+    },
+    {
+      "id": "blocks_release_with_known_exploitable_vulnerabilities",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is a release with known exploitable vulnerabilities held back unless they are fixed or mitigated?"
+    },
+    {
+      "id": "third_party_component_due_diligence",
+      "type": "boolean",
+      "level": "product",
+      "label": "Are third-party components checked before use (origin, maintenance, known vulnerabilities) and monitored afterwards?",
+      "condition": {
+        "!=": [
+          {
+            "var": "includes_third_party_components"
+          },
+          false
+        ]
+      }
+    },
+    {
+      "id": "protects_development_environment",
+      "type": "boolean",
+      "level": "product",
+      "label": "Are source code, build systems and developer machines access-controlled and logged?"
+    },
+    {
+      "id": "signs_releases",
+      "type": "boolean",
+      "level": "product",
+      "label": "Are releases and updates signed, with the signing keys protected?",
+      "implied_by": {
+        "when": {
+          "==": [
+            {
+              "var": "verifies_update_authenticity"
+            },
+            true
+          ]
+        },
+        "value": true
+      }
+    },
+    {
+      "id": "monitors_component_vulnerabilities",
+      "type": "boolean",
+      "level": "product",
+      "label": "After release, are new vulnerabilities in the product and its components monitored?"
+    },
+    {
+      "id": "has_cvd_policy",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is there a published coordinated vulnerability disclosure policy?"
+    },
+    {
+      "id": "has_vulnerability_contact",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is there a public contact point for reporting vulnerabilities?"
+    },
+    {
+      "id": "vulnerability_remediation_process",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is there a documented process to triage, prioritise and fix reported vulnerabilities, with target times?"
+    },
+    {
+      "id": "publishes_security_advisories",
+      "type": "boolean",
+      "level": "product",
+      "label": "Are fixed vulnerabilities published as advisories (description, affected versions, fix)?"
+    },
+    {
+      "id": "provides_secure_use_documentation",
+      "type": "boolean",
+      "level": "product",
+      "label": "Do users get instructions on secure installation, operation, updates and decommissioning?"
+    },
+    {
+      "id": "security_design_review",
+      "type": "boolean",
+      "level": "software",
+      "label": "Was this release's design reviewed against its security requirements and threats?",
+      "carry_forward": false
+    },
+    {
+      "id": "code_review_or_static_analysis",
+      "type": "boolean",
+      "level": "software",
+      "label": "Was this release's code reviewed for security, by people or static analysis?",
+      "carry_forward": false
+    },
+    {
+      "id": "scans_for_known_vulnerabilities",
+      "type": "boolean",
+      "level": "software",
+      "label": "Was this release, including its dependencies, scanned for known vulnerabilities before release?",
+      "carry_forward": false
+    },
+    {
+      "id": "security_testing_before_release",
+      "type": "boolean",
+      "level": "software",
+      "label": "Was this release security-tested before release (security functions, fuzzing, dynamic tests)?",
+      "carry_forward": false,
+      "implied_by": {
+        "when": {
+          "==": [
+            {
+              "var": "penetration_testing_performed"
+            },
+            true
+          ]
+        },
+        "value": true
+      }
+    },
+    {
+      "id": "penetration_testing_performed",
+      "type": "boolean",
+      "level": "software",
+      "label": "Was this release penetration-tested?",
+      "carry_forward": false
+    },
+    {
+      "id": "sbom_scope",
+      "type": "choice",
+      "level": "software",
+      "label": "Was a machine-readable software bill of materials produced for this release, and how deep does it go?",
+      "choices": [
+        "none",
+        "top_level_dependencies",
+        "full_transitive"
+      ],
+      "carry_forward": false
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "mfa-for-all-implies-admin-and-support",
+      "answers": {
+        "mfa_for_all_users": true
+      },
+      "expected": {
+        "mfa_for_admin_access": true,
+        "uses_mfa": true,
+        "requires_user_authentication": true
+      }
+    },
+    {
+      "id": "no-implication-without-answer",
+      "answers": {},
+      "expected": {
+        "mfa_for_admin_access": null,
+        "uses_mfa": null,
+        "has_data_connection": null
+      }
+    },
+    {
+      "id": "radio-implies-data-connection",
+      "answers": {
+        "wireless_interface_capability": "present"
+      },
+      "expected": {
+        "has_data_connection": true
+      }
+    },
+    {
+      "id": "disabled-radio-derives-nothing",
+      "answers": {
+        "wireless_interface_capability": "present_physically_disabled"
+      },
+      "expected": {
+        "has_data_connection": null
+      }
+    },
+    {
+      "id": "update-verification-implies-signed-releases",
+      "answers": {
+        "verifies_update_authenticity": true
+      },
+      "expected": {
+        "signs_releases": true
+      }
+    },
+    {
+      "id": "pen-test-implies-security-testing",
+      "answers": {
+        "penetration_testing_performed": true
+      },
+      "expected": {
+        "security_testing_before_release": true
+      }
+    }
+  ]
+}

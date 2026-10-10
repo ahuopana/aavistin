@@ -6,9 +6,10 @@ before a snapshot is ever taken (see docs/architecture.md, "Products and
 assessments", "Findings" and "Results").
 """
 
+from django.utils import timezone
+
 from apps.evidence.models import EvidenceLink, EvidenceTargetType
-from apps.packages.fixtures_runner import evaluate_scope
-from apps.packages.ruleengine import evaluate
+from apps.packages.evaluator import evaluate_package
 
 from .resolution import resolve_answers
 
@@ -43,54 +44,33 @@ def _requirement_evidence_fingerprint(
     ]
 
 
-def evaluate_configuration(configuration, resolved=None, packages=None) -> dict:
+def evaluate_configuration(configuration, resolved=None, packages=None, *, as_of=None) -> dict:
+    """``as_of`` is the assessment date that calendar-dated requirements
+    are compared with (docs/adr/0019-requirement-applicability.md); today
+    by default."""
     if resolved is None or packages is None:
         resolved, packages = resolve_answers(configuration)
+    if as_of is None:
+        as_of = timezone.localdate()
 
     data = {question_id: ra.value for question_id, ra in resolved.items()}
 
     results = []
     findings = []
     for package in packages:
-        content = package.content
-        in_scope = evaluate_scope(content, data)
-
-        classification_ids = []
-        for classification in content.get("classifications", []):
-            condition = classification.get("when")
-            if condition is None or evaluate(condition, data):
-                classification_ids.append(classification["id"])
-
-        extended_data = {**data, **{f"class__{cid}": True for cid in classification_ids}}
-
-        package_findings = []
-        for rule in content.get("finding_rules", []):
-            if evaluate(rule.get("when", False), extended_data):
-                package_findings.append(
-                    {
-                        "id": rule["id"],
-                        "level": rule["level"],
-                        "message": rule["message"],
-                        "ref": rule.get("ref"),
-                        "source": package.source,
-                        "version": package.version,
-                    }
-                )
-        findings.extend(package_findings)
-
-        requirements = []
-        if in_scope:
-            for requirement in content.get("requirements", []):
-                applies_to = requirement.get("applies_to_classes")
-                if not applies_to or set(applies_to) & set(classification_ids):
-                    requirements.append(requirement["id"])
-
-        routes = [
-            route["id"]
-            for route in content.get("assessment_routes", [])
-            if evaluate(route.get("allowed_when", True), extended_data)
-        ]
-
+        outcome = evaluate_package(package.content, data, as_of=as_of)
+        findings.extend(
+            {
+                "id": rule["id"],
+                "level": rule["level"],
+                "message": rule["message"],
+                "ref": rule.get("ref"),
+                "source": package.source,
+                "version": package.version,
+            }
+            for rule in outcome["findings"]
+        )
+        requirements = outcome["requirements"]
         requirement_evidence = {
             requirement_id: fingerprint
             for requirement_id in requirements
@@ -108,10 +88,13 @@ def evaluate_configuration(configuration, resolved=None, packages=None) -> dict:
                 "package_id": package.pk,
                 "package_type": package.package_type,
                 "creates_legal_obligations": package.creates_legal_obligations,
-                "in_scope": in_scope,
-                "classifications": classification_ids,
+                "in_scope": outcome["in_scope"],
+                "classifications": outcome["classifications"],
+                "role": outcome["role"],
                 "requirements": requirements,
-                "assessment_routes": routes,
+                "upcoming_requirements": outcome["upcoming_requirements"],
+                "ended_requirements": outcome["ended_requirements"],
+                "assessment_routes": outcome["assessment_routes"],
                 "requirement_evidence": requirement_evidence,
             }
         )
@@ -125,4 +108,9 @@ def evaluate_configuration(configuration, resolved=None, packages=None) -> dict:
         for question_id, ra in resolved.items()
     }
 
-    return {"resolved_answers": resolved_answers, "results": results, "findings": findings}
+    return {
+        "as_of": as_of.isoformat(),
+        "resolved_answers": resolved_answers,
+        "results": results,
+        "findings": findings,
+    }

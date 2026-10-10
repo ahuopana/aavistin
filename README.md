@@ -82,7 +82,7 @@ fresh dev database has none installed. To add one, run these *inside* the
 via `docker compose up`, or `run --rm` otherwise):
 
 ```bash
-docker compose exec web python manage.py import_package packages/eu-cra-partial/1.0.0.json --kind requirement --official
+docker compose exec web python manage.py import_package packages/eu-cra/1.0.0.json --kind requirement --official
 ```
 
 This validates the file against the package JSON Schema, runs the

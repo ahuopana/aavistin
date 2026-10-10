@@ -53,8 +53,21 @@
     {% if result.classifications %}
       <p>Classifications: {{ result.classifications|join:", " }}</p>
     {% endif %}
+    {% if result.role %}
+      <p>Economic operator role: {{ result.role }}</p>
+    {% endif %}
     {% if result.requirements %}
       <p>Requirements: {{ result.requirements|join:", " }}</p>
+    {% endif %}
+    {% if result.upcoming_requirements %}
+      <p>Not in force yet:
+        {% for r in result.upcoming_requirements %}{{ r.id }} (from {{ r.applies_from }}){% if not forloop.last %}, {% endif %}{% endfor %}
+      </p>
+    {% endif %}
+    {% if result.ended_requirements %}
+      <p>No longer in force:
+        {% for r in result.ended_requirements %}{{ r.id }} (until {{ r.applies_until }}){% if not forloop.last %}, {% endif %}{% endfor %}
+      </p>
     {% endif %}
     {% if result.assessment_routes %}
       <p>Assessment routes: {{ result.assessment_routes|join:", " }}</p>

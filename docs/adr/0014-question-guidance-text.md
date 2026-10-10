@@ -1,6 +1,6 @@
 # 14. Optional self-assessment guidance text on questions
 
-Status: Accepted
+Status: Accepted. The package named below was replaced by `packages/eu-cra` (ADR 0022), which keeps and extends the guidance texts.
 
 ## Context
 

@@ -26,14 +26,20 @@ class Command(BaseCommand):
             help="Mark as an official, maintainer-reviewed package.",
         )
 
-    def handle(self, path, kind, official, **options):
+        parser.add_argument(
+            "--force",
+            action="store_true",
+            help="Import even if question sets named in 'uses' are not yet approved.",
+        )
+
+    def handle(self, path, kind, official, force, **options):
         with open(path) as f:
             content = json.load(f)
 
         try:
-            package = import_package(content, kind=kind, is_official=official)
+            package = import_package(content, kind=kind, is_official=official, force=force)
         except PackageImportError as exc:
-            raise CommandError(f"schema validation failed: {exc}") from exc
+            raise CommandError(str(exc)) from exc
 
         self.stdout.write(
             self.style.SUCCESS(f"Imported {package.source}@{package.version} — {package.status}")

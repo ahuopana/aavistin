@@ -11,11 +11,12 @@ it only knows how to evaluate a package against your answers. See the
 for a real example.
 
 Each package targets a **jurisdiction** (e.g. EU, US). A package is only
-active for a configuration if that configuration's hardware revision has
-a matching target market. Real, non-demo packages (such as the EU Cyber
-Resilience Act) live in the `packages/` directory of the Aavistin
-repository, alongside a README noting anything still pending legal
-review.
+active for a configuration if that configuration's target markets include
+it (the hardware variant's and the software release's markets, see
+[organisations and products](organisations-and-products)). Real, non-demo
+packages (such as the EU Cyber Resilience Act) live in the `packages/`
+directory of the Aavistin repository, alongside a README noting anything
+still pending legal review.
 
 ## Answering questions
 
@@ -33,9 +34,15 @@ For each active package, evaluating a configuration works out:
 - **In scope or not** — whether the package's scope rule, run against
   your answers, includes or excludes this configuration.
 - **Classification(s)** — which of the package's classifications match
-  (e.g. "default", "important", "critical" for the EU CRA package).
+  (e.g. "default", "important class I", "critical" for the EU CRA package).
+- **Your role** — manufacturer, importer, distributor, authorised
+  representative or open-source steward, where the package asks for it.
+  Only that role's requirements are listed; while unanswered, all are.
 - **Requirements** — which of the package's requirements apply, given
-  the classification(s).
+  the classification(s), your role and your answers (e.g. when the product
+  was placed on the market). Requirements with a start date that hasn't
+  passed yet are listed separately as "not in force yet", and those whose
+  end date has passed as "no longer in force".
 - **Assessment routes** — which conformity routes (e.g. "internal
   control" vs. "third-party assessment") are allowed for this
   classification.
@@ -47,6 +54,21 @@ For each active package, evaluating a configuration works out:
 Once an assessment's questionnaire is complete, it can be **approved** —
 this freezes a snapshot of the evaluation (results, findings, resolved
 answers) for audit purposes. If the underlying data changes afterwards
-(an answer changes, or the package itself is updated), the approved
-assessment is flagged **stale** and due for re-review — it is not
-silently recalculated.
+(an answer changes, the package itself is updated, or a date passes that
+brings a requirement into force or ends it), the approved assessment is
+flagged **stale** and due for re-review — it is not silently recalculated.
+
+## EU Cyber Resilience Act
+
+The EU CRA package asks for the product's core functionality as one choice
+from the categories of Annexes III and IV of the regulation. The category
+names are quoted from Regulation (EU) 2024/2847 of the European Parliament
+and of the Council (Cyber Resilience Act), OJ L, 2024/2847, 20.11.2024,
+ELI: http://data.europa.eu/eli/reg/2024/2847/oj. Source: EUR-Lex,
+© European Union, 1998–2026; reuse authorised with acknowledgement of the
+source. Only the published Official Journal text is authentic.
+
+The "Good to understand before you answer" notes are our own summaries of
+the Commission's guidance on the application of the CRA, C(2026) 5252,
+not the guidance itself. The package is not legal advice and is pending
+legal review; see the package README.

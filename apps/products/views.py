@@ -277,6 +277,7 @@ def software_release_edit(request, pk):
             _flash_errors(request, exc)
             return redirect("products:product_detail", pk=product.pk)
         release.save()
+        release.target_markets.set(request.POST.getlist("target_markets"))
         django_messages.success(request, "Software release updated.")
     return redirect("products:product_detail", pk=product.pk)
 

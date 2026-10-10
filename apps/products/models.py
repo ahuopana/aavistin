@@ -132,6 +132,12 @@ class SoftwareRelease(Approvable):
     name = models.CharField(max_length=200, help_text="e.g. Firmware, Companion app")
     version = models.CharField(max_length=50)
     released_at = models.DateField(null=True, blank=True)
+    target_markets = models.ManyToManyField(
+        TargetMarket,
+        related_name="sw_releases",
+        blank=True,
+        help_text="Leave empty to use the hardware variant's markets (ADR 0020).",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -191,6 +197,18 @@ class Configuration(Approvable):
 
     def __str__(self):
         return self.name
+
+    def effective_market_codes(self) -> set[str]:
+        """Where this configuration is sold: the intersection when both the
+        hardware variant and the release set markets, otherwise whichever
+        does (docs/adr/0020-target-markets-on-software-releases.md)."""
+        hardware = set(
+            self.hardware_revision.hardware_variant.target_markets.values_list("code", flat=True)
+        )
+        software = set(self.software_release.target_markets.values_list("code", flat=True))
+        if hardware and software:
+            return hardware & software
+        return hardware or software
 
     def clean(self):
         hw_product = self.hardware_revision.hardware_variant.product_id
