@@ -354,6 +354,10 @@ tr[id^="q-"] {
   margin-top: var(--space-2);
 }
 
+td > .stat-bar-row {
+  margin-top: 0;
+}
+
 .stat-bar-label {
   flex: 0 0 5.5rem;
   color: var(--color-text-muted);
@@ -407,6 +411,8 @@ tr[id^="q-"] {
 
 .stat-bar-value {
   flex: 0 0 auto;
+  min-width: 7ch;
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
   font-size: 0.85em;
 }

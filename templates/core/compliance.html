@@ -9,32 +9,8 @@
     <section class="dashboard-widget">
       <h2>Portfolio</h2>
       {% include "core/_stat_bar.html" with label="Questions" ok=totals.questions.0 total=totals.questions.1 fill="questions" %}
-      <div class="stat-bar-row">
-        <span class="stat-bar-label">Compliance</span>
-        {% with ok=totals.compliance.0 total=totals.compliance.1 %}
-          {% if total %}
-            <div class="stat-bar" role="img" aria-label="Compliance {{ ok }} of {{ total }}">
-              <div class="stat-bar-fill stat-bar-fill-compliance" style="width: {% widthratio ok total 100 %}%"></div>
-            </div>
-            <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
-          {% else %}
-            <span class="stat-bar-value">no data yet</span>
-          {% endif %}
-        {% endwith %}
-      </div>
-      <div class="stat-bar-row">
-        <span class="stat-bar-label">Risk</span>
-        {% with ok=totals.risk.0 total=totals.risk.1 %}
-          {% if total %}
-            <div class="stat-bar" role="img" aria-label="Risk {{ ok }} of {{ total }}">
-              <div class="stat-bar-fill stat-bar-fill-risk" style="width: {% widthratio ok total 100 %}%"></div>
-            </div>
-            <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
-          {% else %}
-            <span class="stat-bar-value">no data yet</span>
-          {% endif %}
-        {% endwith %}
-      </div>
+      {% include "core/_stat_bar.html" with label="Compliance" ok=totals.compliance.0 total=totals.compliance.1 fill="compliance" %}
+      {% include "core/_stat_bar.html" with label="Risk" ok=totals.risk.0 total=totals.risk.1 fill="risk" %}
     </section>
   </div>
 
@@ -57,30 +33,8 @@
             <td>{{ row.family.name }}</td>
             <td><a href="{% url 'products:product_detail' row.product.pk %}">{{ row.product.name }}</a></td>
             <td>{% include "core/_stat_bar.html" with label="" ok=row.questions.0 total=row.questions.1 fill="questions" %}</td>
-            <td>
-              {% with ok=row.compliance.0 total=row.compliance.1 %}
-                {% if total %}
-                  <div class="stat-bar" role="img" aria-label="Compliance {{ ok }} of {{ total }}">
-                    <div class="stat-bar-fill stat-bar-fill-compliance" style="width: {% widthratio ok total 100 %}%"></div>
-                  </div>
-                  <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
-                {% else %}
-                  <span class="stat-bar-value">no data yet</span>
-                {% endif %}
-              {% endwith %}
-            </td>
-            <td>
-              {% with ok=row.risk.0 total=row.risk.1 %}
-                {% if total %}
-                  <div class="stat-bar" role="img" aria-label="Risk {{ ok }} of {{ total }}">
-                    <div class="stat-bar-fill stat-bar-fill-risk" style="width: {% widthratio ok total 100 %}%"></div>
-                  </div>
-                  <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
-                {% else %}
-                  <span class="stat-bar-value">no data yet</span>
-                {% endif %}
-              {% endwith %}
-            </td>
+            <td>{% include "core/_stat_bar.html" with label="" ok=row.compliance.0 total=row.compliance.1 fill="compliance" %}</td>
+            <td>{% include "core/_stat_bar.html" with label="" ok=row.risk.0 total=row.risk.1 fill="risk" %}</td>
           </tr>
         {% endfor %}
       </tbody>
