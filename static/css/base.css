@@ -1,21 +1,22 @@
 :root {
   --color-bg: #ffffff;
-  --color-surface: #f4f6fb;
-  --color-border: #d8dce6;
-  --color-text: #12151f;
-  --color-text-muted: #4b5568;
-  --color-brand: #1f3d7a;
+  --color-surface: #f3f7f7;
+  --color-border: #d5dfe0;
+  --color-text: #0f1a1e;
+  --color-text-muted: #46585c;
+  --color-brand: #0f2a33;
   --color-brand-contrast: #ffffff;
-  --color-brand-tint: #e4eaf9;
-  --color-accent: #8a6a18;
-  --color-gold-fill: #c9a227;
-  --color-on-gold: #1a1300;
+  --color-brand-tint: #e3f2ef;
+  --color-accent: #1b6f6d;
+  --color-accent-fill: #1b6f6d;
+  --color-attention: #f2711c;
+  --color-on-accent-fill: #ffffff;
   --color-danger: #b3362e;
   --color-warning: #b5540e;
   --color-success: #1b7d52;
-  --color-focus-ring: #1f3d7a;
+  --color-focus-ring: #1b6f6d;
   --color-input-bg: var(--color-surface);
-  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-display: "Outfit", system-ui, sans-serif;
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
   --space-1: 0.25rem;
@@ -31,41 +32,43 @@
 }
 
 :root[data-theme="dark"] {
-  --color-bg: #0b1220;
-  --color-surface: #141b2e;
-  --color-border: #2a3350;
-  --color-text: #e9ecf5;
-  --color-text-muted: #a3abc2;
-  --color-brand: #2f4f99;
+  --color-bg: #0b161a;
+  --color-surface: #12222a;
+  --color-border: #264048;
+  --color-text: #e6f0ef;
+  --color-text-muted: #9fb3b5;
+  --color-brand: #0f2a33;
   --color-brand-contrast: #ffffff;
-  --color-brand-tint: #1c2947;
-  --color-accent: #e3c563;
-  --color-gold-fill: #c9a227;
-  --color-on-gold: #1a1300;
+  --color-brand-tint: #14323a;
+  --color-accent: #7fd6c9;
+  --color-accent-fill: #8fe0d3;
+  --color-attention: #ff9a4d;
+  --color-on-accent-fill: #06201f;
   --color-danger: #e5695f;
   --color-warning: #e08b3d;
   --color-success: #3fbe87;
-  --color-focus-ring: #7da1e8;
+  --color-focus-ring: #8fe0d3;
   --color-input-bg: var(--color-bg);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not([data-theme="dark"]) {
-    --color-bg: #0b1220;
-    --color-surface: #141b2e;
-    --color-border: #2a3350;
-    --color-text: #e9ecf5;
-    --color-text-muted: #a3abc2;
-    --color-brand: #2f4f99;
+    --color-bg: #0b161a;
+    --color-surface: #12222a;
+    --color-border: #264048;
+    --color-text: #e6f0ef;
+    --color-text-muted: #9fb3b5;
+    --color-brand: #0f2a33;
     --color-brand-contrast: #ffffff;
-    --color-brand-tint: #1c2947;
-    --color-accent: #e3c563;
-    --color-gold-fill: #c9a227;
-    --color-on-gold: #1a1300;
+    --color-brand-tint: #14323a;
+    --color-accent: #7fd6c9;
+    --color-accent-fill: #8fe0d3;
+    --color-attention: #ff9a4d;
+    --color-on-accent-fill: #06201f;
     --color-danger: #e5695f;
     --color-warning: #e08b3d;
     --color-success: #3fbe87;
-    --color-focus-ring: #7da1e8;
+    --color-focus-ring: #8fe0d3;
     --color-input-bg: var(--color-bg);
   }
 }
@@ -265,7 +268,7 @@ a {
 }
 
 .message-info {
-  border-color: var(--color-gold-fill);
+  border-color: var(--color-accent-fill);
   color: var(--color-accent);
 }
 
@@ -380,7 +383,7 @@ td > .stat-bar-row {
 }
 
 .stat-bar-fill-risk {
-  background: var(--color-gold-fill);
+  background: var(--color-attention);
 }
 
 .stat-bar-fill-questions {
@@ -522,16 +525,16 @@ button:hover {
 }
 
 button.button-primary {
-  background: var(--color-gold-fill);
-  border-color: var(--color-gold-fill);
-  color: var(--color-on-gold);
+  background: var(--color-accent-fill);
+  border-color: var(--color-accent-fill);
+  color: var(--color-on-accent-fill);
   font-weight: 600;
 }
 
 button.button-primary:hover {
   filter: brightness(1.08);
-  background: var(--color-gold-fill);
-  border-color: var(--color-gold-fill);
+  background: var(--color-accent-fill);
+  border-color: var(--color-accent-fill);
 }
 
 button.button-danger {
@@ -977,14 +980,14 @@ input[type="date"] {
 .tab-button.active {
   color: var(--color-text);
   border-color: var(--color-border);
-  border-top: 3px solid var(--color-gold-fill);
+  border-top: 3px solid var(--color-accent-fill);
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-bg);
 }
 
 .tab-button.active .tab-count {
-  background: var(--color-gold-fill);
-  color: var(--color-on-gold);
+  background: var(--color-accent-fill);
+  color: var(--color-on-accent-fill);
 }
 
 .tab-count {
