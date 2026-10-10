@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 102 102" role="img" aria-label="Aavistin">
+  <rect x="0" y="0" width="32" height="32" rx="6" fill="#4FA7A2"/>
+  <rect x="35" y="0" width="32" height="32" rx="6" fill="#8FE0D3"/>
+  <rect x="70" y="0" width="32" height="32" rx="6" fill="#FF9A4D"/>
+  <rect x="0" y="35" width="32" height="32" rx="6" fill="#2F6F73"/>
+  <rect x="35" y="35" width="32" height="32" rx="6" fill="#4FA7A2"/>
+  <rect x="70" y="35" width="32" height="32" rx="6" fill="#8FE0D3"/>
+  <rect x="0" y="70" width="32" height="32" rx="6" fill="#1F4A52"/>
+  <rect x="35" y="70" width="32" height="32" rx="6" fill="#2F6F73"/>
+  <rect x="70" y="70" width="32" height="32" rx="6" fill="#4FA7A2"/>
+</svg>
