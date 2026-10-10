@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load assessment_tags %}
 
 {% block title %}{{ configuration.name }} · Aavistin{% endblock %}
 
@@ -69,7 +70,7 @@
               </details>
             {% endif %}
           </td>
-          <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% else %}{{ row.value }}{% endif %}
+          <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% elif row.question.type == "choice" %}{{ row.value|choice_label }}{% else %}{{ row.value }}{% endif %}
             {% if row.justification %}
               {% if row.justification|length > 80 %}
                 <span class="field-hint" x-data="{ open: false }">Justification:
@@ -102,7 +103,7 @@
                     <select name="value" aria-label="Answer">
                       <option value="" {% if row.value is None %}selected{% endif %}>—</option>
                       {% for choice in row.question.choices %}
-                        <option value="{{ choice }}" {% if row.value == choice %}selected{% endif %}>{{ choice }}</option>
+                        <option value="{{ choice }}" {% if row.value == choice %}selected{% endif %}>{{ choice|choice_label }}</option>
                       {% endfor %}
                     </select>
                   {% elif row.question.type == "number" %}

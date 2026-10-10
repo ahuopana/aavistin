@@ -224,7 +224,12 @@ def assessment_detail(request, pk):
         for question_id, resolved in current.items()
     }
     answer_rows = [
-        {"id": question_id, "label": labels.get(question_id, question_id), **answer}
+        {
+            "id": question_id,
+            "label": labels.get(question_id, question_id),
+            "type": current[question_id].question.get("type") if question_id in current else "",
+            **answer,
+        }
         for question_id, answer in sorted(evaluation.get("resolved_answers", {}).items())
     ]
     return render(

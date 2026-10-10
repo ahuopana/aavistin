@@ -34,6 +34,7 @@ from .services import (
     recompute_staleness,
 )
 from .tasks import refresh_staleness_task
+from .templatetags.assessment_tags import choice_label
 from .views import _coerce_value
 
 DEMO_DIR = Path(settings.BASE_DIR) / "packages" / "demo-widget-safety"
@@ -1116,3 +1117,47 @@ class DateAnswerViewTests(ConfigurationFixture):
     def test_invalid_date_is_rejected(self):
         self.post("15.1.2028")
         self.assertFalse(Answer.objects.filter(question_id="first_shipped").exists())
+
+
+class ChoiceLabelTests(TestCase):
+    def test_choice_id_becomes_sentence_case_label(self):
+        self.assertEqual(choice_label("hardware_with_software"), "Hardware with software")
+
+    def test_non_strings_and_empty_pass_through(self):
+        self.assertEqual(choice_label(""), "")
+        self.assertIsNone(choice_label(None))
+        self.assertIs(choice_label(True), True)
+
+
+class ChoiceLabelRenderingTests(EuCraConfigurationFixture):
+    def setUp(self):
+        super().setUp()
+        self.editor = User.objects.create_user(username="edna", password="x")
+        RoleAssignment.objects.create(
+            role=Role.EDITOR, user=self.editor, product_family=self.family
+        )
+        RoleAssignment.objects.create(
+            role=Role.VIEWER, user=self.editor, product_family=self.family
+        )
+        Answer.objects.create(
+            question_id="product_form", value="hardware_with_software", product=self.product
+        )
+
+    def test_questionnaire_shows_labels_but_posts_ids(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, "<td>Hardware with software", html=False)
+        self.assertContains(
+            response,
+            '<option value="hardware_with_software" selected>Hardware with software</option>',
+            html=True,
+        )
+
+    def test_assessment_answers_show_labels(self):
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
+        self.assertContains(response, "Hardware with software")
+        self.assertNotContains(response, ">hardware_with_software<")
