@@ -340,6 +340,27 @@ class ImportPipelineTests(TestCase):
         self.assertEqual(package.lint_report, [])
         self.assertTrue(all(r["passed"] for r in package.fixture_report), package.fixture_report)
 
+    def test_import_eu_lvd_package_reaches_fixtures_passed(self):
+        approve_package(
+            import_package(
+                load_package("common", "1.2.0"), kind=PackageKind.QUESTION_SET, is_official=True
+            )
+        )
+        package = import_package(load_package("eu-lvd", "1.0.0"), is_official=True)
+        self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+        self.assertEqual(package.lint_report, [])
+        self.assertTrue(all(r["passed"] for r in package.fixture_report), package.fixture_report)
+
+    def test_eu_cra_still_passes_with_common_1_2_0(self):
+        approve_package(
+            import_package(
+                load_package("common", "1.2.0"), kind=PackageKind.QUESTION_SET, is_official=True
+            )
+        )
+        package = import_package(load_package("eu-cra", "1.0.0"), is_official=True)
+        self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+        self.assertEqual(package.lint_report, [])
+
 
 class ManagementCommandTests(TestCase):
     def test_import_and_approve_via_management_commands(self):
@@ -1043,7 +1064,12 @@ class QuestionGroupLintTests(TestCase):
         )
 
     def test_eu_cra_groups_every_question(self):
-        content = load_package("eu-cra", "1.0.0")
+        self.assert_groups_every_question(load_package("eu-cra", "1.0.0"))
+
+    def test_eu_lvd_groups_every_question(self):
+        self.assert_groups_every_question(load_package("eu-lvd", "1.0.0"))
+
+    def assert_groups_every_question(self, content):
         grouped = [q for g in content["question_groups"] for q in g["questions"]]
         self.assertEqual(len(grouped), len(set(grouped)))
         known = {q["id"] for q in content["questions"]} | {
