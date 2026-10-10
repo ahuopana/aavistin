@@ -10,6 +10,9 @@ from django.contrib import messages as django_messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.html import format_html
+from django.utils.http import urlencode
 
 from apps.core.readiness import register_readiness
 from apps.orgs.models import Role
@@ -300,6 +303,22 @@ def _entry_form(request, configuration, entry: RiskEntry, *, is_new: bool):
             _flash_errors(request, exc)
         else:
             entry.save()
+            if is_new and request.POST.get("next") == "another":
+                # Keep type, scope and (for threats) asset so a run of
+                # similar entries needs only a new label each time.
+                detail_url = reverse("risk:entry_detail", args=[configuration.pk, entry.pk])
+                django_messages.success(
+                    request,
+                    format_html(
+                        'Added <a href="{}">{}</a>. Add the next one.', detail_url, entry.label
+                    ),
+                )
+                query = {"type": entry.entry_type, "scope": _scope_value(entry)}
+                if entry.asset_id:
+                    query["asset"] = entry.asset_id
+                return redirect(
+                    f"{reverse('risk:entry_create', args=[configuration.pk])}?{urlencode(query)}"
+                )
             django_messages.success(request, "Entry added." if is_new else "Entry updated.")
             return redirect("risk:entry_detail", pk=configuration.pk, entry_pk=entry.pk)
 
@@ -319,7 +338,7 @@ def _entry_form(request, configuration, entry: RiskEntry, *, is_new: bool):
             "scope_choices": _scope_choices(product),
             "scope_value": request.POST.get("scope", "")
             if request.method == "POST" and not scope_locked
-            else _scope_value(entry),
+            else (request.GET.get("scope", "") if is_new else _scope_value(entry)),
             "scope_locked": scope_locked,
         },
     )
@@ -339,6 +358,12 @@ def entry_create(request, pk):
         else EntryType.THREAT,
         created_by=request.user,
     )
+    # Prefill from "Save and add another"; _entry_form re-validates on POST.
+    asset_id = request.GET.get("asset", "")
+    if request.method == "GET" and asset_id.isdigit():
+        entry.asset = RiskEntry.objects.filter(
+            pk=int(asset_id), product=product, entry_type=EntryType.ASSET
+        ).first()
     return _entry_form(request, configuration, entry, is_new=True)
 
 

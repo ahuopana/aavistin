@@ -882,3 +882,34 @@ class EntryAuthoringTests(RiskFixture):
         RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
         self.client.force_login(viewer)
         self.assertNotContains(self.client.get(url), f'href="{url}edit/"')
+
+    def test_save_and_add_another_keeps_type_scope_and_asset(self):
+        asset = self.make_asset()
+        response = self.client.post(
+            self.create_url,
+            {
+                "entry_type": "threat",
+                "label": "Firmware <tampering>",
+                "asset": str(asset.pk),
+                "violates": "integrity",
+                "scope": f"sw:{self.release.pk}",
+                "next": "another",
+            },
+            follow=True,
+        )
+        threat = RiskEntry.objects.get(label="Firmware <tampering>")
+        self.assertEqual(response.request["PATH_INFO"], self.create_url)
+        self.assertContains(
+            response,
+            f'Added <a href="{self.base}entries/{threat.pk}/">Firmware &lt;tampering&gt;</a>',
+        )
+        self.assertEqual(response.context["entry"].entry_type, EntryType.THREAT)
+        self.assertEqual(response.context["entry"].asset, asset)
+        self.assertEqual(response.context["scope_value"], f"sw:{self.release.pk}")
+        self.assertEqual(response.context["entry"].label, "")
+
+    def test_prefilled_asset_of_another_product_is_ignored(self):
+        other = Product.objects.create(product_family=self.family, name="Other", slug="other")
+        foreign = RiskEntry.objects.create(product=other, entry_type=EntryType.ASSET, label="F")
+        response = self.client.get(self.create_url, {"type": "threat", "asset": foreign.pk})
+        self.assertIsNone(response.context["entry"].asset)

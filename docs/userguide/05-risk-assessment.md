@@ -26,6 +26,11 @@ description, and choose where it applies (see below). A threat also
 names the asset it targets and the property it violates — the choices
 come from the risk methods your administrator has approved.
 
+To enter several entries in a row, use **Save and add another**: it
+saves the entry and opens a fresh form with the same type, scope and
+(for threats) asset already chosen, so each next entry only needs its
+label.
+
 The **Edit** button on an entry changes its label, description, scope
 and (for threats) asset and property. The type can't be changed once an
 entry exists; add a new entry instead.

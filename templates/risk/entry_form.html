@@ -30,7 +30,7 @@
 
     <div class="field">
       <label for="id_label">Label</label>
-      <input type="text" id="id_label" name="label" value="{{ entry.label }}" maxlength="200" required>
+      <input type="text" id="id_label" name="label" value="{{ entry.label }}" maxlength="200" required{% if is_new %} autofocus{% endif %}>
     </div>
     <div class="field">
       <label for="id_description">Description</label>
@@ -73,6 +73,7 @@
     </div>
 
     <button type="submit" class="button-primary">{% if is_new %}Add entry{% else %}Save changes{% endif %}</button>
+    {% if is_new %}<button type="submit" name="next" value="another">Save and add another</button>{% endif %}
     <a href="{% if is_new %}{% url 'risk:register' configuration.pk %}{% else %}{% url 'risk:entry_detail' configuration.pk entry.pk %}{% endif %}">Cancel</a>
   </form>
 {% endblock %}
