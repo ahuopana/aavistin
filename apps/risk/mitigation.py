@@ -3,7 +3,7 @@ in place yet.
 
 A mitigation is only a claim until a control says how the risk is reduced,
 and only effective once that control is implemented: see
-docs/adr/0030-mitigation-needs-controls.md. Accept, transfer and avoid
+docs/adr/0031-mitigation-needs-controls.md. Accept, transfer and avoid
 treatments are decisions, not plans, so they have no mitigation state.
 """
 

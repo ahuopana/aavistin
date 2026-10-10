@@ -1,4 +1,4 @@
-# 30. A mitigation needs controls, and counts once they are in place
+# 31. A mitigation needs controls, and counts once they are in place
 
 Status: Accepted
 
