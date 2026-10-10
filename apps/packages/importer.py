@@ -96,6 +96,17 @@ def _other_package_questions(source: str) -> dict[str, dict]:
     return declared
 
 
+def _missing_question_sets(content: dict) -> list[str]:
+    """Sources of question sets named in ``uses`` with no approved version."""
+    wanted = {ref.partition(":")[0] for ref in content.get("uses", [])}
+    available = set(
+        RequirementPackage.objects.filter(
+            kind=PackageKind.QUESTION_SET, status=PackageStatus.APPROVED
+        ).values_list("source", flat=True)
+    )
+    return sorted(wanted - available)
+
+
 def _run_fixtures(content, *, kind):
     if kind == PackageKind.METHOD:
         return run_method_fixtures(content)
@@ -112,18 +123,34 @@ def import_package(
     kind: str = PackageKind.REQUIREMENT,
     is_official: bool = False,
     actor=None,
+    force: bool = False,
 ) -> RequirementPackage:
     """Validate, lint, run fixtures and save a new package version.
 
-    Raises PackageImportError on structural (schema) failure — the
-    package is not saved at all in that case. Semantic lint and fixture
-    failures do *not* raise: the package is saved with the failures
+    ``force`` skips the check that question sets named in ``uses`` are
+    already approved (e.g. to break a dependency cycle).
+
+    Raises PackageImportError on structural (schema) failure or when this
+    source/version already exists — the package is not saved at all in that
+    case. Semantic lint and fixture failures do *not* raise: the package is saved with the failures
     recorded on it (status stays below 'fixtures_passed'), so a curator
     can review and fix the content. Importing never implies approval.
     """
     validate_schema(content, kind=kind)
 
     existing = RequirementPackage.objects.filter(source=content["source"])
+    if existing.filter(version=content["version"]).exists():
+        raise PackageImportError(
+            f"{content['source']}@{content['version']} has already been imported; "
+            "bump the package version to import changes"
+        )
+    if not force:
+        missing = _missing_question_sets(content)
+        if missing:
+            raise PackageImportError(
+                f"requires question set(s) {', '.join(missing)}, which are not imported and "
+                "approved; import and approve them first (or use force to skip this check)"
+            )
     lint_report = _lint(content, kind=kind, is_official=is_official, existing=existing)
 
     status = PackageStatus.DRAFT

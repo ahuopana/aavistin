@@ -1,0 +1,17 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a> &rsaquo;
+    <a href="{% url 'admin:packages_requirementpackage_changelist' %}">Requirement packages</a> &rsaquo;
+    Import package
+  </div>
+{% endblock %}
+{% block content %}
+  <p>Validates, lints and runs fixtures; the package is saved as a draft and is not approved.
+    Import and approve any question sets it uses first.</p>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Import" class="default">
+  </form>
+{% endblock %}

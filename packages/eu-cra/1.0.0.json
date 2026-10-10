@@ -65,6 +65,159 @@
     "common:publishes_security_advisories",
     "common:provides_secure_use_documentation"
   ],
+  "question_groups": [
+    {
+      "id": "product_and_role",
+      "title": "Product and your role",
+      "questions": [
+        "product_form",
+        "has_data_connection",
+        "processes_personal_data",
+        "software_executes_on_user_side",
+        "remote_processing_at_distance",
+        "remote_processing_needed_for_function",
+        "remote_processing_designed_by_manufacturer",
+        "has_remote_data_processing",
+        "supplied_as_spare_part",
+        "spare_part_security_identical",
+        "economic_operator_role",
+        "places_under_own_name_or_modifies",
+        "is_unfinished_software_release",
+        "release_has_preview_features"
+      ]
+    },
+    {
+      "id": "exclusions",
+      "title": "Exclusions from CRA scope (Art. 2)",
+      "questions": [
+        "is_free_and_open_source",
+        "is_commercial_activity",
+        "is_medical_device",
+        "is_in_vitro_diagnostic",
+        "is_exclusively_vehicle_component",
+        "is_civil_aviation_product",
+        "is_marine_equipment",
+        "is_exclusively_national_security_product",
+        "is_exclusively_defence_product",
+        "processes_classified_information"
+      ]
+    },
+    {
+      "id": "classification",
+      "title": "CRA classification and conformity (Annex III and IV)",
+      "questions": [
+        "core_functionality_category",
+        "harmonised_standards_cover_core_functionality",
+        "has_prior_cybersecurity_type_exam_certificate"
+      ]
+    },
+    {
+      "id": "market_and_support",
+      "title": "Market placement and support period",
+      "questions": [
+        "hardware_first_placed_on_market",
+        "hardware_still_placed_on_market",
+        "hardware_last_placed_on_market",
+        "software_first_placed_on_market",
+        "designed_before_cra_application",
+        "expected_use_time_years",
+        "support_period_end"
+      ]
+    },
+    {
+      "id": "interfaces",
+      "title": "Security by design: interfaces and exposure (CRA Annex I Part I)",
+      "questions": [
+        "network_interface_capability",
+        "wireless_interface_capability",
+        "physical_debug_interface",
+        "inbound_exposure_default",
+        "inbound_exposure_max",
+        "relies_on_network_isolation",
+        "minimal_default_configuration"
+      ]
+    },
+    {
+      "id": "access_and_data",
+      "title": "Security by design: access control and data protection (CRA Annex I Part I)",
+      "questions": [
+        "requires_user_authentication",
+        "default_credentials",
+        "uses_mfa",
+        "encrypts_data_in_transit",
+        "sensitive_data_at_rest",
+        "limits_data_to_what_is_necessary",
+        "supports_secure_data_export",
+        "supports_reset_to_defaults",
+        "data_erasure_method"
+      ]
+    },
+    {
+      "id": "resilience",
+      "title": "Security by design: resilience and logging (CRA Annex I Part I)",
+      "questions": [
+        "dos_resilience_measures",
+        "security_event_logging",
+        "logging_user_opt_out"
+      ]
+    },
+    {
+      "id": "development",
+      "title": "Before release: development and testing",
+      "questions": [
+        "performs_cybersecurity_risk_assessment",
+        "includes_third_party_components",
+        "third_party_component_due_diligence",
+        "security_testing_before_release",
+        "scans_for_known_vulnerabilities",
+        "blocks_release_with_known_exploitable_vulnerabilities",
+        "sbom_scope"
+      ]
+    },
+    {
+      "id": "updates",
+      "title": "Security updates (CRA Annex I Parts I and II)",
+      "questions": [
+        "update_mechanism",
+        "verifies_update_authenticity",
+        "security_updates_free_of_charge",
+        "security_updates_separate_from_features",
+        "latest_version_remediation_only"
+      ]
+    },
+    {
+      "id": "after_release",
+      "title": "After release: vulnerability handling and reporting (CRA Annex I Part II)",
+      "questions": [
+        "monitors_component_vulnerabilities",
+        "has_cvd_policy",
+        "has_vulnerability_contact",
+        "vulnerability_remediation_process",
+        "publishes_security_advisories",
+        "reporting_process_in_place"
+      ]
+    },
+    {
+      "id": "user_information",
+      "title": "Information for users",
+      "questions": [
+        "provides_secure_use_documentation"
+      ]
+    },
+    {
+      "id": "modification",
+      "title": "Substantial modification of this release",
+      "questions": [
+        "release_changes_intended_purpose",
+        "release_adds_threat_vectors",
+        "release_enables_new_attack_scenarios",
+        "release_changes_attack_likelihood",
+        "release_changes_attack_impact",
+        "release_changes_covered_by_risk_assessment",
+        "is_substantial_modification"
+      ]
+    }
+  ],
   "questions": [
     {
       "id": "software_executes_on_user_side",

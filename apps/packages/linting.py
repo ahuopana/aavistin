@@ -256,6 +256,62 @@ def _library_issues(content, *, library, other_package_questions) -> list[dict]:
     return issues
 
 
+def _question_group_issues(content) -> list[dict]:
+    """Groups may only list questions this package declares or ``uses``, each
+    in at most one group; a question left out of every group is a warning."""
+    groups = content.get("question_groups")
+    if not groups:
+        return []
+    known = {q["id"] for q in content.get("questions", [])}
+    known.update(ref.partition(":")[2] for ref in content.get("uses", []))
+    issues: list[dict] = []
+    placed: set[str] = set()
+    seen_groups: set[str] = set()
+    for i, group in enumerate(groups):
+        if group["id"] in seen_groups:
+            issues.append(
+                _issue(
+                    "error",
+                    "duplicate_question_group",
+                    f"group id '{group['id']}' is used twice",
+                    f"question_groups[{i}]",
+                )
+            )
+        seen_groups.add(group["id"])
+        for j, qid in enumerate(group["questions"]):
+            path = f"question_groups[{i}].questions[{j}]"
+            if qid not in known:
+                issues.append(
+                    _issue(
+                        "error",
+                        "unknown_group_question",
+                        f"group '{group['id']}' lists '{qid}', which this package neither "
+                        "declares nor uses",
+                        path,
+                    )
+                )
+            elif qid in placed:
+                issues.append(
+                    _issue(
+                        "error",
+                        "question_in_two_groups",
+                        f"'{qid}' is listed in more than one group",
+                        path,
+                    )
+                )
+            placed.add(qid)
+    for qid in sorted(known - placed):
+        issues.append(
+            _issue(
+                "warning",
+                "ungrouped_question",
+                f"'{qid}' is in no question group",
+                "question_groups",
+            )
+        )
+    return issues
+
+
 def lint_package(
     content: dict,
     *,
@@ -279,6 +335,7 @@ def lint_package(
             content, library=library, other_package_questions=other_package_questions or {}
         )
     )
+    issues.extend(_question_group_issues(content))
     question_types = {q["id"]: q["type"] for q in content.get("questions", [])}
     for ref in content.get("uses", []):
         used = library.get(ref.partition(":")[2])
