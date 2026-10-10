@@ -7,7 +7,10 @@
     <a href="{% url 'products:product_detail' product.pk %}">{{ product.name }}</a> /
     <a href="{% url 'assessments:configuration_detail' configuration.pk %}">{{ configuration.name }}</a>
   </p>
-  <h1>Risk register</h1>
+  <div class="page-header">
+    <h1>Risk register</h1>
+    {% if can_edit %}<a class="button button-primary" href="{% url 'risk:entry_create' configuration.pk %}">+ Add entry</a>{% endif %}
+  </div>
   <p>
     {{ configuration.hardware_revision }} / {{ configuration.software_release }} —
     product baseline plus the deltas that apply to this configuration.
@@ -96,7 +99,9 @@
       <h2>No register entries yet</h2>
       <p>This product's register is empty. Here is what is set up so far:</p>
       {% include "core/_readiness.html" with checks=readiness %}
-      <p class="field-hint">Entries can also be added by hand once you have a risk method.</p>
+      {% if can_edit %}
+        <p><a href="{% url 'risk:entry_create' configuration.pk %}">Add the first entry by hand &rarr;</a></p>
+      {% endif %}
     {% endif %}
   {% endfor %}
 {% endblock %}

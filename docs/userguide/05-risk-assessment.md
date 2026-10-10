@@ -18,6 +18,23 @@ A risk register entry is one of three types:
 Threats and hazards can be linked to each other where they share a root
 cause.
 
+## Adding and editing entries
+
+Editors open a configuration's risk register and choose **+ Add entry**.
+Pick the type (asset, threat or hazard), give it a label and an optional
+description, and choose where it applies (see below). A threat also
+names the asset it targets and the property it violates — the choices
+come from the risk methods your administrator has approved.
+
+The **Edit** button on an entry changes its label, description, scope
+and (for threats) asset and property. The type can't be changed once an
+entry exists; add a new entry instead.
+
+Entries belong to the product's register, so an entry added from one
+configuration appears in every configuration it applies to.
+
+Rating, treatment and controls can't be edited in the app yet.
+
 ## Baseline vs. scoped entries
 
 An entry is **baseline** by default — it applies to the whole product.

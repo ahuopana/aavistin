@@ -320,6 +320,8 @@ The link is visible from both sides: the safety view lists all causes of a hazar
 
 **Treatment and approval.** Treatment is mitigate, accept, transfer or avoid, giving a residual severity × likelihood checked against the method's acceptance thresholds. Controls are entities from the start (name, description, status, linked threats and hazard causes), so one control can mitigate several entries and evidence attaches in a later milestone without migration. Approval freezes a snapshot per configuration view with method and catalog package versions; a new method version marks approved assessments stale and never rescores them.
 
+**Authoring in the app.** Editors add and edit assets, threats and hazards from the register page (label, description, scope; a threat's asset and violated property). Entry type is fixed after creation; deltas, rating, treatment, controls and suggestion review are still admin-only and follow as later slices. See docs/adr/0027-risk-entry-authoring.md.
+
 **Candidate package:** the EU Machinery Regulation (2023/1230), applying from January 2027, requires protection of safety functions against corruption, including malicious attempts. This model covers it without changes.
 
 ## Evidence

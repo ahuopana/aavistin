@@ -715,3 +715,170 @@ class EmptyRegisterReadinessTests(RiskFixture):
         response = self.client.get(self.url, {"q": "zzz"})
         self.assertContains(response, "No register entries match the current filter.")
         self.assertNotContains(response, "No register entries yet")
+
+
+class EntryAuthoringTests(RiskFixture):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        self.base = f"/risk/configurations/{self.configuration.pk}/"
+        self.create_url = f"{self.base}entries/new/"
+
+    def test_editor_sees_add_button(self):
+        response = self.client.get(self.base)
+        self.assertContains(response, f'href="{self.create_url}"')
+
+    def test_non_editor_cannot_add(self):
+        viewer = User.objects.create_user(username="vic", password="x")
+        RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
+        self.client.force_login(viewer)
+        response = self.client.get(self.base)
+        self.assertNotContains(response, f'href="{self.create_url}"')
+        response = self.client.post(
+            self.create_url, {"entry_type": "asset", "label": "Sneaky asset"}
+        )
+        self.assertRedirects(response, self.base)
+        self.assertFalse(RiskEntry.objects.filter(label="Sneaky asset").exists())
+
+    def test_add_asset(self):
+        response = self.client.post(
+            self.create_url,
+            {"entry_type": "asset", "label": "User data", "description": "Wi-Fi credentials"},
+        )
+        entry = RiskEntry.objects.get(label="User data")
+        self.assertRedirects(response, f"{self.base}entries/{entry.pk}/")
+        self.assertEqual(entry.entry_type, EntryType.ASSET)
+        self.assertEqual(entry.product, self.product)
+        self.assertEqual(entry.suggestion_status, SuggestionStatus.CUSTOM)
+        self.assertEqual(entry.created_by, self.editor)
+        self.assertTrue(entry.is_baseline)
+        self.assertEqual(entry.history.first().history_user, self.editor)
+
+    def test_add_threat_with_asset_and_scope(self):
+        asset = self.make_asset()
+        self.client.post(
+            self.create_url,
+            {
+                "entry_type": "threat",
+                "label": "Firmware tampering",
+                "asset": str(asset.pk),
+                "violates": "integrity",
+                "scope": f"sw:{self.release.pk}",
+            },
+        )
+        threat = RiskEntry.objects.get(label="Firmware tampering")
+        self.assertEqual(threat.asset, asset)
+        self.assertEqual(threat.violates, "integrity")
+        self.assertEqual(threat.scope_software_release, self.release)
+        self.assertIsNone(threat.base_entry)
+
+    def test_threat_without_property_is_rejected_and_input_kept(self):
+        response = self.client.post(
+            self.create_url,
+            {"entry_type": "threat", "label": "Half-filled threat", "description": "keep me"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Threats must name the property they violate.")
+        self.assertContains(response, 'value="Half-filled threat"')
+        self.assertContains(response, "keep me")
+        self.assertFalse(RiskEntry.objects.filter(label="Half-filled threat").exists())
+
+    def test_hazard_drops_threat_only_fields(self):
+        asset = self.make_asset()
+        self.client.post(
+            self.create_url,
+            {
+                "entry_type": "hazard",
+                "label": "Electric shock",
+                "asset": str(asset.pk),
+                "violates": "integrity",
+            },
+        )
+        hazard = RiskEntry.objects.get(label="Electric shock")
+        self.assertIsNone(hazard.asset)
+        self.assertEqual(hazard.violates, "")
+
+    def test_asset_and_scope_of_another_product_are_rejected(self):
+        other = Product.objects.create(product_family=self.family, name="Other", slug="other")
+        foreign_asset = RiskEntry.objects.create(
+            product=other, entry_type=EntryType.ASSET, label="Foreign"
+        )
+        foreign_release = SoftwareRelease.objects.create(product=other, version="9.9")
+        response = self.client.post(
+            self.create_url,
+            {
+                "entry_type": "threat",
+                "label": "Cross-product threat",
+                "asset": str(foreign_asset.pk),
+                "violates": "integrity",
+            },
+        )
+        self.assertContains(response, "Choose an asset of this product.")
+        response = self.client.post(
+            self.create_url,
+            {"entry_type": "asset", "label": "Cross-scope", "scope": f"sw:{foreign_release.pk}"},
+        )
+        self.assertContains(response, "Choose a valid scope.")
+        self.assertFalse(
+            RiskEntry.objects.filter(label__in=["Cross-product threat", "Cross-scope"]).exists()
+        )
+
+    def test_violates_choices_come_from_approved_methods(self):
+        response = self.client.get(self.create_url)
+        values = [c["value"] for c in response.context["violates_choices"]]
+        self.assertEqual(values[:3], ["confidentiality", "integrity", "availability"])
+
+    def test_edit_updates_fields_but_not_type(self):
+        asset = self.make_asset()
+        threat = self.make_threat(asset)
+        url = f"{self.base}entries/{threat.pk}/edit/"
+        response = self.client.get(url)
+        self.assertContains(response, "Edit threat")
+        response = self.client.post(
+            url,
+            {
+                "entry_type": "hazard",
+                "label": "Eavesdropping over Wi-Fi",
+                "asset": str(asset.pk),
+                "violates": "confidentiality",
+                "scope": f"hw:{self.variant.pk}",
+            },
+        )
+        self.assertRedirects(response, f"{self.base}entries/{threat.pk}/")
+        threat.refresh_from_db()
+        self.assertEqual(threat.entry_type, EntryType.THREAT)
+        self.assertEqual(threat.label, "Eavesdropping over Wi-Fi")
+        self.assertEqual(threat.scope_hardware_variant, self.variant)
+
+    def test_entry_with_deltas_keeps_its_scope(self):
+        asset = self.make_asset()
+        threat = self.make_threat(asset)
+        self.make_threat(
+            asset,
+            label="Eavesdropping (TLS)",
+            scope_software_release=self.release,
+            base_entry=threat,
+            delta_justification="TLS enforced",
+        )
+        url = f"{self.base}entries/{threat.pk}/edit/"
+        self.client.post(
+            url,
+            {
+                "label": "Renamed",
+                "asset": str(asset.pk),
+                "violates": "confidentiality",
+                "scope": f"hw:{self.variant.pk}",
+            },
+        )
+        threat.refresh_from_db()
+        self.assertEqual(threat.label, "Renamed")
+        self.assertTrue(threat.is_baseline)
+
+    def test_detail_shows_edit_link_to_editor_only(self):
+        asset = self.make_asset()
+        url = f"{self.base}entries/{asset.pk}/"
+        self.assertContains(self.client.get(url), f'href="{url}edit/"')
+        viewer = User.objects.create_user(username="vic", password="x")
+        RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
+        self.client.force_login(viewer)
+        self.assertNotContains(self.client.get(url), f'href="{url}edit/"')
