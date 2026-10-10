@@ -23,6 +23,7 @@ from apps.products.models import (
 from .approval import (
     RiskAssessmentError,
     approve_risk_assessment,
+    build_snapshot,
     recompute_all_staleness,
     recompute_staleness,
 )
@@ -1117,6 +1118,9 @@ class RatingAndTreatmentAuthoringTests(RiskFixture):
 
     def test_treatment_mitigated_to_acceptable_needs_no_justification(self):
         Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=4)
+        Control.objects.create(product=self.product, name="Signed updates").threats.add(
+            self.threat
+        )
         self.client.post(
             self.url(self.threat, "treatment"),
             {
@@ -1403,3 +1407,79 @@ class SuggestionReviewTests(RiskFixture):
         Control.objects.create(product=self.product, name="Thermal fuse").hazard_causes.add(cause)
         response = self.client.get(url)
         self.assertEqual(response.context["catalog_controls"], ["Firmware power limiting"])
+
+
+class MitigationPlanTests(RiskFixture):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        self.threat = self.make_threat(self.make_asset(), violates="integrity")
+        Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=4)
+        self.url = f"/risk/configurations/{self.configuration.pk}/entries/{self.threat.pk}/"
+
+    def _mitigate(self):
+        return self.client.post(
+            f"{self.url}treatment/",
+            {
+                "method": self.cia_method.pk,
+                "treatment_type": "mitigate",
+                "residual_severity": "2",
+                "residual_likelihood": "1",
+            },
+            follow=True,
+        )
+
+    def test_mitigation_needs_a_linked_control(self):
+        response = self._mitigate()
+        self.assertContains(response, "Link at least one control first")
+        self.assertFalse(Treatment.objects.exists())
+
+    def test_planned_then_in_place(self):
+        control = Control.objects.create(product=self.product, name="Signed updates")
+        control.threats.add(self.threat)
+        response = self._mitigate()
+        self.assertContains(response, "mitigation planned")
+        self.assertContains(response, "counts once every control below is implemented")
+        control.status = "implemented"
+        control.save()
+        response = self.client.get(self.url)
+        self.assertContains(response, "controls in place")
+
+    def test_unlinked_controls_are_flagged(self):
+        control = Control.objects.create(product=self.product, name="Signed updates")
+        control.threats.add(self.threat)
+        self._mitigate()
+        control.threats.remove(self.threat)
+        response = self.client.get(self.url)
+        self.assertContains(response, "no controls linked")
+        self.assertContains(response, "rating doesn't count")
+
+    def test_accept_needs_no_control(self):
+        self.client.post(
+            f"{self.url}treatment/",
+            {"method": self.cia_method.pk, "treatment_type": "accept", "justification": "Low"},
+        )
+        self.assertTrue(Treatment.objects.filter(treatment_type="accept").exists())
+
+    def test_hazard_mitigation_needs_control_on_a_cause(self):
+        hazard = self.make_hazard()
+        Rating.objects.create(entry=hazard, method=self.safety_method, severity=4, likelihood=3)
+        url = f"/risk/configurations/{self.configuration.pk}/entries/{hazard.pk}/treatment/"
+        data = {
+            "method": self.safety_method.pk,
+            "treatment_type": "mitigate",
+            "residual_severity": "1",
+            "residual_likelihood": "1",
+        }
+        response = self.client.post(url, data, follow=True)
+        self.assertContains(response, "linked to the hazard cause it addresses")
+        cause = HazardCause.objects.create(hazard=hazard, cause_type="hardware_failure")
+        Control.objects.create(product=self.product, name="Thermal fuse").hazard_causes.add(cause)
+        self.client.post(url, data)
+        self.assertTrue(Treatment.objects.filter(entry=hazard).exists())
+
+    def test_relinking_control_makes_approved_snapshot_stale(self):
+        control = Control.objects.create(product=self.product, name="Signed updates")
+        snapshot = build_snapshot(self.configuration)
+        control.threats.add(self.threat)
+        self.assertNotEqual(build_snapshot(self.configuration), snapshot)

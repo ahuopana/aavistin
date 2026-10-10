@@ -71,6 +71,15 @@ For each rated method, **+ Add treatment** records the decision
 likelihood after treatment. A justification is required unless you
 mitigate down to a residual the method accepts outright.
 
+**Mitigate** needs a plan: link at least one control first (on a hazard,
+to the cause it addresses) — its description says how the risk is
+reduced. While any of those controls is still *planned*, the treatment
+shows **mitigation planned** and the entry doesn't yet count as
+acceptable in the product's risk bar. Once every control is
+*implemented* or *verified* it shows **controls in place** and the
+residual rating counts. Accept, transfer and avoid need no control,
+only a justification.
+
 On a threat, **+ Link a control** creates a control (e.g. "Secure boot")
 or links one that already exists for the product, so one control can
 mitigate several threats. Its status (planned, implemented, verified)

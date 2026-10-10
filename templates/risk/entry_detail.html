@@ -188,10 +188,13 @@
           <h4>Treatment</h4>
           {% if row.treatment %}
             <p>
-              {{ row.treatment.get_treatment_type_display }} ·
-              residual {% if row.residual.level %}<span class="risk-level risk-level-{{ row.residual.level }}">{{ row.residual.level }}</span> <span class="field-hint">S{{ row.treatment.residual_severity }} × L{{ row.treatment.residual_likelihood }} · {{ row.residual.acceptance }}</span>{% else %}<span class="field-hint">not assessed</span>{% endif %}
+              {{ row.treatment.get_treatment_type_display }}
+              {% if row.mitigation %}<span class="badge {% if row.mitigation == 'in_place' %}badge-approved{% else %}badge-warning{% endif %}">{{ row.mitigation_label }}</span>{% endif %}
+              · residual {% if row.residual.level %}<span class="risk-level risk-level-{{ row.residual.level }}">{{ row.residual.level }}</span> <span class="field-hint">S{{ row.treatment.residual_severity }} × L{{ row.treatment.residual_likelihood }} · {{ row.residual.acceptance }}</span>{% else %}<span class="field-hint">not assessed</span>{% endif %}
             </p>
             {% if row.treatment.justification %}<p class="field-hint">{{ row.treatment.justification }}</p>{% endif %}
+            {% if row.mitigation == "planned" %}<p class="field-hint">The residual rating counts once every control below is implemented or verified.</p>
+            {% elif row.mitigation == "no_controls" %}<p class="field-hint">Its controls were unlinked, so the residual rating doesn't count. Link a control, or change the treatment.</p>{% endif %}
           {% elif not can_edit %}<p class="field-hint">None yet.</p>{% endif %}
           {% if can_edit %}
             <details {% if not row.treatment and row.acceptance and row.acceptance != "accept" %}open{% endif %}>
@@ -224,6 +227,7 @@
                   <textarea id="id_justification_{{ row.method.pk }}" name="justification" rows="2">{{ row.treatment.justification }}</textarea>
                   <p class="field-hint">Required unless you mitigate down to an acceptable residual risk.</p>
                 </div>
+                <p class="field-hint">Mitigate needs at least one linked control{% if entry.entry_type == "hazard" %} on a cause{% endif %} — it is the plan for how. The residual rating counts once the controls are implemented.{% if not has_mitigation_controls %} <strong>None linked yet.</strong>{% endif %}</p>
                 <button type="submit" class="button-primary">Save treatment</button>
               </form>
             </details>

@@ -89,6 +89,11 @@ def build_snapshot(configuration) -> dict:
             "id": control.id,
             "name": control.name,
             "status": control.status,
+            # What a control is linked to decides whether a mitigation
+            # counts (apps.risk.mitigation), so a link change makes the
+            # approved view stale like a status change does.
+            "threats": sorted(control.threats.values_list("id", flat=True)),
+            "hazard_causes": sorted(control.hazard_causes.values_list("id", flat=True)),
             "evidence": _control_evidence_fingerprint(control),
         }
         for control in Control.objects.filter(product=product).order_by("id")

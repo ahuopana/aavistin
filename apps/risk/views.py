@@ -23,7 +23,9 @@ from apps.orgs.services import has_role
 from apps.packages.models import PackageKind, PackageStatus, RequirementPackage
 from apps.products.models import Configuration, HardwareVariant, SoftwareOption, SoftwareRelease
 
+from . import mitigation
 from .consistency import check_threat_hazard_consistency
+from .mitigation import mitigation_controls, mitigation_state
 from .models import (
     AssetRating,
     CauseType,
@@ -181,6 +183,7 @@ def entry_detail(request, pk, entry_pk):
     # Every applicable method gets a row (rated or not, so it can be rated),
     # plus any other approved method the entry already carries a rating under.
     row_methods = [m for m in methods if m in applicable or m.pk in ratings]
+    controls_for_mitigation = mitigation_controls(entry)
     method_rows = []
     for method in row_methods:
         rating = ratings.get(method.pk)
@@ -200,6 +203,12 @@ def entry_detail(request, pk, entry_pk):
                 "likelihood_scale": _scale(method, "likelihood"),
                 "treatment": treatment,
                 "residual": evaluate_residual_rating(treatment) if treatment else None,
+                "mitigation": (
+                    state := mitigation_state(treatment, controls_for_mitigation)
+                    if treatment
+                    else None
+                ),
+                "mitigation_label": mitigation.LABELS.get(state),
             }
         )
 
@@ -289,6 +298,7 @@ def entry_detail(request, pk, entry_pk):
                 else []
             ),
             "can_edit": has_role(request.user, Role.EDITOR, product=entry.product),
+            "has_mitigation_controls": bool(controls_for_mitigation),
         },
     )
 
@@ -805,6 +815,16 @@ def treatment_save(request, pk, entry_pk):
         if needs_reason and not treatment.justification:
             raise ValidationError(
                 {"justification": "Explain this treatment decision in the justification."}
+            )
+        # A mitigation needs a plan: at least one control saying how.
+        if mitigation_state(treatment) == mitigation.NO_CONTROLS:
+            raise ValidationError(
+                "Link at least one control first: it is the plan for how the risk is "
+                + (
+                    "mitigated."
+                    if entry.entry_type == EntryType.THREAT
+                    else "mitigated, linked to the hazard cause it addresses."
+                )
             )
     except ValidationError as exc:
         _flash_errors(request, exc)
