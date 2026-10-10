@@ -6,6 +6,7 @@ from django.views.decorators.http import require_POST
 
 from apps.orgs.models import ProductFamily, Role
 from apps.orgs.services import has_role
+from apps.risk.metrics import product_metrics
 
 from .models import (
     Configuration,
@@ -73,6 +74,7 @@ def product_detail(request, pk):
     software_releases = product.sw_releases.all()
     can_edit = has_role(request.user, Role.EDITOR, product=product)
     can_approve = has_role(request.user, Role.APPROVER, product=product)
+    risk_metrics = product_metrics(product)
     return render(
         request,
         "products/product_detail.html",
@@ -85,6 +87,8 @@ def product_detail(request, pk):
             "questions": questions_ratio(product),
             "compliance": compliance_ratio(product),
             "risk": risk_ratio(product),
+            "risk_metrics": risk_metrics,
+            "link_configuration": configurations[0].pk if configurations else None,
             "can_edit": can_edit,
             "can_approve": can_approve,
             "can_close": can_approve and product.status == ProductStatus.APPROVED,

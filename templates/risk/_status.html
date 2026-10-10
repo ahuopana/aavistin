@@ -1,0 +1,103 @@
+{% load risk_tags %}
+{# Current risk status. Context: m (apps.risk.metrics), link_configuration (or None), pending_suggestions (optional), configuration (optional, for the suggestions link). #}
+<section class="risk-status" aria-label="Risk status">
+  <div class="risk-summary">
+    <div class="risk-stat"><span class="risk-stat-value">{{ m.completeness.rateable }}</span> threats and hazards</div>
+    <div class="risk-stat {% if m.exposure.open_must_treat %}risk-stat-alert{% endif %}"><span class="risk-stat-value">{{ m.exposure.open_must_treat }}</span> still must treat</div>
+    <div class="risk-stat"><span class="risk-stat-value">{{ m.completeness.unrated }}</span> unrated</div>
+    <div class="risk-stat"><span class="risk-stat-value">{{ m.completeness.untreated }}</span> without treatment</div>
+    <div class="risk-stat {% if m.consistency_issues %}risk-stat-alert{% endif %}"><span class="risk-stat-value">{{ m.consistency_issues }}</span> consistency issues</div>
+    {% if configuration %}
+      <a class="risk-stat" href="{% url 'risk:suggestions' configuration.pk %}"><span class="risk-stat-value">{{ pending_suggestions }}</span> suggestions pending</a>
+    {% endif %}
+  </div>
+
+  <div class="status-grid">
+    <div class="status-card">
+      <h3>Exposure</h3>
+      {% include "risk/_class_bar.html" with label="Before treatment" segments=m.exposure.inherent_segments %}
+      {% include "risk/_class_bar.html" with label="After treatment" segments=m.exposure.residual_segments %}
+      <p class="field-hint">
+        Each threat or hazard counts once, in its worst class across the methods it is rated under.
+        After treatment only counts a treatment that can be relied on: a mitigation counts once its controls are in place.
+        {% if m.exposure.reduced %}{{ m.exposure.reduced }} entr{{ m.exposure.reduced|pluralize:"y,ies" }} moved to a lower class.{% endif %}
+      </p>
+    </div>
+
+    <div class="status-card">
+      <h3>Completeness</h3>
+      {% include "core/_stat_bar.html" with label="Rated" ok=m.completeness.rated total=m.completeness.rateable fill="progress" %}
+      {% include "core/_stat_bar.html" with label="Treated" ok=m.completeness.treated total=m.completeness.rateable fill="progress" %}
+      {% with mit=m.treatment.mitigation %}
+        {% include "core/_stat_bar.html" with label="Controls in place" ok=mit.in_place total=m.treatment.mitigate_total fill="progress" %}
+      {% endwith %}
+      <ul class="status-notes">
+        {% if m.completeness.incomplete %}<li>{{ m.completeness.incomplete }} rated but missing a severity (a threat needs a consequence).</li>{% endif %}
+        {% if m.completeness.assets_unrated %}<li>{{ m.completeness.assets_unrated }} of {{ m.completeness.assets }} assets have no rating.</li>{% endif %}
+        {% if m.completeness.threats_without_consequence %}<li>{{ m.completeness.threats_without_consequence }} threats have no consequence.</li>{% endif %}
+        {% if m.treatment.missing_justification %}<li>{{ m.treatment.missing_justification }} treatments are missing a justification.</li>{% endif %}
+        {% if m.controls.verified_without_evidence %}<li>{{ m.controls.verified_without_evidence }} verified controls have no current evidence.</li>{% endif %}
+        {% if m.controls.unlinked %}<li>{{ m.controls.unlinked }} controls are not linked to any entry.</li>{% endif %}
+      </ul>
+    </div>
+  </div>
+
+  {% if governance %}
+    <p class="governance">
+      <strong>Risk assessment:</strong>
+      <span class="badge {% if governance.stale %}badge-warning{% endif %}">{{ governance.label }}</span>
+      {% if governance.approved_at %}{{ governance.age_days|days_text }}.{% endif %}
+      {% for b in governance.versions_behind %}
+        <span class="field-hint">{{ b.source }} {{ b.used }} was used; {{ b.latest }} is now approved.</span>
+      {% endfor %}
+    </p>
+  {% endif %}
+
+  {% if m.top %}
+    <h3>Needs attention first</h3>
+    <table class="risk-table top-open">
+      <thead><tr><th>Entry</th><th>Class</th><th>Method</th><th>Rating after treatment</th></tr></thead>
+      <tbody>
+        {% for item in m.top %}
+          <tr>
+            <td>{% if link_configuration %}<a href="{% url 'risk:entry_detail' link_configuration item.entry.pk %}">{{ item.entry.label }}</a>{% else %}{{ item.entry.label }}{% endif %}</td>
+            <td><span class="class-chip class-{{ item.class }}">{% if item.class == "must_treat" %}&#10005; must treat{% else %}! justify{% endif %}</span></td>
+            <td>{{ item.method.source }}</td>
+            <td>S{{ item.severity }} × L{{ item.likelihood }} · {{ item.level }}{% if item.state == "not_in_place" %} <span class="field-hint">(controls not in place yet)</span>{% elif item.state == "untreated" %} <span class="field-hint">(untreated)</span>{% elif item.state == "no_residual" %} <span class="field-hint">(no residual rating)</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+
+  <details class="status-details" {% if open_heatmaps %}open{% endif %}>
+    <summary>Risk matrices</summary>
+    {% include "risk/_heatmap.html" with grids=m.heatmaps %}
+  </details>
+
+  <details class="status-details">
+    <summary>Treatments and controls</summary>
+    <div class="status-grid">
+      <table class="risk-table">
+        <caption>Treatments</caption>
+        <tbody>
+          {% for kind, count in m.treatment.mix.items %}<tr><th scope="row">{{ kind|capfirst }}</th><td>{{ count }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+      <table class="risk-table">
+        <caption>Mitigations</caption>
+        <tbody>
+          <tr><th scope="row">No controls linked</th><td>{{ m.treatment.mitigation.no_controls }}</td></tr>
+          <tr><th scope="row">Controls planned</th><td>{{ m.treatment.mitigation.planned }}</td></tr>
+          <tr><th scope="row">Controls in place</th><td>{{ m.treatment.mitigation.in_place }}</td></tr>
+        </tbody>
+      </table>
+      <table class="risk-table">
+        <caption>Controls ({{ m.controls.total }})</caption>
+        <tbody>
+          {% for status, count in m.controls.by_status.items %}<tr><th scope="row">{{ status|capfirst }}</th><td>{{ count }}</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+</section>

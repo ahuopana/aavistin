@@ -12,9 +12,7 @@ from django.utils.text import slugify
 from apps.assessments.evaluation import evaluate_configuration
 from apps.assessments.progress import questionnaire_progress
 from apps.orgs.models import ProductFamily, Role, RoleAssignment
-from apps.risk.mitigation import mitigation_controls, treatment_counts
-from apps.risk.models import EntryType, RiskEntry
-from apps.risk.rating import evaluate_residual_rating
+from apps.risk.metrics import risk_summary
 
 from .models import (
     Configuration,
@@ -25,8 +23,6 @@ from .models import (
     SoftwareOption,
     SoftwareRelease,
 )
-
-ACCEPTABLE_RESIDUAL_RATINGS = ("accept", "justify")
 
 
 def compliance_ratio(product) -> tuple[int, int]:
@@ -82,35 +78,17 @@ def questions_ratio(product) -> tuple[int, int]:
 
 
 def risk_ratio(product) -> tuple[int, int]:
-    """(acceptable, total) baseline threat/hazard entries, where
-    "acceptable" means every method treatment on the entry has a
+    """(acceptable, total) threat/hazard entries that apply to some
+    configuration of the product (the baseline when it has none), each
+    once. "Acceptable" means every method treatment on the entry has a
     residual acceptance of "accept" or "justify" -- an entry with no
     treatment yet, or one still rated "must_treat" under any method,
     doesn't count. A mitigation also only counts once its controls are
     in place (apps.risk.mitigation): a planned control is not yet a
-    reduced risk.
+    reduced risk. See apps.risk.metrics.
     """
-    entries = RiskEntry.objects.filter(
-        product=product,
-        entry_type__in=[EntryType.THREAT, EntryType.HAZARD],
-        scope_hardware_variant__isnull=True,
-        scope_software_release__isnull=True,
-        scope_software_option__isnull=True,
-    ).prefetch_related("treatments__method")
-
-    total = 0
-    acceptable = 0
-    for entry in entries:
-        total += 1
-        treatments = list(entry.treatments.all())
-        controls = mitigation_controls(entry) if treatments else []
-        if treatments and all(
-            evaluate_residual_rating(t)["acceptance"] in ACCEPTABLE_RESIDUAL_RATINGS
-            and treatment_counts(t, controls)
-            for t in treatments
-        ):
-            acceptable += 1
-    return acceptable, total
+    summary = risk_summary(product)
+    return summary["acceptable"], summary["total"]
 
 
 class ApprovedEntityError(Exception):

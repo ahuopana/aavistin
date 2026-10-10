@@ -120,6 +120,9 @@
       <button type="button" role="tab" class="tab-button" :class="{ active: tab === 'configurations' }" :aria-selected="tab === 'configurations'" @click="setTab('configurations')">
         Configurations <span class="tab-count">{{ configurations|length }}</span>
       </button>
+      <button type="button" role="tab" class="tab-button" :class="{ active: tab === 'risk' }" :aria-selected="tab === 'risk'" @click="setTab('risk')">
+        Risk status{% if risk_metrics.exposure.open_must_treat %} <span class="tab-count">{{ risk_metrics.exposure.open_must_treat }}</span>{% endif %}
+      </button>
     </div>
 
     <div class="tab-panel" x-show="tab === 'hardware'">
@@ -386,6 +389,33 @@
           <input type="date" name="released_at" aria-label="Release date">
           <button type="submit">+ Add</button>
         </form>
+      {% endif %}
+    </div>
+
+    <div class="tab-panel" x-show="tab === 'risk'">
+      <p class="field-hint">Rolled up over every configuration: each threat or hazard counts once, wherever it applies. The number on the tab is the entries that still must be treated.</p>
+      {% include "risk/_status.html" with m=risk_metrics governance=None configuration=None open_heatmaps=False %}
+      {% if risk_metrics.configurations %}
+        <h3>By configuration</h3>
+        <table class="risk-table risk-product-table">
+          <thead>
+            <tr><th>Configuration</th><th>Threats and hazards</th><th>Still must treat</th><th>Unrated</th><th>Without treatment</th><th>Risk assessment</th></tr>
+          </thead>
+          <tbody>
+            {% for row in risk_metrics.configurations %}
+              <tr>
+                <td><a href="{% url 'risk:register' row.configuration.pk %}">{{ row.configuration.name }}</a></td>
+                <td>{{ row.rateable }}</td>
+                <td>{% if row.exposure.open_must_treat %}<span class="class-chip class-must_treat">&#10005; {{ row.exposure.open_must_treat }}</span>{% else %}0{% endif %}</td>
+                <td>{{ row.unrated }}</td>
+                <td>{{ row.untreated }}</td>
+                <td><span class="badge {% if row.governance.stale %}badge-warning{% endif %}">{{ row.governance.label }}</span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="field-hint">No configurations yet; the figures above cover the baseline register.</p>
       {% endif %}
     </div>
 

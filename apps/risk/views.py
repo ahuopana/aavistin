@@ -25,6 +25,7 @@ from apps.products.models import Configuration, HardwareVariant, SoftwareOption,
 
 from . import mitigation
 from .consistency import check_threat_hazard_consistency
+from .metrics import register_metrics
 from .mitigation import mitigation_controls, mitigation_state
 from .models import (
     AssetRating,
@@ -134,6 +135,7 @@ def register(request, pk):
     counts = {t.value: sum(1 for e in entries if e.entry_type == t) for t in TYPE_ORDER}
 
     pending_count = len(pending_suggestions(configuration))
+    metrics = register_metrics(configuration)
     return render(
         request,
         "risk/register.html",
@@ -147,13 +149,7 @@ def register(request, pk):
             "counts": counts,
             "total": len(entries),
             "pending_suggestions": pending_count,
-            "must_treat": sum(
-                1 for r in rows for c in r["ratings"] if c["acceptance"] == "must_treat"
-            ),
-            "unrated": sum(
-                1 for r in rows if r["entry"].entry_type != EntryType.ASSET and not r["ratings"]
-            ),
-            "issue_count": sum(len(r["issues"]) for r in rows),
+            "metrics": metrics,
             "type_filter": entry_type,
             "query": request.GET.get("q", ""),
             "entry_types": TYPE_ORDER,

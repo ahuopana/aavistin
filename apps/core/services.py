@@ -18,6 +18,7 @@ from apps.products.services import (
     questions_ratio,
     risk_ratio,
 )
+from apps.risk.metrics import risk_summary
 from apps.risk.models import Control
 
 
@@ -59,24 +60,37 @@ def compliance_overview(user):
         "product_family", "product_family__organisation"
     )
 
-    rows = [
-        {
-            "product": product,
-            "organisation": product.product_family.organisation,
-            "family": product.product_family,
-            "questions": questions_ratio(product),
-            "compliance": compliance_ratio(product),
-            "risk": risk_ratio(product),
-        }
-        for product in products
-    ]
-    rows.sort(key=lambda r: (_ratio_fraction(r["compliance"]), _ratio_fraction(r["risk"])))
+    rows = []
+    for product in products:
+        summary = risk_summary(product)
+        rows.append(
+            {
+                "product": product,
+                "organisation": product.product_family.organisation,
+                "family": product.product_family,
+                "questions": questions_ratio(product),
+                "compliance": compliance_ratio(product),
+                "risk": (summary["acceptable"], summary["total"]),
+                "must_treat": summary["open_must_treat"],
+                "unrated": summary["unrated"],
+            }
+        )
+    rows.sort(
+        key=lambda r: (
+            _ratio_fraction(r["compliance"]),
+            _ratio_fraction(r["risk"]),
+            -r["must_treat"],
+            -r["unrated"],
+        )
+    )
 
     totals_compliance = (
         sum(r["compliance"][0] for r in rows),
         sum(r["compliance"][1] for r in rows),
     )
     totals_risk = (sum(r["risk"][0] for r in rows), sum(r["risk"][1] for r in rows))
+    totals_must_treat = sum(r["must_treat"] for r in rows)
+    totals_unrated = sum(r["unrated"] for r in rows)
     totals_questions = (
         sum(r["questions"][0] for r in rows),
         sum(r["questions"][1] for r in rows),
@@ -88,6 +102,8 @@ def compliance_overview(user):
             "questions": totals_questions,
             "compliance": totals_compliance,
             "risk": totals_risk,
+            "must_treat": totals_must_treat,
+            "unrated": totals_unrated,
         },
     }
 

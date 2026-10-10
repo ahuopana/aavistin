@@ -134,3 +134,17 @@ Like assessments, a product's risk register can be **approved** per
 configuration view, recording exactly which method and catalog versions
 were used — and goes **stale** the same way if the underlying data
 changes afterwards.
+
+## Risk status
+
+The top of the risk register shows where the risk stands right now. The same figures roll up on the product page (the **Risk status** tab) and, in short, on the Compliance Overview.
+
+- **Exposure.** Every threat and hazard is placed in one of three classes by the risk method it is rated under: *must treat*, *justify* or *accept* (or *unrated*). If an entry is rated under several methods, it takes the worst class. The two bars show the classes before and after treatment. Classes are the only thing compared across methods: Aavistin never adds up severities from different methods, and it does not give a single risk score.
+- **After treatment.** An entry moves to its treatment's residual rating only when that can be relied on. A treatment without a residual rating, or a mitigation whose controls are still planned or missing, leaves the entry where it was.
+- **Still must treat.** The number of entries that are still in the *must treat* class after treatment. It is the main figure for deciding what to work on next.
+- **Completeness.** How many entries are rated, how many have a treatment, and how many mitigations have controls in place. Notes underneath list gaps: ratings that cannot be completed, assets without a rating, threats without a consequence, treatments missing a justification, verified controls with no current evidence, and controls linked to nothing.
+- **Needs attention first.** Up to five entries still above *accept* after treatment, worst class first.
+- **Risk matrices.** One grid per method, severity down the side and likelihood across the top, before and after treatment. The colour and symbol of a cell show its class; the number is how many entries sit there (hover or focus it to see which).
+- **Risk assessment.** Whether the configuration has an approved risk assessment, whether it is stale, how old it is, and whether a method or catalog has a newer approved version than the one it used.
+
+On the product page, each threat or hazard counts once, even when it applies to several configurations, and the table below lists each configuration separately so you can see which one holds the open items.

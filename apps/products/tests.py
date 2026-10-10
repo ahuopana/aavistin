@@ -243,8 +243,31 @@ class RiskRatioTests(RatioFixture):
         )
         self.assertEqual(risk_ratio(self.product), (0, 1))
 
-    def test_scoped_entry_excluded_from_baseline_count(self):
+    def test_scoped_entry_counts_when_a_configuration_it_applies_to_exists(self):
         self._make_threat(scope_software_release=self.release)
+        self.assertEqual(risk_ratio(self.product), (0, 1))
+
+    def test_scoped_entry_matching_no_configuration_is_excluded(self):
+        other = SoftwareRelease.objects.create(product=self.product, version="2.0")
+        self._make_threat(scope_software_release=other)
+        self.assertEqual(risk_ratio(self.product), (0, 0))
+
+    def test_delta_replaces_its_baseline_entry_once(self):
+        base = self._make_threat()
+        RiskEntry.objects.create(
+            product=self.product,
+            entry_type=EntryType.THREAT,
+            label="Eavesdropping (1.0)",
+            asset=base.asset,
+            violates="confidentiality",
+            scope_software_release=self.release,
+            base_entry=base,
+            delta_justification="Secure boot in 1.0",
+        )
+        self.assertEqual(risk_ratio(self.product), (0, 1))
+
+    def test_dismissed_suggestion_is_not_counted(self):
+        self._make_threat(suggestion_status="dismissed")
         self.assertEqual(risk_ratio(self.product), (0, 0))
 
     def test_asset_entries_excluded(self):

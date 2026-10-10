@@ -1,6 +1,6 @@
 # Plan: risk metrics
 
-Status: draft for review. Nothing is built.
+Status: phases 1–4 implemented (ADR 0032): metrics module, register page, product page, Compliance Overview columns and the governance line. Not built: trends (phase 5), control owner and target date (phase 6), the demo seed (phase 7), and the CSV export. Where the build differs from this plan, "Implemented" notes say how.
 
 ## 1. Goal and scope
 
@@ -9,6 +9,8 @@ Today the only risk number in the app is `risk_ratio`: the share of baseline thr
 This plan adds **metrics computed from the risk register**: how complete it is, how much risk it holds, whether the treatments are real, and whether the approved view is still current. It does not change how entries are rated or treated, and it does not add new rating methods.
 
 I read "risk metrics" as reporting on the register. If you meant something else (a new scoring method, factor-based likelihood, or metrics about vulnerabilities), say so before phase 1; the plan would change.
+
+**Implemented.** Decisions 1–4 and 6 were confirmed as proposed, and trends (decision 5) were left for later because the aim is the current status. The metrics are in `apps.risk.metrics`; `risk_ratio` delegates to it, which changes its count: scoped entries and deltas are now included, and dismissed suggestions are no longer counted. Metric 13 (accepted risks without a justification) counts every treatment that needs a justification under ADR 0028's rule, not only accepts. Metric 20 (review cadence) and E19 are not built.
 
 **Related work in flight.** PR #29 (risk register authoring in the app, `claude/risk-register-editing`) changes `risk_ratio` so a mitigation counts only once its controls are in place, and adds `apps.risk.mitigation`. This plan builds on that code, so **phase 1 starts after #29 merges**. #29 also carries an ADR numbered 0030 (`0030-mitigation-needs-controls.md`) that now collides with main's `0030-matrix-logo-and-teal-palette.md`, so one of them needs renumbering. This plan assigns no ADR numbers; take the next free one when writing each, after checking open branches.
 
