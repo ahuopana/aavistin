@@ -187,9 +187,7 @@ def answer_question(request, pk):
 
     answer.save()
     next_question = _next_open_question(configuration, question_id)
-    return redirect(
-        reverse("assessments:configuration_detail", args=[pk]) + f"#q-{next_question}"
-    )
+    return redirect(reverse("assessments:configuration_detail", args=[pk]) + f"#q-{next_question}")
 
 
 @login_required

@@ -85,10 +85,12 @@ class RequirementPackageAdmin(admin.ModelAdmin):
                 return redirect(
                     reverse("admin:packages_requirementpackage_change", args=[package.pk])
                 )
-        context = {**self.admin_site.each_context(request), "title": "Import package", "form": form}
-        return TemplateResponse(
-            request, "admin/packages/requirementpackage/import.html", context
-        )
+        context = {
+            **self.admin_site.each_context(request),
+            "title": "Import package",
+            "form": form,
+        }
+        return TemplateResponse(request, "admin/packages/requirementpackage/import.html", context)
 
     def get_actions(self, request):
         # Bulk delete doesn't check per-object permission, so it is removed.
