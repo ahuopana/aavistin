@@ -354,6 +354,10 @@ tr[id^="q-"] {
   margin-top: var(--space-2);
 }
 
+td > .stat-bar-row {
+  margin-top: 0;
+}
+
 .stat-bar-label {
   flex: 0 0 5.5rem;
   color: var(--color-text-muted);
@@ -379,8 +383,36 @@ tr[id^="q-"] {
   background: var(--color-gold-fill);
 }
 
+.stat-bar-fill-questions {
+  background: var(--color-success);
+}
+
+.progress-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  list-style: none;
+  margin: var(--space-3) 0 var(--space-2);
+  padding: 0;
+  color: var(--color-text-muted);
+}
+
+.progress-count {
+  font-family: var(--font-display);
+  font-size: 1.4em;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-right: var(--space-1);
+}
+
+.progress-count-alert {
+  color: var(--color-warning);
+}
+
 .stat-bar-value {
   flex: 0 0 auto;
+  min-width: 7ch;
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-muted);
   font-size: 0.85em;
 }

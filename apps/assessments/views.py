@@ -15,6 +15,7 @@ from apps.products.models import Configuration
 
 from .evaluation import evaluate_configuration
 from .models import Answer, Assessment, AssessmentStatus
+from .progress import is_open, questionnaire_progress
 from .resolution import resolve_answers
 from .services import AssessmentError, SoDViolation, approve_assessment
 
@@ -114,10 +115,16 @@ def configuration_detail(request, pk):
                 ),
                 "origin": resolved_answer.origin,
                 "needs_confirmation": resolved_answer.needs_confirmation,
+                "is_open": is_open(resolved_answer),
                 "owner_type": LEVEL_TO_OWNER_FIELD.get(level),
                 "owner_id": owner.pk if owner else None,
             }
         )
+    # A group header stays visible under the "only open" filter while any
+    # of its questions is still open.
+    open_groups = {r["group"]["id"] if r["group"] else None for r in rows if r["is_open"]}
+    for row in rows:
+        row["group_has_open"] = (row["group"]["id"] if row["group"] else None) in open_groups
 
     return render(
         request,
@@ -126,6 +133,7 @@ def configuration_detail(request, pk):
             "configuration": configuration,
             "product": product,
             "rows": rows,
+            "progress": questionnaire_progress(configuration, resolved),
             "packages": [p for p in packages if p.kind == PackageKind.REQUIREMENT],
             "assessments": configuration.assessments.all(),
             "can_edit": has_role(request.user, Role.EDITOR, product_family=family),
@@ -210,12 +218,18 @@ def assessment_detail(request, pk):
         evaluation = assessment.snapshot
     else:
         evaluation = evaluate_configuration(assessment.configuration)
+    current, _packages = resolve_answers(assessment.configuration)
     labels = {
         question_id: resolved.question.get("label") or question_id
-        for question_id, resolved in resolve_answers(assessment.configuration)[0].items()
+        for question_id, resolved in current.items()
     }
     answer_rows = [
-        {"id": question_id, "label": labels.get(question_id, question_id), **answer}
+        {
+            "id": question_id,
+            "label": labels.get(question_id, question_id),
+            "type": current[question_id].question.get("type") if question_id in current else "",
+            **answer,
+        }
         for question_id, answer in sorted(evaluation.get("resolved_answers", {}).items())
     ]
     return render(
@@ -225,6 +239,9 @@ def assessment_detail(request, pk):
             "assessment": assessment,
             "evaluation": evaluation,
             "answer_rows": answer_rows,
+            "progress": questionnaire_progress(assessment.configuration, current)
+            if assessment.status == AssessmentStatus.DRAFT
+            else None,
             "readiness": assessment_readiness(assessment.configuration)
             if not evaluation.get("results")
             else [],

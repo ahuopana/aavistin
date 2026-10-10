@@ -15,33 +15,9 @@
               <a href="{% url 'products:product_detail' row.product.pk %}">{{ row.product.name }}</a>
               <span class="dashboard-product-family">{{ row.product.product_family }}</span>
 
-              <div class="stat-bar-row">
-                <span class="stat-bar-label">Compliance</span>
-                {% with ok=row.compliance.0 total=row.compliance.1 %}
-                  {% if total %}
-                    <div class="stat-bar" role="img" aria-label="Compliance {{ ok }} of {{ total }}">
-                      <div class="stat-bar-fill stat-bar-fill-compliance" style="width: {% widthratio ok total 100 %}%"></div>
-                    </div>
-                    <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
-                  {% else %}
-                    <span class="stat-bar-value">no data yet</span>
-                  {% endif %}
-                {% endwith %}
-              </div>
+              {% include "core/_stat_bar.html" with label="Compliance" ok=row.compliance.0 total=row.compliance.1 fill="compliance" %}
 
-              <div class="stat-bar-row">
-                <span class="stat-bar-label">Risk</span>
-                {% with ok=row.risk.0 total=row.risk.1 %}
-                  {% if total %}
-                    <div class="stat-bar" role="img" aria-label="Risk {{ ok }} of {{ total }}">
-                      <div class="stat-bar-fill stat-bar-fill-risk" style="width: {% widthratio ok total 100 %}%"></div>
-                    </div>
-                    <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
-                  {% else %}
-                    <span class="stat-bar-value">no data yet</span>
-                  {% endif %}
-                {% endwith %}
-              </div>
+              {% include "core/_stat_bar.html" with label="Risk" ok=row.risk.0 total=row.risk.1 fill="risk" %}
             </li>
           {% endfor %}
         </ul>

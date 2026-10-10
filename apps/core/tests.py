@@ -102,7 +102,9 @@ class ComplianceOverviewTests(DashboardFixture):
     def test_outsider_sees_no_rows(self):
         overview = compliance_overview(self.outsider)
         self.assertEqual(overview["rows"], [])
-        self.assertEqual(overview["totals"], {"compliance": (0, 0), "risk": (0, 0)})
+        self.assertEqual(
+            overview["totals"], {"questions": (0, 0), "compliance": (0, 0), "risk": (0, 0)}
+        )
 
     def test_viewer_sees_product_with_ratios_and_totals(self):
         self._ready_answers(has_wireless=False)
@@ -114,6 +116,10 @@ class ComplianceOverviewTests(DashboardFixture):
         self.assertEqual(row["family"], self.family)
         self.assertEqual(row["compliance"], (2, 2))
         self.assertEqual(overview["totals"]["compliance"], (2, 2))
+        done, total = row["questions"]
+        self.assertEqual(done, total)
+        self.assertGreater(total, 0)
+        self.assertEqual(overview["totals"]["questions"], row["questions"])
 
     def test_worst_compliance_sorts_first(self):
         self._ready_answers(has_wireless=True)  # (0, 2) -- fails compliance

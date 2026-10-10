@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load assessment_tags %}
 
 {% block title %}Assessment #{{ assessment.pk }} · Aavistin{% endblock %}
 
@@ -14,6 +15,14 @@
     <a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}#questions">{% if assessment.status == "draft" %}Answer questions{% else %}View questions{% endif %} &rarr;</a>
     · <a href="{% url 'risk:register' assessment.configuration.pk %}">Risk register</a>
   </p>
+
+  {% if progress and progress.open %}
+    <p class="message message-warning">
+      {{ progress.open }} of {{ progress.total }} question{{ progress.total|pluralize }} still to answer
+      ({{ progress.unanswered }} unanswered, {{ progress.needs_confirmation }} need{{ progress.needs_confirmation|pluralize:"s," }} confirmation).
+      <a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}?show=open#questions">Answer them &rarr;</a>
+    </p>
+  {% endif %}
 
   {% if assessment.status == "draft" and can_approve %}
     <form method="post" action="{% url 'assessments:assessment_approve' assessment.pk %}">
@@ -33,7 +42,7 @@
               <a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}#q-{{ row.id }}">{{ row.label }}</a>
               {% if row.needs_confirmation %}<span class="badge badge-warning">needs confirmation</span>{% endif %}
             </td>
-            <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% else %}{{ row.value }}{% endif %}</td>
+            <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% elif row.type == "choice" %}{{ row.value|choice_label }}{% else %}{{ row.value }}{% endif %}</td>
             <td><span class="badge badge-{{ row.origin|default:'unanswered' }}">{{ row.origin|default:"unanswered" }}</span></td>
           </tr>
         {% endfor %}

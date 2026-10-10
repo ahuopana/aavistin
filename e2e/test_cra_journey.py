@@ -72,8 +72,8 @@ def test_cra_journey(page, live_server, world):
         f"{live_server.url}{reverse('assessments:configuration_detail', args=[configuration.pk])}"
     )
     expect(page.get_by_role("heading", name="Questions")).to_be_visible()
-    answer(page, "What kind of product is this?", "hardware_with_software")
-    answer(page, "What is your role for this product?", "manufacturer")
+    answer(page, "What kind of product is this?", "Hardware with software")
+    answer(page, "What is your role for this product?", "Manufacturer")
     answer(page, "Is the product supplied in the course of a commercial activity?", "Yes")
     answer(page, "Can the product exchange digital data", "Yes")
 
