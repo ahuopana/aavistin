@@ -508,7 +508,7 @@ class ProductViewTests(ProductAuthoringFixture):
     def test_tabs_are_styled_and_expose_the_selected_one(self):
         self.client.force_login(self.editor)
         response = self.client.get(reverse("products:product_detail", args=[self.product.pk]))
-        self.assertContains(response, 'role="tab" class="tab-button"', count=3)
+        self.assertContains(response, 'role="tab" class="tab-button"', count=4)
         self.assertContains(response, ":aria-selected=\"tab === 'configurations'\"")
 
     def test_hardware_tab_is_default_when_there_are_no_configurations(self):

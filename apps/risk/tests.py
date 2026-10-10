@@ -639,13 +639,18 @@ class RegisterViewTests(RiskFixture):
         self.assertContains(response, "not rated")  # the hazard has no rating yet
         self.assertEqual(response.context["counts"], {"asset": 1, "threat": 1, "hazard": 1})
 
+    def _listed(self, response):
+        return [r["entry"].label for s in response.context["sections"] for r in s["rows"]]
+
     def test_filter_by_type_and_search(self):
+        # The list is filtered; the status above it (which can name entries
+        # too) covers the whole register, so check the list itself.
         response = self.client.get(self.url, {"type": "hazard"})
-        self.assertContains(response, "Overheating fire")
-        self.assertNotContains(response, "Wireless eavesdropping")
+        self.assertIn("Overheating fire", self._listed(response))
+        self.assertNotIn("Wireless eavesdropping", self._listed(response))
         response = self.client.get(self.url, {"q": "firmware"})
-        self.assertContains(response, "Widget firmware")
-        self.assertNotContains(response, "Overheating fire")
+        self.assertIn("Widget firmware", self._listed(response))
+        self.assertNotIn("Overheating fire", self._listed(response))
 
     def test_delta_replaces_baseline_in_configuration_view(self):
         RiskEntry.objects.create(
