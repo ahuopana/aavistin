@@ -1,10 +1,12 @@
 import json
+import re
+from collections import defaultdict
 from io import StringIO
 from pathlib import Path
 
 from django.conf import settings
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from apps.accounts.models import User
@@ -313,3 +315,50 @@ class SchedulerCommandTests(TestCase):
         out = StringIO()
         call_command("scheduler", "--once", stdout=out)
         self.assertEqual(out.getvalue().count("Enqueued"), len(SCHEDULE))
+
+
+class AdrNumberingTests(SimpleTestCase):
+    """docs/adr/NNNN-title.md: one number per ADR, and the heading agrees.
+
+    KNOWN_DUPLICATES lists numbers reused before this check existed; their
+    files are referenced from elsewhere, so they are allowed rather than
+    renumbered. Don't add to it: give a new ADR the next free number.
+    """
+
+    ADR_DIR = Path(settings.BASE_DIR) / "docs" / "adr"
+    NAME = re.compile(r"^(\d{4})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
+    KNOWN_DUPLICATES = {
+        "0012": {"0012-eu-cra-package.md", "0012-product-lifecycle-and-portfolio-navigation.md"},
+        "0015": {"0015-shared-question-library.md", "0015-ui-component-conventions.md"},
+    }
+
+    def _adrs(self):
+        return sorted(p.name for p in self.ADR_DIR.glob("*.md"))
+
+    def test_file_names_are_numbered(self):
+        bad = [name for name in self._adrs() if not self.NAME.match(name)]
+        self.assertEqual(bad, [], "ADR files must be named NNNN-lowercase-title.md")
+
+    def test_numbers_are_unique(self):
+        by_number = defaultdict(set)
+        for name in self._adrs():
+            match = self.NAME.match(name)
+            if match:
+                by_number[match.group(1)].add(name)
+        duplicates = {
+            number: names
+            for number, names in by_number.items()
+            if len(names) > 1 and names != self.KNOWN_DUPLICATES.get(number)
+        }
+        self.assertEqual(duplicates, {}, "Give each new ADR the next free number.")
+
+    def test_heading_matches_file_number(self):
+        mismatched = []
+        for name in self._adrs():
+            match = self.NAME.match(name)
+            if not match:
+                continue
+            first_line = (self.ADR_DIR / name).read_text().splitlines()[0]
+            if not first_line.startswith(f"# {int(match.group(1))}. "):
+                mismatched.append(f"{name}: {first_line}")
+        self.assertEqual(mismatched, [], "An ADR's heading starts with '# <its number>. '")

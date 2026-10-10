@@ -913,3 +913,69 @@ class EntryAuthoringTests(RiskFixture):
         foreign = RiskEntry.objects.create(product=other, entry_type=EntryType.ASSET, label="F")
         response = self.client.get(self.create_url, {"type": "threat", "asset": foreign.pk})
         self.assertIsNone(response.context["entry"].asset)
+
+    def _post_threat(self, *properties, label="Remote code execution", **extra):
+        return self.client.post(
+            self.create_url,
+            {
+                "entry_type": "threat",
+                "label": label,
+                "asset": str(self.make_asset().pk),
+                "violates": list(properties),
+                **extra,
+            },
+        )
+
+    def test_several_properties_add_one_threat_each(self):
+        response = self._post_threat("confidentiality", "integrity", "availability")
+        threats = RiskEntry.objects.filter(entry_type=EntryType.THREAT).order_by("label")
+        self.assertEqual(
+            [(t.label, t.violates) for t in threats],
+            [
+                ("Remote code execution (Availability)", "availability"),
+                ("Remote code execution (Confidentiality)", "confidentiality"),
+                ("Remote code execution (Integrity)", "integrity"),
+            ],
+        )
+        asset = RiskEntry.objects.get(entry_type=EntryType.ASSET)
+        self.assertTrue(all(t.asset == asset and t.is_baseline for t in threats))
+        self.assertTrue(all(t.created_by == self.editor for t in threats))
+        self.assertRedirects(response, f"{self.base}?type=threat", fetch_redirect_response=False)
+        followed = self.client.get(f"{self.base}?type=threat")
+        self.assertContains(followed, "Added 3 threats:")
+
+    def test_single_property_keeps_plain_label(self):
+        self._post_threat("integrity", label="Firmware tampering")
+        self.assertTrue(
+            RiskEntry.objects.filter(label="Firmware tampering", violates="integrity").exists()
+        )
+
+    def test_split_is_all_or_nothing(self):
+        # 190 + " (Confidentiality)" exceeds the 200-character label limit,
+        # while 190 + " (Integrity)" does not: nothing may be saved.
+        response = self._post_threat("integrity", "confidentiality", label="x" * 190)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(RiskEntry.objects.filter(entry_type=EntryType.THREAT).exists())
+
+    def test_unknown_property_is_rejected(self):
+        response = self._post_threat("integrity", "telepathy")
+        self.assertContains(response, "Choose a property from the risk methods.")
+        self.assertFalse(RiskEntry.objects.filter(entry_type=EntryType.THREAT).exists())
+
+    def test_save_and_add_another_with_several_properties(self):
+        response = self._post_threat("integrity", "availability", next="another")
+        self.assertEqual(RiskEntry.objects.filter(entry_type=EntryType.THREAT).count(), 2)
+        self.assertTrue(response["Location"].startswith(self.create_url + "?type=threat"))
+
+    def test_edit_keeps_property_of_a_method_no_longer_approved(self):
+        hazard_threat = self.make_threat(
+            self.make_asset(), label="Unsafe state", violates="safety"
+        )
+        RequirementPackage.objects.filter(pk=self.safety_method.pk).update(
+            status=PackageStatus.DRAFT
+        )
+        url = f"{self.base}entries/{hazard_threat.pk}/edit/"
+        self.client.post(url, {"label": "Unsafe state renamed", "violates": "safety"})
+        hazard_threat.refresh_from_db()
+        self.assertEqual(hazard_threat.label, "Unsafe state renamed")
+        self.assertEqual(hazard_threat.violates, "safety")

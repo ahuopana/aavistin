@@ -26,6 +26,13 @@ description, and choose where it applies (see below). A threat also
 names the asset it targets and the property it violates — the choices
 come from the risk methods your administrator has approved.
 
+One attack can break several properties at once — remote code execution
+may expose data, change it and stop the device. When adding a threat,
+tick every property it breaks: Aavistin adds one threat per property,
+labelled e.g. "Remote code execution (Integrity)". They are separate
+because each property is rated and treated on its own: encryption may
+handle confidentiality while integrity still needs signing.
+
 To enter several entries in a row, use **Save and add another**: it
 saves the entry and opens a fresh form with the same type, scope and
 (for threats) asset already chosen, so each next entry only needs its

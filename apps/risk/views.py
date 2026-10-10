@@ -9,9 +9,10 @@ slices; see docs/adr/0027-risk-entry-authoring.md.
 from django.contrib import messages as django_messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.utils.http import urlencode
 
 from apps.core.readiness import register_readiness
@@ -267,6 +268,23 @@ def _flash_errors(request, exc: ValidationError) -> None:
             django_messages.error(request, message)
 
 
+def _split_threat(entry: RiskEntry, prop: str, prop_label: str) -> RiskEntry:
+    """One threat per violated property, sharing everything else; the label
+    gains the property so the entries stay distinguishable in the register."""
+    threat = RiskEntry(
+        product=entry.product,
+        entry_type=entry.entry_type,
+        label=f"{entry.label} ({prop_label})",
+        description=entry.description,
+        asset=entry.asset,
+        violates=prop,
+        created_by=entry.created_by,
+        **{field: getattr(entry, field) for field, _model, _lookup in SCOPE_FIELDS.values()},
+    )
+    threat._history_user = entry._history_user
+    return threat
+
+
 def _entry_form(request, configuration, entry: RiskEntry, *, is_new: bool):
     """Shared GET/POST handling for adding and editing an entry. On a
     validation error the form is shown again with what was typed."""
@@ -274,6 +292,13 @@ def _entry_form(request, configuration, entry: RiskEntry, *, is_new: bool):
     # A delta or an entry that has deltas keeps its scope: moving either
     # would break the baseline/delta pairing apps.risk.resolution relies on.
     scope_locked = not is_new and (entry.base_entry_id or entry.deltas.exists())
+    violates_choices = _violates_choices()
+    # Keep an existing threat's property selectable even if its method is no
+    # longer approved, so editing the label doesn't force a property change.
+    if entry.violates and entry.violates not in {c["value"] for c in violates_choices}:
+        violates_choices.append(
+            {"value": entry.violates, "label": entry.violates.replace("_", " ").capitalize()}
+        )
 
     if request.method == "POST":
         if is_new:
@@ -281,7 +306,13 @@ def _entry_form(request, configuration, entry: RiskEntry, *, is_new: bool):
         entry.label = request.POST.get("label", "").strip()
         entry.description = request.POST.get("description", "").strip()
         is_threat = entry.entry_type == EntryType.THREAT
-        entry.violates = request.POST.get("violates", "") if is_threat else ""
+        # A new threat may name several properties: one entry is created per
+        # property, since rating and treatment are per property. An existing
+        # entry is a single threat, so editing posts exactly one.
+        properties = list(dict.fromkeys(request.POST.getlist("violates"))) if is_threat else []
+        if not is_new:
+            properties = properties[:1]
+        entry.violates = properties[0] if properties else ""
         asset_id = request.POST.get("asset", "") if is_threat else ""
         entry.asset = (
             RiskEntry.objects.filter(
@@ -296,29 +327,48 @@ def _entry_form(request, configuration, entry: RiskEntry, *, is_new: bool):
                 raise ValidationError({"entry_type": "Choose an entry type."})
             if is_threat and asset_id and entry.asset is None:
                 raise ValidationError({"asset": "Choose an asset of this product."})
+            property_labels = {c["value"]: c["label"] for c in violates_choices}
+            if any(p not in property_labels for p in properties):
+                raise ValidationError({"violates": "Choose a property from the risk methods."})
             if not scope_locked:
                 _apply_scope(entry, request.POST.get("scope", ""))
             entry.full_clean()
+            entries = (
+                [_split_threat(entry, p, property_labels[p]) for p in properties]
+                if len(properties) > 1
+                else [entry]
+            )
+            for each in entries:
+                each.full_clean()
         except ValidationError as exc:
             _flash_errors(request, exc)
         else:
-            entry.save()
+            with transaction.atomic():
+                for each in entries:
+                    each.save()
+            links = format_html_join(
+                ", ",
+                '<a href="{}">{}</a>',
+                (
+                    (reverse("risk:entry_detail", args=[configuration.pk, e.pk]), e.label)
+                    for e in entries
+                ),
+            )
             if is_new and request.POST.get("next") == "another":
                 # Keep type, scope and (for threats) asset so a run of
                 # similar entries needs only a new label each time.
-                detail_url = reverse("risk:entry_detail", args=[configuration.pk, entry.pk])
-                django_messages.success(
-                    request,
-                    format_html(
-                        'Added <a href="{}">{}</a>. Add the next one.', detail_url, entry.label
-                    ),
-                )
+                django_messages.success(request, format_html("Added {}. Add the next one.", links))
                 query = {"type": entry.entry_type, "scope": _scope_value(entry)}
                 if entry.asset_id:
                     query["asset"] = entry.asset_id
                 return redirect(
                     f"{reverse('risk:entry_create', args=[configuration.pk])}?{urlencode(query)}"
                 )
+            if len(entries) > 1:
+                django_messages.success(
+                    request, format_html("Added {} threats: {}.", len(entries), links)
+                )
+                return redirect(f"{reverse('risk:register', args=[configuration.pk])}?type=threat")
             django_messages.success(request, "Entry added." if is_new else "Entry updated.")
             return redirect("risk:entry_detail", pk=configuration.pk, entry_pk=entry.pk)
 
@@ -334,7 +384,10 @@ def _entry_form(request, configuration, entry: RiskEntry, *, is_new: bool):
             .exclude(suggestion_status=SuggestionStatus.DISMISSED)
             .exclude(pk=entry.pk or 0)
             .order_by("label"),
-            "violates_choices": _violates_choices(),
+            "violates_choices": violates_choices,
+            "violates_selected": properties
+            if request.method == "POST" and is_threat
+            else [entry.violates],
             "scope_choices": _scope_choices(product),
             "scope_value": request.POST.get("scope", "")
             if request.method == "POST" and not scope_locked

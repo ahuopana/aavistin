@@ -47,16 +47,29 @@
       </select>
       {% if not assets %}<p class="field-hint">This product has no assets yet. Add one first to link it here, or link it later.</p>{% endif %}
     </div>
-    <div class="field" x-show="type === 'threat'">
-      <label for="id_violates">Violates</label>
-      <select id="id_violates" name="violates">
-        <option value="">— property —</option>
+    {% if is_new %}
+      <fieldset class="field" x-show="type === 'threat'">
+        <legend>Violates</legend>
         {% for choice in violates_choices %}
-          <option value="{{ choice.value }}" {% if entry.violates == choice.value %}selected{% endif %}>{{ choice.label }}</option>
+          <label class="radio-option">
+            <input type="checkbox" name="violates" value="{{ choice.value }}" {% if choice.value in violates_selected %}checked{% endif %}>
+            {{ choice.label }}
+          </label>
         {% endfor %}
-      </select>
-      <p class="field-hint">Threats only. Required for a threat.</p>
-    </div>
+        <p class="field-hint">Threats only; pick at least one. Picking several adds one threat per property, labelled "Label (Property)", because each property is rated and treated on its own.</p>
+      </fieldset>
+    {% else %}
+      <div class="field" x-show="type === 'threat'">
+        <label for="id_violates">Violates</label>
+        <select id="id_violates" name="violates">
+          <option value="">— property —</option>
+          {% for choice in violates_choices %}
+            <option value="{{ choice.value }}" {% if choice.value in violates_selected %}selected{% endif %}>{{ choice.label }}</option>
+          {% endfor %}
+        </select>
+        <p class="field-hint">Threats only. Required for a threat.</p>
+      </div>
+    {% endif %}
 
     <div class="field">
       <label for="id_scope">Applies to</label>
