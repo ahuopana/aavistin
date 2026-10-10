@@ -45,7 +45,38 @@ entry exists; add a new entry instead.
 Entries belong to the product's register, so an entry added from one
 configuration appears in every configuration it applies to.
 
-Rating, treatment and controls can't be edited in the app yet.
+**Delete** on an entry asks for confirmation first and lists what goes
+with it. Threats that targeted a deleted asset stay, without an asset.
+
+## Rating an entry in the app
+
+Open an entry from the register:
+
+- **Asset** — under *Asset rating*, set how severe it would be if its
+  confidentiality, integrity or availability were compromised.
+- **Threat** — add its *consequences* (what happens if it succeeds, by
+  impact category). A new consequence starts at the asset's rating for
+  the property the threat violates; choosing another value needs a
+  justification. The threat's severity is its worst consequence. Then
+  set its *likelihood* under each method that covers that property.
+- **Hazard** — set severity and likelihood under each safety method.
+
+The method's matrix then shows the level (e.g. *high*) and what it
+means (*must treat*, *justify*, *accept*).
+
+## Treatment and controls
+
+For each rated method, **+ Add treatment** records the decision
+(mitigate, accept, transfer or avoid) and the residual severity and
+likelihood after treatment. A justification is required unless you
+mitigate down to a residual the method accepts outright.
+
+On a threat, **+ Link a control** creates a control (e.g. "Secure boot")
+or links one that already exists for the product, so one control can
+mitigate several threats. Its status (planned, implemented, verified)
+can be changed in place.
+
+Hazard causes and their controls are still edited by an administrator.
 
 ## Baseline vs. scoped entries
 

@@ -8,7 +8,14 @@
   </p>
   <div class="page-header">
     <h1>{{ entry.label }}</h1>
-    {% if can_edit %}<a class="button" href="{% url 'risk:entry_edit' configuration.pk entry.pk %}">Edit</a>{% endif %}
+    {% if can_edit %}
+      <div class="page-header-actions">
+        <div class="row-actions">
+          <a class="button" href="{% url 'risk:entry_edit' configuration.pk entry.pk %}">Edit</a>
+          <a class="button button-danger" href="{% url 'risk:entry_delete' configuration.pk entry.pk %}">Delete</a>
+        </div>
+      </div>
+    {% endif %}
   </div>
   <p>
     <span class="badge">{{ entry.get_entry_type_display }}</span>

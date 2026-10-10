@@ -16,6 +16,11 @@ urlpatterns = [
         name="entry_edit",
     ),
     path(
+        "configurations/<int:pk>/entries/<int:entry_pk>/delete/",
+        views.entry_delete,
+        name="entry_delete",
+    ),
+    path(
         "configurations/<int:pk>/entries/<int:entry_pk>/asset-rating/",
         views.asset_rating_save,
         name="asset_rating_save",

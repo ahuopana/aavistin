@@ -1199,3 +1199,37 @@ class RatingAndTreatmentAuthoringTests(RiskFixture):
     def test_get_is_not_allowed_on_actions(self):
         response = self.client.get(self.url(self.threat, "rating"))
         self.assertEqual(response.status_code, 405)
+
+    def test_delete_entry_confirms_then_deletes_and_unlinks(self):
+        Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=3)
+        url = self.url(self.asset, "delete")
+        page = self.client.get(url)
+        self.assertContains(page, "no longer targets an asset")
+        self.assertTrue(RiskEntry.objects.filter(pk=self.asset.pk).exists())
+        response = self.client.post(url)
+        self.assertRedirects(response, f"/risk/configurations/{self.configuration.pk}/")
+        self.assertFalse(RiskEntry.objects.filter(pk=self.asset.pk).exists())
+        self.threat.refresh_from_db()
+        self.assertIsNone(self.threat.asset)
+        self.client.post(self.url(self.threat, "delete"))
+        self.assertFalse(Rating.objects.exists())
+
+    def test_entry_with_deltas_cannot_be_deleted(self):
+        self.make_threat(
+            self.asset,
+            label="Tampering (signed)",
+            violates="integrity",
+            scope_software_release=self.release,
+            base_entry=self.threat,
+            delta_justification="Signed updates",
+        )
+        response = self.client.post(self.url(self.threat, "delete"), follow=True)
+        self.assertContains(response, "delete those first")
+        self.assertTrue(RiskEntry.objects.filter(pk=self.threat.pk).exists())
+
+    def test_viewer_cannot_delete(self):
+        viewer = User.objects.create_user(username="vic", password="x")
+        RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
+        self.client.force_login(viewer)
+        self.client.post(self.url(self.hazard, "delete"))
+        self.assertTrue(RiskEntry.objects.filter(pk=self.hazard.pk).exists())

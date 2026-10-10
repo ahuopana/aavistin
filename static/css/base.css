@@ -546,7 +546,8 @@ a.button.button-primary:hover {
   border-color: var(--color-gold-fill);
 }
 
-button.button-danger {
+button.button-danger,
+a.button.button-danger {
   color: var(--color-danger);
   border-color: transparent;
 }

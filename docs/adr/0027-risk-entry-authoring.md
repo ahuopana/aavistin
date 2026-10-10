@@ -18,5 +18,5 @@ The risk register model (ADR 0005) was complete, but the only way to create or c
 
 ## Consequences
 
-- Entries can't be deleted in the app yet; that comes with the controls/treatment slice, since deleting needs rules for linked ratings, consequences and controls.
+- Entries couldn't be deleted in the app in this slice; ADR 0028 adds deletion with the rating and treatment forms.
 - Threats can be saved without an asset (the model allows it) so a threat can be recorded before its asset exists.

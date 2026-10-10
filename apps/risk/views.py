@@ -821,3 +821,37 @@ def control_status(request, pk, entry_pk, control_pk):
     control.save()
     django_messages.success(request, f"“{control.name}” is now {control.get_status_display()}.")
     return _back(configuration, entry, "controls")
+
+
+@login_required
+def entry_delete(request, pk, entry_pk):
+    """Confirm, then delete an entry with its ratings, consequences, causes and
+    treatments. Threats targeting a deleted asset and consequences linking a
+    deleted hazard are kept and unlinked; controls are kept."""
+    configuration, entry = _editable_entry(request, pk, entry_pk)
+    if configuration is None:
+        return entry
+    if entry.deltas.exists():
+        django_messages.error(request, "This entry has configuration deltas; delete those first.")
+        return _back(configuration, entry)
+    if request.method == "POST":
+        label = entry.label
+        entry._history_user = request.user
+        entry.delete()
+        django_messages.success(request, f"Deleted “{label}”.")
+        return redirect("risk:register", pk=configuration.pk)
+    return render(
+        request,
+        "risk/entry_confirm_delete.html",
+        {
+            "configuration": configuration,
+            "entry": entry,
+            "ratings": entry.ratings.count() + entry.asset_ratings.count(),
+            "treatments": entry.treatments.count(),
+            "consequences": entry.consequences.count(),
+            "causes": entry.causes.count(),
+            "targeting_threats": entry.threats.all(),
+            "linking_consequences": entry.threat_consequences.select_related("threat"),
+            "controls": entry.controls.all(),
+        },
+    )
