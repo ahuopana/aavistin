@@ -24,7 +24,7 @@
     <div class="risk-stat {% if must_treat %}risk-stat-alert{% endif %}"><span class="risk-stat-value">{{ must_treat }}</span> must treat</div>
     <div class="risk-stat"><span class="risk-stat-value">{{ unrated }}</span> unrated</div>
     <div class="risk-stat {% if issue_count %}risk-stat-alert{% endif %}"><span class="risk-stat-value">{{ issue_count }}</span> consistency issues</div>
-    <div class="risk-stat"><span class="risk-stat-value">{{ pending_suggestions }}</span> suggestions pending</div>
+    <a class="risk-stat" href="{% url 'risk:suggestions' configuration.pk %}"><span class="risk-stat-value">{{ pending_suggestions }}</span> suggestions pending</a>
   </div>
 
   <form method="get" class="risk-filters" role="search">

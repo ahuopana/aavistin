@@ -1233,3 +1233,173 @@ class RatingAndTreatmentAuthoringTests(RiskFixture):
         self.client.force_login(viewer)
         self.client.post(self.url(self.hazard, "delete"))
         self.assertTrue(RiskEntry.objects.filter(pk=self.hazard.pk).exists())
+
+
+class HazardCauseAuthoringTests(RiskFixture):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        self.hazard = self.make_hazard()
+        self.threat = self.make_threat(self.make_asset(), violates="integrity")
+        self.base = f"/risk/configurations/{self.configuration.pk}/entries/{self.hazard.pk}/"
+
+    def test_add_and_remove_cause(self):
+        self.client.post(
+            f"{self.base}causes/",
+            {"cause_type": "hardware_failure", "description": "Thermal fuse fails closed"},
+        )
+        cause = self.hazard.causes.get()
+        self.assertEqual(cause.description, "Thermal fuse fails closed")
+        self.client.post(f"{self.base}causes/{cause.pk}/delete/")
+        self.assertFalse(self.hazard.causes.exists())
+
+    def test_cyberattack_cause_needs_a_threat_of_the_product(self):
+        response = self.client.post(
+            f"{self.base}causes/", {"cause_type": "cyberattack"}, follow=True
+        )
+        self.assertContains(response, "should link the responsible threat entry")
+        self.client.post(
+            f"{self.base}causes/", {"cause_type": "cyberattack", "threat": self.threat.pk}
+        )
+        self.assertEqual(self.hazard.causes.get().threat, self.threat)
+
+    def test_threat_is_ignored_for_non_cyber_causes(self):
+        self.client.post(
+            f"{self.base}causes/", {"cause_type": "software_fault", "threat": self.threat.pk}
+        )
+        self.assertIsNone(self.hazard.causes.get().threat)
+
+    def test_controls_link_per_cause(self):
+        cause = HazardCause.objects.create(hazard=self.hazard, cause_type="hardware_failure")
+        self.client.post(
+            f"{self.base}controls/",
+            {"cause": cause.pk, "name": "Thermal fuse", "status": "planned"},
+        )
+        control = Control.objects.get(name="Thermal fuse")
+        self.assertEqual(list(control.hazard_causes.all()), [cause])
+        self.assertFalse(control.threats.exists())
+        self.client.post(f"{self.base}controls/{control.pk}/unlink/", {"cause": cause.pk})
+        self.assertFalse(control.hazard_causes.exists())
+
+    def test_cause_of_another_hazard_is_refused(self):
+        other = self.make_hazard(label="Electric shock")
+        foreign = HazardCause.objects.create(hazard=other, cause_type="hardware_failure")
+        response = self.client.post(
+            f"{self.base}controls/", {"cause": foreign.pk, "name": "Sneaky"}, follow=True
+        )
+        self.assertContains(response, "one of a hazard&#x27;s causes")
+        self.assertFalse(Control.objects.exists())
+
+    def test_catalog_hazard_prompts_for_missing_cyberattack_cause(self):
+        catalog_hazard = accept_suggestion(self.product, self.catalog, "overheating_fire")
+        url = f"/risk/configurations/{self.configuration.pk}/entries/{catalog_hazard.pk}/"
+        self.assertContains(self.client.get(url), "The catalog lists a cyberattack")
+        HazardCause.objects.create(
+            hazard=catalog_hazard, cause_type="cyberattack", threat=self.threat
+        )
+        self.assertNotContains(self.client.get(url), "The catalog lists a cyberattack")
+
+
+class SuggestionReviewTests(RiskFixture):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        Answer.objects.create(
+            question_id="has_wireless", value=True, hardware_revision=self.revision
+        )
+        Answer.objects.create(
+            question_id="rated_power_watts", value=100, hardware_revision=self.revision
+        )
+        Answer.objects.create(
+            question_id="has_power_source", value=True, hardware_revision=self.revision
+        )
+        Answer.objects.create(question_id="is_toy_widget", value=False, product=self.product)
+        self.url = f"/risk/configurations/{self.configuration.pk}/suggestions/"
+        self.key = f"{self.catalog.pk}:unauthorized_wireless_access"
+
+    def test_page_lists_pending_and_register_links_to_it(self):
+        response = self.client.get(self.url)
+        self.assertContains(response, "Unauthorised access via wireless interface")
+        self.assertContains(response, "Overheating leading to fire")
+        register = self.client.get(f"/risk/configurations/{self.configuration.pk}/")
+        self.assertContains(register, f'href="{self.url}"')
+
+    def test_accept_threat_with_asset_and_suggested_controls(self):
+        asset = self.make_asset()
+        existing = Control.objects.create(product=self.product, name="Secure boot")
+        self.client.post(
+            f"{self.url}accept/", {"suggestion": self.key, "asset": asset.pk, "add_controls": "1"}
+        )
+        entry = RiskEntry.objects.get(source_catalog_entry_id="unauthorized_wireless_access")
+        self.assertEqual(entry.suggestion_status, SuggestionStatus.ACCEPTED)
+        self.assertEqual(entry.asset, asset)
+        self.assertEqual(entry.created_by, self.editor)
+        self.assertEqual(
+            sorted(entry.controls.values_list("name", flat=True)),
+            ["Authenticate wireless clients", "Secure boot"],
+        )
+        self.assertIn(existing, entry.controls.all())  # reused, not duplicated
+        self.assertEqual(Control.objects.filter(name="Secure boot").count(), 1)
+        pending = self.client.get(self.url).context["pending"]
+        self.assertNotIn(self.key, [s["key"] for s in pending])
+
+    def test_accept_without_controls(self):
+        self.client.post(f"{self.url}accept/", {"suggestion": self.key})
+        entry = RiskEntry.objects.get(source_catalog_entry_id="unauthorized_wireless_access")
+        self.assertFalse(entry.controls.exists())
+
+    def test_dismiss_needs_reason_and_restore_accepts(self):
+        response = self.client.post(
+            f"{self.url}dismiss/", {"suggestion": self.key, "reason": ""}, follow=True
+        )
+        self.assertContains(response, "Give a reason")
+        self.assertFalse(RiskEntry.objects.exists())
+        self.client.post(
+            f"{self.url}dismiss/", {"suggestion": self.key, "reason": "No radio in this variant"}
+        )
+        entry = RiskEntry.objects.get()
+        self.assertEqual(entry.suggestion_status, SuggestionStatus.DISMISSED)
+        page = self.client.get(self.url)
+        self.assertContains(page, "No radio in this variant")
+        self.client.post(f"{self.url}{entry.pk}/restore/")
+        entry.refresh_from_db()
+        self.assertEqual(entry.suggestion_status, SuggestionStatus.ACCEPTED)
+        self.assertEqual(entry.dismissal_reason, "")
+
+    def test_untriggered_or_decided_suggestion_is_refused(self):
+        response = self.client.post(
+            f"{self.url}accept/",
+            {"suggestion": f"{self.catalog.pk}:no_such_entry"},
+            follow=True,
+        )
+        self.assertContains(response, "no longer pending")
+        self.client.post(f"{self.url}accept/", {"suggestion": self.key})
+        response = self.client.post(f"{self.url}accept/", {"suggestion": self.key}, follow=True)
+        self.assertContains(response, "no longer pending")
+        self.assertEqual(RiskEntry.objects.count(), 1)
+
+    def test_viewer_sees_but_cannot_act(self):
+        viewer = User.objects.create_user(username="vic", password="x")
+        RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
+        self.client.force_login(viewer)
+        page = self.client.get(self.url)
+        self.assertContains(page, "Unauthorised access via wireless interface")
+        self.assertNotContains(page, "Dismiss…")
+        self.client.post(f"{self.url}accept/", {"suggestion": self.key})
+        self.assertFalse(RiskEntry.objects.exists())
+
+    def test_readiness_links_to_review(self):
+        response = self.client.get(f"/risk/configurations/{self.configuration.pk}/")
+        self.assertContains(response, "Review suggestions")
+
+    def test_catalog_hazard_lists_suggested_controls_until_linked(self):
+        catalog_hazard = accept_suggestion(self.product, self.catalog, "overheating_fire")
+        url = f"/risk/configurations/{self.configuration.pk}/entries/{catalog_hazard.pk}/"
+        response = self.client.get(url)
+        self.assertEqual(
+            response.context["catalog_controls"], ["Thermal fuse", "Firmware power limiting"]
+        )
+        cause = catalog_hazard.causes.get()  # hardware_failure, created on accept
+        Control.objects.create(product=self.product, name="Thermal fuse").hazard_causes.add(cause)
+        response = self.client.get(url)
+        self.assertEqual(response.context["catalog_controls"], ["Firmware power limiting"])

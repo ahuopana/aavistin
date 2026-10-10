@@ -60,4 +60,30 @@ urlpatterns = [
         views.control_status,
         name="control_status",
     ),
+    path(
+        "configurations/<int:pk>/entries/<int:entry_pk>/causes/",
+        views.cause_add,
+        name="cause_add",
+    ),
+    path(
+        "configurations/<int:pk>/entries/<int:entry_pk>/causes/<int:cause_pk>/delete/",
+        views.cause_delete,
+        name="cause_delete",
+    ),
+    path("configurations/<int:pk>/suggestions/", views.suggestions, name="suggestions"),
+    path(
+        "configurations/<int:pk>/suggestions/accept/",
+        views.suggestion_accept,
+        name="suggestion_accept",
+    ),
+    path(
+        "configurations/<int:pk>/suggestions/dismiss/",
+        views.suggestion_dismiss,
+        name="suggestion_dismiss",
+    ),
+    path(
+        "configurations/<int:pk>/suggestions/<int:entry_pk>/restore/",
+        views.suggestion_restore,
+        name="suggestion_restore",
+    ),
 ]

@@ -1199,3 +1199,23 @@ input[type="date"] {
 .risk-edit-table select {
   min-width: 10rem;
 }
+
+.cause-remove {
+  margin-top: var(--space-2);
+  text-align: right;
+}
+
+.suggestion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+a.risk-stat {
+  text-decoration: none;
+}
+
+a.risk-stat:hover {
+  border-color: var(--color-text-muted);
+}

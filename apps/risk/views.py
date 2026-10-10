@@ -2,8 +2,9 @@
 plus matching deltas), a detail page per entry, and adding or editing
 entries by hand.
 
-Rating, treatment, deltas, suggestion review and approval come in later
-slices; see docs/adr/0027-risk-entry-authoring.md.
+Rating, treatment, causes, controls and suggestion review follow; deltas and
+approval are still admin-only. See docs/adr/0027-risk-entry-authoring.md,
+0028-risk-rating-and-treatment.md and 0029-hazard-causes-and-suggestion-review.md.
 """
 
 from django.contrib import messages as django_messages
@@ -25,10 +26,12 @@ from apps.products.models import Configuration, HardwareVariant, SoftwareOption,
 from .consistency import check_threat_hazard_consistency
 from .models import (
     AssetRating,
+    CauseType,
     CIAProperty,
     Control,
     ControlStatus,
     EntryType,
+    HazardCause,
     ImpactCategory,
     Rating,
     RiskEntry,
@@ -39,7 +42,7 @@ from .models import (
 )
 from .rating import evaluate_entry_rating, evaluate_residual_rating
 from .resolution import register_for_configuration
-from .suggestions import pending_suggestions
+from .suggestions import accept_suggestion, dismiss_suggestion, pending_suggestions
 
 TYPE_ORDER = [EntryType.ASSET, EntryType.THREAT, EntryType.HAZARD]
 
@@ -224,6 +227,18 @@ def entry_detail(request, pk, entry_pk):
         _scale((applicable or methods)[0], "severity") if (applicable or methods) else []
     )
     linked_controls = entry.controls.order_by("name")
+    product_controls = list(Control.objects.filter(product=entry.product).order_by("name"))
+    cause_rows = []
+    if entry.entry_type == EntryType.HAZARD:
+        for cause in entry.causes.select_related("threat").prefetch_related("controls"):
+            linked = list(cause.controls.order_by("name"))
+            cause_rows.append(
+                {
+                    "cause": cause,
+                    "controls": linked,
+                    "available": [c for c in product_controls if c not in linked],
+                }
+            )
     return render(
         request,
         "risk/entry_detail.html",
@@ -247,11 +262,25 @@ def entry_detail(request, pk, entry_pk):
             .order_by("label"),
             "treatment_types": TreatmentType.choices,
             "causes": entry.causes.select_related("threat"),
+            "cause_rows": cause_rows,
+            "cause_types": CauseType.choices,
+            "product_threats": RiskEntry.objects.filter(
+                product=entry.product, entry_type=EntryType.THREAT
+            )
+            .exclude(suggestion_status=SuggestionStatus.DISMISSED)
+            .order_by("label"),
+            "missing_cyber_cause": _missing_cyber_cause(entry),
+            # A catalog hazard's suggested controls have no automatic target
+            # (they belong to a cause), so they are listed as a hint.
+            "catalog_controls": [
+                name
+                for name in _catalog_entry(entry).get("suggested_controls", [])
+                if entry.entry_type == EntryType.HAZARD
+                and not any(name == c.name for row in cause_rows for c in row["controls"])
+            ],
             "threats": entry.threats.exclude(suggestion_status=SuggestionStatus.DISMISSED),
             "controls": linked_controls,
-            "available_controls": Control.objects.filter(product=entry.product)
-            .exclude(pk__in=linked_controls.values("pk"))
-            .order_by("name"),
+            "available_controls": [c for c in product_controls if c not in linked_controls],
             "control_statuses": ControlStatus.choices,
             "deltas": entry.deltas.all(),
             "issues": (
@@ -261,6 +290,31 @@ def entry_detail(request, pk, entry_pk):
             ),
             "can_edit": has_role(request.user, Role.EDITOR, product=entry.product),
         },
+    )
+
+
+def _catalog_entry(entry: RiskEntry) -> dict:
+    """The catalog definition an accepted suggestion came from, or {}."""
+    if not entry.source_catalog_id:
+        return {}
+    return next(
+        (
+            e
+            for e in entry.source_catalog.content.get("entries", [])
+            if e.get("id") == entry.source_catalog_entry_id
+        ),
+        {},
+    )
+
+
+def _missing_cyber_cause(entry: RiskEntry) -> bool:
+    """A catalog hazard listing a cyberattack cause that isn't recorded yet;
+    accepting the suggestion can't create it, since it must name a threat."""
+    if entry.entry_type != EntryType.HAZARD:
+        return False
+    return (
+        CauseType.CYBERATTACK in _catalog_entry(entry).get("causes", [])
+        and not entry.causes.filter(cause_type=CauseType.CYBERATTACK).exists()
     )
 
 
@@ -763,13 +817,14 @@ def treatment_save(request, pk, entry_pk):
 @login_required
 @require_POST
 def control_link(request, pk, entry_pk):
-    """Link an existing control, or create a new one and link it."""
+    """Link an existing control, or create a new one and link it, to a threat
+    or (with ``cause``) to one of a hazard's causes."""
     configuration, entry = _editable_entry(request, pk, entry_pk)
     if configuration is None:
         return entry
-    if entry.entry_type != EntryType.THREAT:
-        django_messages.error(request, "Controls are linked to threats here.")
-        return _back(configuration, entry)
+    target = _control_target(request, entry)
+    if target is None:
+        return _back(configuration, entry, "controls")
     control_id = request.POST.get("control", "")
     if control_id.isdigit():
         control = get_object_or_404(Control, pk=int(control_id), product=entry.product)
@@ -787,9 +842,24 @@ def control_link(request, pk, entry_pk):
             _flash_errors(request, exc)
             return _back(configuration, entry, "controls")
         control.save()
-    control.threats.add(entry)
+    target.add(control)
     django_messages.success(request, f"Control “{control.name}” linked.")
     return _back(configuration, entry, "controls")
+
+
+def _control_target(request, entry):
+    """The related manager a control is linked through: the threat's
+    ``controls``, or a hazard cause's ``controls``. None (with a message) if
+    neither applies."""
+    if entry.entry_type == EntryType.THREAT:
+        return entry.controls
+    cause_id = request.POST.get("cause", "")
+    if entry.entry_type == EntryType.HAZARD and cause_id.isdigit():
+        cause = HazardCause.objects.filter(pk=int(cause_id), hazard=entry).first()
+        if cause is not None:
+            return cause.controls
+    django_messages.error(request, "Controls link to a threat, or to one of a hazard's causes.")
+    return None
 
 
 @login_required
@@ -799,9 +869,53 @@ def control_unlink(request, pk, entry_pk, control_pk):
     if configuration is None:
         return entry
     control = get_object_or_404(Control, pk=control_pk, product=entry.product)
-    control.threats.remove(entry)
+    target = _control_target(request, entry)
+    if target is None:
+        return _back(configuration, entry, "controls")
+    target.remove(control)
     django_messages.success(request, f"Control “{control.name}” unlinked.")
     return _back(configuration, entry, "controls")
+
+
+@login_required
+@require_POST
+def cause_add(request, pk, entry_pk):
+    configuration, entry = _editable_entry(request, pk, entry_pk)
+    if configuration is None:
+        return entry
+    if entry.entry_type != EntryType.HAZARD:
+        django_messages.error(request, "Only hazards have causes.")
+        return _back(configuration, entry)
+    threat_id = request.POST.get("threat", "")
+    cause = HazardCause(
+        hazard=entry,
+        cause_type=request.POST.get("cause_type", ""),
+        description=request.POST.get("description", "").strip(),
+    )
+    # Only a cyberattack names the responsible threat (HazardCause.clean()).
+    if cause.cause_type == CauseType.CYBERATTACK and threat_id.isdigit():
+        cause.threat = RiskEntry.objects.filter(
+            pk=int(threat_id), product=entry.product, entry_type=EntryType.THREAT
+        ).first()
+    try:
+        cause.full_clean()
+    except ValidationError as exc:
+        _flash_errors(request, exc)
+        return _back(configuration, entry, "causes")
+    cause.save()
+    django_messages.success(request, f"Cause “{cause.get_cause_type_display()}” added.")
+    return _back(configuration, entry, "causes")
+
+
+@login_required
+@require_POST
+def cause_delete(request, pk, entry_pk, cause_pk):
+    configuration, entry = _editable_entry(request, pk, entry_pk)
+    if configuration is None:
+        return entry
+    get_object_or_404(HazardCause, pk=cause_pk, hazard=entry).delete()
+    django_messages.success(request, "Cause removed; its controls are kept.")
+    return _back(configuration, entry, "causes")
 
 
 @login_required
@@ -855,3 +969,145 @@ def entry_delete(request, pk, entry_pk):
             "controls": entry.controls.all(),
         },
     )
+
+
+# --- Suggestion review --------------------------------------------------------------
+
+
+def _suggestion_rows(configuration) -> list[dict]:
+    return [
+        {
+            **s,
+            "key": f"{s['catalog'].pk}:{s['entry_id']}",
+            "type_label": EntryType(s["entry_type"]).label,
+            "violates_label": s.get("violates", "").replace("_", " ").capitalize(),
+            "cause_labels": [CauseType(c).label for c in s.get("causes", [])],
+        }
+        for s in pending_suggestions(configuration)
+    ]
+
+
+@login_required
+def suggestions(request, pk):
+    configuration = get_object_or_404(Configuration, pk=pk)
+    product = configuration.hardware_revision.hardware_variant.product
+    return render(
+        request,
+        "risk/suggestions.html",
+        {
+            "configuration": configuration,
+            "product": product,
+            "pending": _suggestion_rows(configuration),
+            "dismissed": RiskEntry.objects.filter(
+                product=product, suggestion_status=SuggestionStatus.DISMISSED
+            )
+            .select_related("source_catalog", "created_by")
+            .order_by("label"),
+            "assets": RiskEntry.objects.filter(product=product, entry_type=EntryType.ASSET)
+            .exclude(suggestion_status=SuggestionStatus.DISMISSED)
+            .order_by("label"),
+            "can_edit": has_role(request.user, Role.EDITOR, product=product),
+        },
+    )
+
+
+def _pending_suggestion(request, configuration):
+    """The pending suggestion a POST names, or None: only a suggestion this
+    configuration's answers actually trigger, and that is still undecided."""
+    catalog_id, _, entry_id = request.POST.get("suggestion", "").partition(":")
+    for suggestion in pending_suggestions(configuration):
+        if str(suggestion["catalog"].pk) == catalog_id and suggestion["entry_id"] == entry_id:
+            return suggestion
+    django_messages.error(request, "That suggestion is no longer pending.")
+    return None
+
+
+def _suggestion_editor(request, pk):
+    configuration = get_object_or_404(Configuration, pk=pk)
+    product = configuration.hardware_revision.hardware_variant.product
+    if not has_role(request.user, Role.EDITOR, product=product):
+        django_messages.error(request, "You need the editor role to review suggestions.")
+        return None, None
+    return configuration, product
+
+
+@login_required
+@require_POST
+def suggestion_accept(request, pk):
+    configuration, product = _suggestion_editor(request, pk)
+    if (
+        configuration is None
+        or (suggestion := _pending_suggestion(request, configuration)) is None
+    ):
+        return redirect("risk:suggestions", pk=pk)
+    asset_id = request.POST.get("asset", "")
+    asset = (
+        RiskEntry.objects.filter(
+            pk=int(asset_id), product=product, entry_type=EntryType.ASSET
+        ).first()
+        if asset_id.isdigit()
+        else None
+    )
+    with transaction.atomic():
+        entry = accept_suggestion(
+            product, suggestion["catalog"], suggestion["entry_id"], actor=request.user
+        )
+        if asset is not None and entry.entry_type == EntryType.THREAT:
+            entry.asset = asset
+            entry.save(update_fields=["asset"])
+        added = []
+        if entry.entry_type == EntryType.THREAT and request.POST.get("add_controls"):
+            for name in suggestion.get("suggested_controls", []):
+                # Reuse a product control of the same name: one control can
+                # mitigate several threats.
+                control = Control.objects.filter(product=product, name=name).first()
+                if control is None:
+                    control = Control.objects.create(product=product, name=name)
+                control.threats.add(entry)
+                added.append(name)
+    detail_url = reverse("risk:entry_detail", args=[configuration.pk, entry.pk])
+    message = format_html('Accepted <a href="{}">{}</a>.', detail_url, entry.label)
+    if added:
+        message = format_html("{} Linked planned controls: {}.", message, ", ".join(added))
+    django_messages.success(request, message)
+    return redirect("risk:suggestions", pk=pk)
+
+
+@login_required
+@require_POST
+def suggestion_dismiss(request, pk):
+    configuration, product = _suggestion_editor(request, pk)
+    if (
+        configuration is None
+        or (suggestion := _pending_suggestion(request, configuration)) is None
+    ):
+        return redirect("risk:suggestions", pk=pk)
+    reason = request.POST.get("reason", "").strip()
+    if not reason:
+        django_messages.error(request, "Give a reason for dismissing the suggestion.")
+        return redirect("risk:suggestions", pk=pk)
+    dismiss_suggestion(
+        product, suggestion["catalog"], suggestion["entry_id"], reason=reason, actor=request.user
+    )
+    django_messages.success(request, f"Dismissed “{suggestion['label']}”.")
+    return redirect("risk:suggestions", pk=pk)
+
+
+@login_required
+@require_POST
+def suggestion_restore(request, pk, entry_pk):
+    """Accept a previously dismissed suggestion after all."""
+    configuration, product = _suggestion_editor(request, pk)
+    if configuration is None:
+        return redirect("risk:suggestions", pk=pk)
+    entry = get_object_or_404(
+        RiskEntry, pk=entry_pk, product=product, suggestion_status=SuggestionStatus.DISMISSED
+    )
+    entry.suggestion_status = SuggestionStatus.ACCEPTED
+    entry.dismissal_reason = ""
+    entry.save(update_fields=["suggestion_status", "dismissal_reason", "updated_at"])
+    detail_url = reverse("risk:entry_detail", args=[configuration.pk, entry.pk])
+    django_messages.success(
+        request, format_html('Accepted <a href="{}">{}</a> after all.', detail_url, entry.label)
+    )
+    return redirect("risk:suggestions", pk=pk)

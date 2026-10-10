@@ -76,7 +76,30 @@ or links one that already exists for the product, so one control can
 mitigate several threats. Its status (planned, implemented, verified)
 can be changed in place.
 
-Hazard causes and their controls are still edited by an administrator.
+On a hazard, **Causes and controls** lists why it might occur: hardware
+failure, software fault, foreseeable misuse or cyberattack. A
+cyberattack names the threat responsible; a software bug is a software
+fault, not a threat. Each cause has its own controls (e.g. a thermal
+fuse for hardware failure, firmware power limiting for a cyberattack),
+linked or created the same way as on a threat.
+
+## Suggestions from your answers
+
+Risk catalogs suggest threats and hazards from the questionnaire answers
+and findings — answering "has wireless" may suggest wireless
+eavesdropping. The register's **suggestions pending** count opens the
+review page:
+
+- **Accept** adds the entry to the register. For a threat you can pick
+  the asset it targets and add the catalog's suggested controls as
+  planned controls.
+- **Dismiss** needs a reason, e.g. "the radio is disabled in hardware".
+  Dismissed suggestions stay listed with the reason, and can still be
+  accepted later.
+
+Either way a suggestion isn't suggested again. If an accepted hazard's
+catalog lists a cyberattack cause, its page reminds you to add it with
+the threat responsible.
 
 ## Baseline vs. scoped entries
 
