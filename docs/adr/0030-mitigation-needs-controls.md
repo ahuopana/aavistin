@@ -17,3 +17,4 @@ With ADR 0028 a treatment of type *mitigate* with an acceptable residual rating 
 
 - Product risk ratios drop for existing mitigations without implemented controls; that is the point.
 - A target date and owner per control (a plan with a deadline) is deferred; it needs a migration.
+- An "in progress" middle segment on the risk bars was considered and deferred until customer feedback asks for it. If added: only mitigations whose residual would be acceptable and that wait on planned controls; a lighter tint of the risk colour with both counts in the text and aria label; never counted as acceptable for sorting; and, once controls have target dates, an overdue control drops the entry out of it, since "planned" alone is cheap and never expires.

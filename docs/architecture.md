@@ -405,4 +405,5 @@ The CRA interpretation of monetised support sits in the eu-cra package with its 
 - [ ] Which identity provider will SSO target first?
 - [ ] Severity mappings between methods: which method pairs need one first (e.g. CIA 5×5 ↔ LVD safety)?
 - [ ] Software-only products: target markets can now be set on the SW release (ADR 0020), but a configuration still needs a hardware revision. Make it optional?
+- [ ] Risk bars with an "in progress" segment (mitigations whose residual would be acceptable but still wait on planned controls)? Deferred until customer feedback asks for it; see docs/adr/0030-mitigation-needs-controls.md.
 - [ ] Organisation wiki: a separate, per-organisation, user-authored Markdown wiki (likely built on the "Documents and concurrent editing" system above) — not yet designed. Not to be confused with the User Guide, which is maintainer-authored and the same for everyone.
