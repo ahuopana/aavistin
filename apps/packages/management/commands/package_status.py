@@ -17,13 +17,12 @@ class Command(BaseCommand):
         if kind:
             packages = packages.filter(kind=kind)
 
-        rows = [
-            (p.source, p.version, p.kind, p.status, str(len(p.lint_errors))) for p in packages
-        ]
+        rows = [(p.source, p.version, p.kind, p.status, str(len(p.lint_errors))) for p in packages]
         if not rows:
             self.stdout.write("No packages imported.")
             return
         header = ("SOURCE", "VERSION", "KIND", "STATUS", "LINT ERRORS")
         widths = [max(len(r[i]) for r in [header, *rows]) for i in range(len(header))]
         for row in [header, *rows]:
-            self.stdout.write("  ".join(c.ljust(w) for c, w in zip(row, widths)).rstrip())
+            cells = (c.ljust(w) for c, w in zip(row, widths, strict=True))
+            self.stdout.write("  ".join(cells).rstrip())

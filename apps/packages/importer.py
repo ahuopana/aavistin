@@ -131,8 +131,9 @@ def import_package(
     already approved (e.g. to break a dependency cycle).
 
     Raises PackageImportError on structural (schema) failure or when this
-    source/version already exists — the package is not saved at all in that case. Semantic lint and fixture
-    failures do *not* raise: the package is saved with the failures
+    source/version already exists — the package is not saved at all in that
+    case. Semantic lint and fixture failures do *not* raise: the package is
+    saved with the failures
     recorded on it (status stays below 'fixtures_passed'), so a curator
     can review and fix the content. Importing never implies approval.
     """
