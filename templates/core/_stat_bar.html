@@ -1,0 +1,12 @@
+{# One labeled ratio bar. Context: label, ok, total, fill ("compliance", "risk" or "questions"). #}
+<div class="stat-bar-row">
+  {% if label %}<span class="stat-bar-label">{{ label }}</span>{% endif %}
+  {% if total %}
+    <div class="stat-bar" role="img" aria-label="{{ label|default:fill|capfirst }} {{ ok }} of {{ total }}">
+      <div class="stat-bar-fill stat-bar-fill-{{ fill }}" style="width: {% widthratio ok total 100 %}%"></div>
+    </div>
+    <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
+  {% else %}
+    <span class="stat-bar-value">no data yet</span>
+  {% endif %}
+</div>
