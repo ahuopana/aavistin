@@ -75,6 +75,7 @@
     </div>
 
     <div class="page-status">
+      {% include "core/_stat_bar.html" with label="Questions" ok=questions.0 total=questions.1 fill="questions" %}
       <div class="stat-bar-row">
         <span class="stat-bar-label">Compliance</span>
         {% with ok=compliance.0 total=compliance.1 %}

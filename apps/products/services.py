@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from apps.assessments.evaluation import evaluate_configuration
+from apps.assessments.progress import questionnaire_progress
 from apps.orgs.models import ProductFamily, Role, RoleAssignment
 from apps.risk.models import EntryType, RiskEntry
 from apps.risk.rating import evaluate_residual_rating
@@ -59,6 +60,24 @@ def compliance_ratio(product) -> tuple[int, int]:
                     bad.add(key)
 
     return len(total - bad), len(total)
+
+
+def questions_ratio(product) -> tuple[int, int]:
+    """(done, total) active questions summed over the product's
+    configurations, per apps.assessments.progress. A product-level answer
+    shared by several configurations counts once per configuration,
+    since each configuration's questionnaire has to be complete on its
+    own.
+    """
+    done = total = 0
+    configurations = Configuration.objects.filter(
+        hardware_revision__hardware_variant__product=product
+    )
+    for configuration in configurations:
+        progress = questionnaire_progress(configuration)
+        done += progress["done"]
+        total += progress["total"]
+    return done, total
 
 
 def risk_ratio(product) -> tuple[int, int]:

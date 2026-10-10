@@ -15,6 +15,14 @@
     · <a href="{% url 'risk:register' assessment.configuration.pk %}">Risk register</a>
   </p>
 
+  {% if progress and progress.open %}
+    <p class="message message-warning">
+      {{ progress.open }} of {{ progress.total }} question{{ progress.total|pluralize }} still to answer
+      ({{ progress.unanswered }} unanswered, {{ progress.needs_confirmation }} need{{ progress.needs_confirmation|pluralize:"s," }} confirmation).
+      <a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}?show=open#questions">Answer them &rarr;</a>
+    </p>
+  {% endif %}
+
   {% if assessment.status == "draft" and can_approve %}
     <form method="post" action="{% url 'assessments:assessment_approve' assessment.pk %}">
       {% csrf_token %}

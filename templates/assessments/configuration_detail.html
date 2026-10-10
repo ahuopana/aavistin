@@ -8,14 +8,45 @@
 
   <p><a href="{% url 'risk:register' configuration.pk %}">Risk register for this configuration &rarr;</a></p>
 
+  <div class="dashboard-widgets">
+    <section class="dashboard-widget questionnaire-progress">
+      <h2>Questionnaire progress</h2>
+      {% include "core/_stat_bar.html" with label="Answered" ok=progress.done total=progress.total fill="questions" %}
+      {% if progress.total %}
+        <ul class="progress-counts">
+          <li><span class="progress-count{% if progress.open %} progress-count-alert{% endif %}">{{ progress.open }}</span> still to answer</li>
+          <li><span class="progress-count">{{ progress.unanswered }}</span> unanswered</li>
+          <li><span class="progress-count">{{ progress.needs_confirmation }}</span> need confirmation</li>
+          <li><span class="progress-count">{{ progress.derived }}</span> derived from other answers</li>
+        </ul>
+        <p class="field-hint">Answering a question can make further questions apply, so the total may grow as you go.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <div x-data="{
+    openOnly: new URLSearchParams(window.location.search).get('show') === 'open',
+    setOpenOnly(value) {
+      this.openOnly = value;
+      const params = new URLSearchParams(window.location.search);
+      if (value) { params.set('show', 'open'); } else { params.delete('show'); }
+      const query = params.toString();
+      history.replaceState(null, '', window.location.pathname + (query ? '?' + query : '') + window.location.hash);
+    }
+  }">
   <h2 id="questions">Questions</h2>
+  {% if progress.total %}
+    <p x-cloak>
+      <label><input type="checkbox" :checked="openOnly" @change="setOpenOnly($event.target.checked)"> Show only questions still to answer ({{ progress.open }})</label>
+    </p>
+  {% endif %}
   <table>
     <thead>
       <tr><th>Question</th><th>Value</th><th>Origin</th>{% if can_edit %}<th>Set answer</th>{% endif %}</tr>
     </thead>
     <tbody>
       {% for row in rows %}
-        <tr id="q-{{ row.question.id }}">
+        <tr id="q-{{ row.question.id }}"{% if not row.is_open %} x-show="!openOnly"{% endif %}>
           <td class="cell-question">
             {{ row.question.label|default:row.question.id }}
             {% if row.question.used_by|length > 1 %}<span class="field-hint">also used by: {{ row.question.used_by|join:", " }}</span>{% endif %}
@@ -75,6 +106,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 
   <h2>Assessments</h2>
   {% if assessments %}

@@ -8,6 +8,7 @@
   <div class="dashboard-widgets">
     <section class="dashboard-widget">
       <h2>Portfolio</h2>
+      {% include "core/_stat_bar.html" with label="Questions" ok=totals.questions.0 total=totals.questions.1 fill="questions" %}
       <div class="stat-bar-row">
         <span class="stat-bar-label">Compliance</span>
         {% with ok=totals.compliance.0 total=totals.compliance.1 %}
@@ -44,6 +45,7 @@
           <th>Organisation</th>
           <th>Product family</th>
           <th>Product</th>
+          <th>Questions answered</th>
           <th>Compliance</th>
           <th>Risk</th>
         </tr>
@@ -54,6 +56,7 @@
             <td>{{ row.organisation.name }}</td>
             <td>{{ row.family.name }}</td>
             <td><a href="{% url 'products:product_detail' row.product.pk %}">{{ row.product.name }}</a></td>
+            <td>{% include "core/_stat_bar.html" with label="" ok=row.questions.0 total=row.questions.1 fill="questions" %}</td>
             <td>
               {% with ok=row.compliance.0 total=row.compliance.1 %}
                 {% if total %}
