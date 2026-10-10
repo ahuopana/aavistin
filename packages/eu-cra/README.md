@@ -15,7 +15,7 @@ The EU Cyber Resilience Act, Regulation (EU) 2024/2847 (CELEX `32024R2847`), as 
 - **Findings:** third-party assessment needed, support period too short, substantial modification, unfinished software and preview features, security gaps (shared default passwords, no or unverified updates, unprotected data, no SBOM or CVD policy), and informational notes.
 - **Fixtures:** 34 example products, most taken from the guidance's numbered examples.
 
-Shared facts (product form, data connection, role, exclusions, placement dates, security properties, development process) come from the shared question library `packages/common` 1.1.0 and are reused by other packages.
+Shared facts (product form, data connection, role, exclusions, placement dates, security properties, development process) come from the shared question library `packages/common` 1.1.1 and are reused by other packages.
 
 ## Known limitations
 
@@ -28,8 +28,8 @@ Shared facts (product form, data connection, role, exclusions, placement dates, 
 Import and approve the shared question library first, then this package. Run inside the `web` container:
 
 ```bash
-docker compose exec web python manage.py import_package packages/common/1.1.0.json --kind question_set --official
-docker compose exec web python manage.py approve_package common 1.1.0
+docker compose exec web python manage.py import_package packages/common/1.1.1.json --kind question_set --official
+docker compose exec web python manage.py approve_package common 1.1.1
 docker compose exec web python manage.py import_package packages/eu-cra/1.0.0.json --kind requirement --official
 docker compose exec web python manage.py approve_package eu-cra "2024-2847@2026-10"
 ```
