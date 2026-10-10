@@ -958,9 +958,7 @@ class PackageAdminImportTests(TestCase):
         )
         response = self.post_import(DEMO_DIR / "1.0.0.json")
         package = RequirementPackage.objects.get(source="demo-widget-safety")
-        self.assertRedirects(
-            response, f"/admin/packages/requirementpackage/{package.pk}/change/"
-        )
+        self.assertRedirects(response, f"/admin/packages/requirementpackage/{package.pk}/change/")
         self.assertEqual(package.imported_by, self.admin)
 
     def test_duplicate_import_shows_error_without_traceback(self):
@@ -975,14 +973,15 @@ class PackageAdminImportTests(TestCase):
         approve_package(package)
         self.assertEqual(self.client.get(url).status_code, 403)
 
-
     def test_package_fields_are_read_only_in_admin(self):
         package = import_package(load_demo("1.0.0"), is_official=True)
         url = f"/admin/packages/requirementpackage/{package.pk}/change/"
         self.client.post(url, {"status": PackageStatus.APPROVED, "title": "x"})
         package.refresh_from_db()
         self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
-        self.assertEqual(self.client.get("/admin/packages/requirementpackage/add/").status_code, 403)
+        self.assertEqual(
+            self.client.get("/admin/packages/requirementpackage/add/").status_code, 403
+        )
 
 
 class AdminLinkTests(TestCase):
@@ -1008,13 +1007,21 @@ class QuestionGroupLintTests(TestCase):
             ],
             "question_groups": groups,
         }
-        return {i["code"] for i in lint_package(
+        return {
+            i["code"]
+            for i in lint_package(
                 content, is_official=False, existing_packages=RequirementPackage.objects.none()
-            )}
+            )
+        }
 
     def test_group_errors_and_warnings(self):
-        self.assertNotIn("unknown_group_question", self.lint([{"id": "g", "title": "G", "questions": ["a", "b"]}]))
-        self.assertIn("unknown_group_question", self.lint([{"id": "g", "title": "G", "questions": ["zz"]}]))
+        self.assertNotIn(
+            "unknown_group_question",
+            self.lint([{"id": "g", "title": "G", "questions": ["a", "b"]}]),
+        )
+        self.assertIn(
+            "unknown_group_question", self.lint([{"id": "g", "title": "G", "questions": ["zz"]}])
+        )
         self.assertIn(
             "question_in_two_groups",
             self.lint(
@@ -1024,7 +1031,9 @@ class QuestionGroupLintTests(TestCase):
                 ]
             ),
         )
-        self.assertIn("ungrouped_question", self.lint([{"id": "g", "title": "G", "questions": ["a"]}]))
+        self.assertIn(
+            "ungrouped_question", self.lint([{"id": "g", "title": "G", "questions": ["a"]}])
+        )
 
     def test_eu_cra_groups_every_question(self):
         content = load_package("eu-cra", "1.0.0")
