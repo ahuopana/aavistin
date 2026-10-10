@@ -10,6 +10,7 @@ from apps.assessments.progress import questionnaire_progress
 from apps.core.navigation import breadcrumbs, configuration_workflow
 from apps.orgs.models import ProductFamily, Role
 from apps.orgs.services import has_role, roles_for_user
+from apps.risk.metrics import product_metrics
 
 from .models import (
     Configuration,
@@ -141,6 +142,7 @@ def product_detail(request, pk):
     for configuration in configurations:
         configuration.workflow = configuration_workflow(configuration, request.user)
     question_links = _question_links(configurations)
+    risk_metrics = product_metrics(product)
     return render(
         request,
         "products/product_detail.html",
@@ -155,6 +157,8 @@ def product_detail(request, pk):
             "questions": questions_ratio(product),
             "compliance": compliance_ratio(product),
             "risk": risk_ratio(product),
+            "risk_metrics": risk_metrics,
+            "link_configuration": configurations[0].pk if configurations else None,
             "can_edit": can_edit,
             "can_approve": can_approve,
             "can_close": can_approve and product.status == ProductStatus.APPROVED,
