@@ -20,9 +20,10 @@ General product-law concepts (making available, placing on the market, economic 
 - **Dates:** each dated requirement applies only to units placed on or after its date (2022/30: 1 August 2025; 2019/320: 17 March 2022; common charger: 28 December 2024, laptops 28 April 2026). While no placement date is answered, nothing is hidden.
 - **Routes:** module A only when harmonised standards for Art. 3(2) and every applicable Art. 3(3) requirement are applied in full (for 2022/30: EN 18031-1/-2/-3 without the options the OJ citation restricts); modules B+C and H always (Art. 17).
 - **Findings:** notified body required, dormant or user-enableable radio, shared default passwords, unverified updates, no update mechanism, unprotected personal data in transit, role notes, and a pointer to the CRA for cyber-relevant products.
+- **Question groups:** the questionnaire follows the Directive's structure: product and role, radio, exclusions, placement, network/privacy/fraud categories and measures, charger and emergency location, conformity (ADR 0025).
 - **Fixtures:** 46 example products, including the demo seed's expected result for Aavistin (out of scope: no radio equipment).
 
-Shared facts come from `packages/common` 1.2.0, which adds `wireless_enablement`, `communicates_over_internet`, `transfers_money_or_value`, `is_toy`, `is_childcare_product` and `is_wearable` to 1.1.0.
+**Depends on** the shared question library `packages/common` 1.2.0, which must be approved first; the importer refuses this package otherwise. Shared facts come from `packages/common` 1.2.0, which adds `wireless_enablement`, `communicates_over_internet`, `transfers_money_or_value`, `is_toy`, `is_childcare_product` and `is_wearable` to 1.1.0.
 
 ## Known limitations
 

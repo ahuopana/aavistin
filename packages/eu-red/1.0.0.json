@@ -176,6 +176,92 @@
       "guidance_url": "https://single-market-economy.ec.europa.eu/sectors/electrical-and-electronic-engineering-industries-eei/radio-equipment-directive-red_en"
     }
   ],
+  "question_groups": [
+    {
+      "id": "product_and_role",
+      "title": "Product and your role (Art. 2, Art. 10-14)",
+      "questions": [
+        "product_form",
+        "economic_operator_role",
+        "places_under_own_name_or_modifies",
+        "is_commercial_activity"
+      ]
+    },
+    {
+      "id": "radio",
+      "title": "Radio equipment (Art. 2(1)(1))",
+      "questions": [
+        "wireless_interface_capability",
+        "wireless_enablement"
+      ]
+    },
+    {
+      "id": "exclusions",
+      "title": "Exclusions from RED scope (Art. 1, Annex I)",
+      "questions": [
+        "is_amateur_radio_equipment",
+        "is_marine_equipment",
+        "is_civil_aviation_product",
+        "is_custom_evaluation_kit",
+        "is_exclusively_defence_product",
+        "is_exclusively_national_security_product"
+      ]
+    },
+    {
+      "id": "placement",
+      "title": "Market placement",
+      "questions": [
+        "hardware_first_placed_on_market",
+        "hardware_still_placed_on_market",
+        "hardware_last_placed_on_market"
+      ]
+    },
+    {
+      "id": "cyber_categories",
+      "title": "Network, privacy and fraud protection: which apply (Art. 3(3)(d)-(f), Delegated Regulation (EU) 2022/30)",
+      "questions": [
+        "communicates_over_internet",
+        "processes_personal_data",
+        "transfers_money_or_value",
+        "is_toy",
+        "is_childcare_product",
+        "is_wearable",
+        "is_medical_device",
+        "is_in_vitro_diagnostic",
+        "is_exclusively_vehicle_component",
+        "is_electronic_road_toll_equipment"
+      ]
+    },
+    {
+      "id": "cyber_measures",
+      "title": "Network, privacy and fraud protection: measures (Art. 3(3)(d)-(f))",
+      "questions": [
+        "requires_user_authentication",
+        "default_credentials",
+        "update_mechanism",
+        "verifies_update_authenticity",
+        "encrypts_data_in_transit"
+      ]
+    },
+    {
+      "id": "charger_and_emergency",
+      "title": "Common charger and emergency caller location (Art. 3(3)(g), 3(4))",
+      "questions": [
+        "common_charger_category",
+        "rechargeable_via_wired_charging",
+        "wired_charging_above_15w",
+        "is_smartphone"
+      ]
+    },
+    {
+      "id": "conformity",
+      "title": "Harmonised standards and conformity assessment (Art. 16-17)",
+      "questions": [
+        "harmonised_standards_art_3_2_applied_in_full",
+        "harmonised_standards_art_3_3_applied_in_full"
+      ]
+    }
+  ],
   "scope": {
     "include": {
       "and": [

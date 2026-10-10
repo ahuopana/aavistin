@@ -1056,14 +1056,16 @@ class QuestionGroupLintTests(TestCase):
             "ungrouped_question", self.lint([{"id": "g", "title": "G", "questions": ["a"]}])
         )
 
-    def test_eu_cra_groups_every_question(self):
-        content = load_package("eu-cra", "1.0.0")
-        grouped = [q for g in content["question_groups"] for q in g["questions"]]
-        self.assertEqual(len(grouped), len(set(grouped)))
-        known = {q["id"] for q in content["questions"]} | {
-            r.partition(":")[2] for r in content["uses"]
-        }
-        self.assertEqual(set(grouped), known)
+    def test_eu_cra_and_eu_red_group_every_question(self):
+        for source in ("eu-cra", "eu-red"):
+            with self.subTest(source=source):
+                content = load_package(source, "1.0.0")
+                grouped = [q for g in content["question_groups"] for q in g["questions"]]
+                self.assertEqual(len(grouped), len(set(grouped)))
+                known = {q["id"] for q in content["questions"]} | {
+                    r.partition(":")[2] for r in content["uses"]
+                }
+                self.assertEqual(set(grouped), known)
 
 
 class PackageAdminListTests(TestCase):
