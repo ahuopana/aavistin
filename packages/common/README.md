@@ -8,7 +8,8 @@ Requirement packages reference its questions with `"uses": ["common:<question_id
 
 - `1.0.0`: the first three questions, kept for history.
 - `1.1.0`: the full set used by `eu-cra`.
-- `1.2.0`: 1.1.0 plus the facts `eu-red` needs (radio enablement, internet connection, money transfer, toy, childcare, wearable); role and placement questions link to the Blue Guide. `eu-cra` lints clean against it.
+- `1.1.1`: reworded the "widest inbound exposure" question and added guidance.
+- `1.2.0`: 1.1.1 plus the facts `eu-red` needs (radio enablement, internet connection, money transfer, toy, childcare, wearable); role and placement questions link to the Blue Guide. `eu-cra` lints clean against it.
 
 ## Importing
 

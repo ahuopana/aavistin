@@ -23,7 +23,7 @@ General product-law concepts (making available, placing on the market, economic 
 - **Question groups:** the questionnaire follows the Directive's structure: product and role, radio, exclusions, placement, network/privacy/fraud categories and measures, charger and emergency location, conformity (ADR 0025).
 - **Fixtures:** 46 example products, including the demo seed's expected result for Aavistin (out of scope: no radio equipment).
 
-**Depends on** the shared question library `packages/common` 1.2.0, which must be approved first; the importer refuses this package otherwise. Shared facts come from `packages/common` 1.2.0, which adds `wireless_enablement`, `communicates_over_internet`, `transfers_money_or_value`, `is_toy`, `is_childcare_product` and `is_wearable` to 1.1.0.
+**Depends on** the shared question library `packages/common` 1.2.0, which must be approved first; the importer refuses this package otherwise. Shared facts come from `packages/common` 1.2.0, which adds `wireless_enablement`, `communicates_over_internet`, `transfers_money_or_value`, `is_toy`, `is_childcare_product` and `is_wearable` to 1.1.1.
 
 ## Known limitations
 

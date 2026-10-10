@@ -313,13 +313,14 @@
       "id": "inbound_exposure_max",
       "type": "choice",
       "level": "software",
-      "label": "At most, once the user configures it, from where can the product accept inbound connections?",
+      "label": "If the user changes the settings, what is the widest exposure the product allows for inbound connections?",
       "choices": [
         "none",
         "same_device_only",
         "restricted_by_product",
         "any_network"
-      ]
+      ],
+      "guidance": "Answer for the most exposed service, counting only what the product's own settings allow. A firewall or VPN the operator adds in front is not a product property; see the network isolation question."
     },
     {
       "id": "relies_on_network_isolation",

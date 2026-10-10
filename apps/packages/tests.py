@@ -586,6 +586,13 @@ class SharedQuestionLibraryTests(TestCase):
         approve_package(package)
         self.assertEqual(package.status, PackageStatus.APPROVED)
 
+    def test_common_1_1_1_question_set_passes_lint_and_fixtures(self):
+        package = import_package(
+            load_package("common", "1.1.1"), kind=PackageKind.QUESTION_SET, is_official=True
+        )
+        self.assertEqual(package.lint_report, [])
+        self.assertTrue(all(r["passed"] for r in package.fixture_report))
+
     def test_package_can_use_library_question_without_declaring_it(self):
         self.import_common()
         package = import_package(_mfa_package("spec-a"))

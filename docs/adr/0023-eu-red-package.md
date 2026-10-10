@@ -28,5 +28,5 @@ Before the package backs a real compliance decision, check against the Official 
 
 ## Consequences
 
-- `common` 1.2.0 is a superset of 1.1.0, so the CRA package lints clean against either.
+- `common` 1.2.0 is a superset of 1.1.1, so the CRA package lints clean against either.
 - Art. 4 and Art. 5 are not modelled until the Commission adopts the acts they depend on.
