@@ -405,6 +405,18 @@ class EuCraGuidanceRenderingTests(EuCraConfigurationFixture):
             response, "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
         )
 
+    def test_questions_are_shown_under_group_headings_in_package_order(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        html = response.content.decode()
+        scope = html.index("Product and your role")
+        security = html.index("Security by design: interfaces and exposure")
+        after_release = html.index("After release: vulnerability handling")
+        self.assertLess(scope, security)
+        self.assertLess(security, after_release)
+
 
 class ApprovalTests(ConfigurationFixture):
     def _ready_answers(self):
@@ -689,6 +701,30 @@ class ViewTests(ConfigurationFixture):
         self.assertEqual(answer.value, True)
         self.assertEqual(answer.hardware_revision, self.revision)
 
+    def test_saving_an_answer_jumps_to_next_open_question(self):
+        self.client.force_login(self.editor)
+        url = reverse("assessments:answer_question", args=[self.configuration.pk])
+        detail = reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        response = self.client.post(url, self._answer_payload())
+        self.assertEqual(response["Location"], f"{detail}#q-is_toy_widget")
+
+        # Everything else answered: stay on the question just saved.
+        Answer.objects.create(question_id="is_toy_widget", value=False, product=self.product)
+        Answer.objects.create(
+            question_id="rated_power_watts", value=10, hardware_revision=self.revision
+        )
+        response = self.client.post(url, self._answer_payload())
+        self.assertEqual(response["Location"], f"{detail}#q-has_power_source")
+
+    def test_failed_save_returns_to_top_of_page(self):
+        self.client.force_login(self.editor)
+        detail = reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        response = self.client.post(
+            reverse("assessments:answer_question", args=[self.configuration.pk]),
+            self._answer_payload(owner_id=""),
+        )
+        self.assertEqual(response["Location"], detail)
+
     def test_viewer_cannot_answer_question(self):
         viewer = User.objects.create_user(username="vera", password="x")
         RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
@@ -739,6 +775,46 @@ class ViewTests(ConfigurationFixture):
         )
         help_text = Answer._meta.get_field("override_justification").help_text
         self.assertContains(response, help_text)
+
+    def test_saved_justification_is_shown_and_kept_on_resave(self):
+        Answer.objects.create(question_id="rated_power_watts", value=20, product=self.product)
+        Answer.objects.create(
+            question_id="rated_power_watts",
+            value=150,
+            hardware_revision=self.revision,
+            override_justification="Rev A uses a higher-power supply.",
+        )
+        self.client.force_login(self.editor)
+        url = reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        response = self.client.get(url)
+        self.assertContains(response, "Justification: Rev A uses a higher-power supply.")
+        # The hidden input is prefilled, so saving without touching it keeps the text.
+        self.assertContains(response, 'value="Rev A uses a higher-power supply."')
+
+    def test_page_names_the_package_being_assessed(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, "Assessing against:")
+        self.assertContains(response, self.package.source)
+
+    def test_long_justification_is_truncated_with_read_more(self):
+        long_text = "Higher-power supply fitted. " * 10
+        Answer.objects.create(question_id="rated_power_watts", value=20, product=self.product)
+        Answer.objects.create(
+            question_id="rated_power_watts",
+            value=150,
+            hardware_revision=self.revision,
+            override_justification=long_text,
+        )
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, "Read more")
+        self.assertContains(response, "Higher-power supply fitted. Higher-power")  # truncated copy
+        self.assertContains(response, long_text.strip())  # full copy, revealed on click
 
     def test_question_without_guidance_has_no_guidance_block(self):
         # The demo package's questions carry no guidance; the block must

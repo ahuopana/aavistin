@@ -1,4 +1,5 @@
 import json
+from io import StringIO
 from pathlib import Path
 
 from django.conf import settings
@@ -570,6 +571,19 @@ class SharedQuestionLibraryTests(TestCase):
         self.assertEqual(package.lint_report, [])
         self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
 
+    def test_import_fails_when_question_set_is_missing_unless_forced(self):
+        with self.assertRaisesMessage(PackageImportError, "common"):
+            import_package(_mfa_package("spec-a"))
+        self.assertFalse(RequirementPackage.objects.filter(source="spec-a").exists())
+
+        package = import_package(_mfa_package("spec-a"), force=True)
+        self.assertIn("unknown_library_question", {i["code"] for i in package.lint_report})
+
+    def test_duplicate_version_is_rejected(self):
+        import_package(load_demo("1.0.0"), is_official=True)
+        with self.assertRaisesMessage(PackageImportError, "already been imported"):
+            import_package(load_demo("1.0.0"), is_official=True)
+
     def test_unknown_library_reference_is_an_error(self):
         self.import_common()
         package = import_package(_mfa_package("spec-a", uses=["common:no_such_question"]))
@@ -896,3 +910,146 @@ class ApplicabilityEvaluationTests(TestCase):
         self.assertTrue(reports["passes"]["passed"], reports["passes"]["errors"])
         self.assertFalse(reports["fails"]["passed"])
         self.assertIn("assessment_routes", reports["fails"]["errors"][0])
+
+
+class PackageReadmeTests(TestCase):
+    def test_every_package_directory_has_a_readme(self):
+        missing = [
+            d.name
+            for d in sorted(PACKAGES_DIR.iterdir())
+            if d.is_dir() and not (d / "README.md").is_file()
+        ]
+        self.assertEqual(missing, [], "package directories without README.md (ADR 0024)")
+
+
+class PackageStatusCommandTests(TestCase):
+    def test_lists_packages_with_status(self):
+        import_package(load_demo("1.0.0"), is_official=True)
+        out = StringIO()
+        call_command("package_status", stdout=out)
+        text = out.getvalue()
+        self.assertIn("demo-widget-safety", text)
+        self.assertIn("fixtures_passed", text)
+
+        out = StringIO()
+        call_command("package_status", "nonexistent", stdout=out)
+        self.assertIn("No packages imported", out.getvalue())
+
+
+class PackageAdminImportTests(TestCase):
+    def setUp(self):
+        from django.contrib.auth import get_user_model
+
+        self.admin = get_user_model().objects.create_superuser(
+            username="root", email="root@example.com", password="pw"
+        )
+        self.client.force_login(self.admin)
+
+    def post_import(self, path):
+        with open(path, "rb") as f:
+            return self.client.post(
+                "/admin/packages/requirementpackage/import/",
+                {"file": f, "kind": PackageKind.REQUIREMENT, "is_official": "on"},
+            )
+
+    def test_import_page_creates_draft_package(self):
+        self.assertEqual(
+            self.client.get("/admin/packages/requirementpackage/import/").status_code, 200
+        )
+        response = self.post_import(DEMO_DIR / "1.0.0.json")
+        package = RequirementPackage.objects.get(source="demo-widget-safety")
+        self.assertRedirects(
+            response, f"/admin/packages/requirementpackage/{package.pk}/change/"
+        )
+        self.assertEqual(package.imported_by, self.admin)
+
+    def test_duplicate_import_shows_error_without_traceback(self):
+        self.post_import(DEMO_DIR / "1.0.0.json")
+        response = self.post_import(DEMO_DIR / "1.0.0.json")
+        self.assertContains(response, "already been imported")
+
+    def test_only_unpublished_packages_can_be_deleted(self):
+        package = import_package(load_demo("1.0.0"), is_official=True)
+        url = f"/admin/packages/requirementpackage/{package.pk}/delete/"
+        self.assertEqual(self.client.get(url).status_code, 200)
+        approve_package(package)
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+
+    def test_package_fields_are_read_only_in_admin(self):
+        package = import_package(load_demo("1.0.0"), is_official=True)
+        url = f"/admin/packages/requirementpackage/{package.pk}/change/"
+        self.client.post(url, {"status": PackageStatus.APPROVED, "title": "x"})
+        package.refresh_from_db()
+        self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+        self.assertEqual(self.client.get("/admin/packages/requirementpackage/add/").status_code, 403)
+
+
+class AdminLinkTests(TestCase):
+    def test_staff_see_admin_link_in_nav(self):
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+        staff = User.objects.create_user(username="s", password="pw", is_staff=True)
+        plain = User.objects.create_user(username="p", password="pw")
+        self.client.force_login(staff)
+        self.assertContains(self.client.get("/"), 'href="/admin/"')
+        self.client.force_login(plain)
+        self.assertNotContains(self.client.get("/"), 'href="/admin/"')
+
+
+class QuestionGroupLintTests(TestCase):
+    def lint(self, groups):
+        content = {
+            **_mfa_package("spec-g", uses=[]),
+            "questions": [
+                {"id": "a", "type": "boolean", "level": "product"},
+                {"id": "b", "type": "boolean", "level": "product"},
+            ],
+            "question_groups": groups,
+        }
+        return {i["code"] for i in lint_package(
+                content, is_official=False, existing_packages=RequirementPackage.objects.none()
+            )}
+
+    def test_group_errors_and_warnings(self):
+        self.assertNotIn("unknown_group_question", self.lint([{"id": "g", "title": "G", "questions": ["a", "b"]}]))
+        self.assertIn("unknown_group_question", self.lint([{"id": "g", "title": "G", "questions": ["zz"]}]))
+        self.assertIn(
+            "question_in_two_groups",
+            self.lint(
+                [
+                    {"id": "g", "title": "G", "questions": ["a"]},
+                    {"id": "h", "title": "H", "questions": ["a"]},
+                ]
+            ),
+        )
+        self.assertIn("ungrouped_question", self.lint([{"id": "g", "title": "G", "questions": ["a"]}]))
+
+    def test_eu_cra_groups_every_question(self):
+        content = load_package("eu-cra", "1.0.0")
+        grouped = [q for g in content["question_groups"] for q in g["questions"]]
+        self.assertEqual(len(grouped), len(set(grouped)))
+        known = {q["id"] for q in content["questions"]} | {
+            r.partition(":")[2] for r in content["uses"]
+        }
+        self.assertEqual(set(grouped), known)
+
+
+class PackageAdminListTests(TestCase):
+    def test_versions_of_a_package_are_listed_together_newest_first(self):
+        from django.contrib.auth import get_user_model
+
+        admin_user = get_user_model().objects.create_superuser(
+            username="root2", email="r@example.com", password="pw"
+        )
+        self.client.force_login(admin_user)
+        import_package(load_demo("1.0.0"), is_official=True)
+        import_package(load_demo("1.1.0"), is_official=True)
+        response = self.client.get("/admin/packages/requirementpackage/?source=demo-widget-safety")
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertLess(html.index("1.1.0"), html.index("1.0.0"))
+        self.assertEqual(
+            self.client.get("/admin/packages/requirementpackage/?q=widget").status_code, 200
+        )

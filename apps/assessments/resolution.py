@@ -81,9 +81,32 @@ def package_questions(packages) -> dict[str, dict]:
         for question in package.content.get("questions", []):
             questions.setdefault(question["id"], question)
             used_by.setdefault(question["id"], []).append(package.source)
+    groups = _question_groups(packages)
     return {
-        qid: {**q, "used_by": sorted(set(used_by.get(qid, [])))} for qid, q in questions.items()
+        qid: {
+            **q,
+            "used_by": sorted(set(used_by.get(qid, []))),
+            "group": groups.get(qid),
+        }
+        for qid, q in questions.items()
     }
+
+
+def _question_groups(packages) -> dict[str, dict]:
+    """Question id -> ``{"id", "title", "order"}`` from the packages' ordered
+    ``question_groups`` (ADR 0025). ``order`` ranks a question across all
+    groups; the first package that groups a question wins."""
+    placed: dict[str, dict] = {}
+    for package in packages:
+        for group in package.content.get("question_groups", []):
+            for qid in group["questions"]:
+                if qid not in placed:
+                    placed[qid] = {
+                        "id": group["id"],
+                        "title": group["title"],
+                        "order": len(placed),
+                    }
+    return placed
 
 
 def resolve_answer(configuration, question_id: str) -> Answer | None:

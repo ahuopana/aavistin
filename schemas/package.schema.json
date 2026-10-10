@@ -66,6 +66,23 @@
       "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*:[a-z][a-z0-9_]*$" },
       "description": "Shared library questions this package relies on, as 'question-set-source:question_id'."
     },
+    "question_groups": {
+      "type": "array",
+      "description": "Optional ordered topics for the questionnaire. Each lists question ids (declared here or taken from 'uses') in display order; ungrouped questions are shown last (ADR 0025).",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "questions"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "title": { "type": "string", "minLength": 1 },
+          "questions": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+          }
+        }
+      }
+    },
     "questions": {
       "type": "array",
       "items": { "$ref": "#/$defs/question" }
