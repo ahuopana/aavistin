@@ -328,7 +328,6 @@ class AdrNumberingTests(SimpleTestCase):
     ADR_DIR = Path(settings.BASE_DIR) / "docs" / "adr"
     NAME = re.compile(r"^(\d{4})-[a-z0-9]+(?:-[a-z0-9]+)*\.md$")
     KNOWN_DUPLICATES = {
-        "0012": {"0012-eu-cra-package.md", "0012-product-lifecycle-and-portfolio-navigation.md"},
         "0015": {"0015-shared-question-library.md", "0015-ui-component-conventions.md"},
     }
 
