@@ -1175,3 +1175,26 @@ input[type="date"] {
 .readiness-todo .readiness-state {
   color: var(--color-warning);
 }
+
+.risk-method {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.risk-method h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 0;
+}
+
+.risk-method h4 {
+  margin: var(--space-3) 0 var(--space-1);
+}
+
+.risk-edit-table select {
+  min-width: 10rem;
+}

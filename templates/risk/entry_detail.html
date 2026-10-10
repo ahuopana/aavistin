@@ -36,60 +36,196 @@
   {% endif %}
 
   {% if entry.entry_type == "asset" %}
-    <h2>Asset rating</h2>
-    {% if asset_ratings %}
-      <table>
-        <thead><tr><th>Method</th><th>Property</th><th>Severity</th></tr></thead>
+    <h2 id="rating">Asset rating</h2>
+    <p class="field-hint">How bad it would be if each property of this asset were compromised. A threat's consequences start from the rating of the property it violates.</p>
+    {% if asset_rows %}
+      <table class="risk-edit-table">
+        <thead>
+          <tr><th>Method</th>{% for prop in asset_rows.0.properties %}<th>{{ prop.label }}</th>{% endfor %}{% if can_edit %}<th></th>{% endif %}</tr>
+        </thead>
         <tbody>
-          {% for r in asset_ratings %}<tr><td>{{ r.method.source }}</td><td>{{ r.get_property_display }}</td><td>{{ r.severity }}</td></tr>{% endfor %}
-        </tbody>
-      </table>
-    {% else %}<p class="field-hint">Not rated.</p>{% endif %}
-    <h2>Threats targeting this asset</h2>
-    <ul>
-      {% for t in threats %}<li><a href="{% url 'risk:entry_detail' configuration.pk t.pk %}">{{ t.label }}</a> ({{ t.violates }})</li>{% empty %}<li class="field-hint">None.</li>{% endfor %}
-    </ul>
-  {% else %}
-    <h2>Ratings and treatment</h2>
-    {% if method_rows %}
-      <table>
-        <thead><tr><th>Method</th><th>Severity</th><th>Likelihood</th><th>Level</th><th>Treatment</th><th>Residual</th></tr></thead>
-        <tbody>
-          {% for row in method_rows %}
+          {% for row in asset_rows %}
             <tr>
-              <td>{{ row.method }}</td>
-              <td>{{ row.severity|default:"—" }}</td>
-              <td>{{ row.likelihood|default:"—" }}</td>
-              <td>{% if row.level %}<span class="risk-level risk-level-{{ row.level }}">{{ row.level }}</span> <span class="field-hint">{{ row.acceptance }}</span>{% else %}—{% endif %}</td>
-              <td>
-                {% if row.treatment %}{{ row.treatment.get_treatment_type_display }}
-                  {% if row.treatment.justification %}<div class="field-hint">{{ row.treatment.justification }}</div>{% endif %}
-                {% else %}<span class="field-hint">none yet</span>{% endif %}
-              </td>
-              <td>
-                {% if row.residual and row.residual.level %}<span class="risk-level risk-level-{{ row.residual.level }}">{{ row.residual.level }}</span> <span class="field-hint">{{ row.residual.acceptance }}</span>{% else %}—{% endif %}
-              </td>
+              <td>{{ row.method.source }}</td>
+              {% if can_edit %}
+                {% for prop in row.properties %}
+                  <td>
+                    <select name="{{ prop.value }}" form="asset-rating-{{ row.method.pk }}" aria-label="{{ prop.label }} severity under {{ row.method.source }}">
+                      <option value="">— not rated —</option>
+                      {% for s in row.scale %}<option value="{{ s.value }}" {% if s.value == prop.severity %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+                    </select>
+                  </td>
+                {% endfor %}
+                <td>
+                  <form method="post" id="asset-rating-{{ row.method.pk }}" action="{% url 'risk:asset_rating_save' configuration.pk entry.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="method" value="{{ row.method.pk }}">
+                    <button type="submit" class="button-primary">Save</button>
+                  </form>
+                </td>
+              {% else %}
+                {% for prop in row.properties %}<td>{{ prop.severity|default:"—" }}</td>{% endfor %}
+              {% endif %}
             </tr>
           {% endfor %}
         </tbody>
       </table>
-    {% else %}<p class="field-hint">Not rated under any method.</p>{% endif %}
+    {% else %}<p class="field-hint">No approved risk method rates confidentiality, integrity or availability.</p>{% endif %}
+    <h2>Threats targeting this asset</h2>
+    <ul>
+      {% for t in threats %}<li><a href="{% url 'risk:entry_detail' configuration.pk t.pk %}">{{ t.label }}</a> ({{ t.violates }})</li>{% empty %}<li class="field-hint">None.</li>{% endfor %}
+    </ul>
   {% endif %}
 
   {% if entry.entry_type == "threat" %}
-    <h2>Consequences</h2>
+    <h2 id="consequences">Consequences</h2>
+    <p class="field-hint">What happens if the threat succeeds. The threat's severity is its worst consequence.{% if inherited_severity %} A new consequence starts at {{ inherited_severity }}, the asset's {{ entry.violates }} rating; a different value is an override and needs a justification.{% endif %}</p>
     <table>
-      <thead><tr><th>Impact category</th><th>Severity</th><th>Linked hazard</th></tr></thead>
+      <thead><tr><th>Impact category</th><th>Severity</th><th>Linked hazard</th>{% if can_edit %}<th></th>{% endif %}</tr></thead>
       <tbody>
         {% for c in consequences %}
           <tr>
             <td>{{ c.get_impact_category_display }}</td>
             <td>{{ c.severity }}{% if c.severity_is_override %} <span class="badge">override</span><div class="field-hint">{{ c.override_justification }}</div>{% endif %}</td>
             <td>{% if c.hazard %}<a href="{% url 'risk:entry_detail' configuration.pk c.hazard.pk %}">{{ c.hazard.label }}</a>{% else %}—{% endif %}</td>
+            {% if can_edit %}
+              <td>
+                <form method="post" action="{% url 'risk:consequence_delete' configuration.pk entry.pk c.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="button-danger">Remove</button>
+                </form>
+              </td>
+            {% endif %}
           </tr>
-        {% empty %}<tr><td colspan="3" class="field-hint">None recorded.</td></tr>{% endfor %}
+        {% empty %}<tr><td colspan="4" class="field-hint">None recorded.</td></tr>{% endfor %}
       </tbody>
     </table>
+    {% if can_edit %}
+      <details {% if not consequences %}open{% endif %}>
+        <summary>+ Add consequence</summary>
+        <form method="post" action="{% url 'risk:consequence_add' configuration.pk entry.pk %}" class="form-vertical"
+              x-data="{ category: '', severity: '{{ inherited_severity|default_if_none:'' }}', inherited: '{{ inherited_severity|default_if_none:'' }}' }">
+          {% csrf_token %}
+          <div class="field">
+            <label for="id_impact_category">Impact category</label>
+            <select id="id_impact_category" name="impact_category" x-model="category" required>
+              <option value="">— category —</option>
+              {% for value, label in impact_categories %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="id_consequence_severity">Severity</label>
+            <select id="id_consequence_severity" name="severity" x-model="severity" required>
+              <option value="">— severity —</option>
+              {% for s in consequence_scale %}<option value="{{ s.value }}" {% if s.value == inherited_severity %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field" x-show="inherited && severity !== inherited">
+            <label for="id_override_justification">Why does this differ from the asset's rating?</label>
+            <input type="text" id="id_override_justification" name="override_justification">
+          </div>
+          {% if hazards %}
+            <div class="field" x-show="['{{ hazard_categories|join:"','" }}'].includes(category)">
+              <label for="id_consequence_hazard">Causes hazard (safety and property damage only)</label>
+              <select id="id_consequence_hazard" name="hazard">
+                <option value="">— none —</option>
+                {% for h in hazards %}<option value="{{ h.pk }}">{{ h.label }}</option>{% endfor %}
+              </select>
+            </div>
+          {% endif %}
+          <button type="submit" class="button-primary">Add consequence</button>
+        </form>
+      </details>
+    {% endif %}
+  {% endif %}
+
+  {% if entry.entry_type != "asset" %}
+    <h2 id="rating">Rating and treatment</h2>
+    {% if entry.entry_type == "threat" %}
+      <p class="field-hint">Rate the likelihood under each method that covers {{ entry.violates|default:"the violated property" }}; severity comes from the consequences above.</p>
+    {% else %}
+      <p class="field-hint">Rate severity and likelihood under each safety method.</p>
+    {% endif %}
+    {% for row in method_rows %}
+      <section class="risk-method" aria-labelledby="method-{{ row.method.pk }}">
+        <h3 id="method-{{ row.method.pk }}">{{ row.method.source }}
+          {% if row.level %}<span class="risk-level risk-level-{{ row.level }}">{{ row.level }}</span> <span class="field-hint">S{{ row.severity }} × L{{ row.likelihood }} · {{ row.acceptance }}</span>
+          {% elif row.rating %}<span class="field-hint">incomplete — {% if entry.entry_type == "threat" %}add a consequence{% else %}set a severity{% endif %}</span>
+          {% else %}<span class="field-hint">not rated</span>{% endif %}
+        </h3>
+        {% if not row.applicable %}<p class="field-hint">This method no longer applies to the entry; clear the likelihood to remove its rating.</p>{% endif %}
+
+        {% if can_edit %}
+          <form method="post" action="{% url 'risk:rating_save' configuration.pk entry.pk %}" class="inline-form">
+            {% csrf_token %}
+            <input type="hidden" name="method" value="{{ row.method.pk }}">
+            {% if entry.entry_type == "hazard" %}
+              <label>Severity
+                <select name="severity">
+                  <option value="">—</option>
+                  {% for s in row.severity_scale %}<option value="{{ s.value }}" {% if s.value == row.rating.severity %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+                </select>
+              </label>
+            {% endif %}
+            <label>Likelihood
+              <select name="likelihood">
+                <option value="">— not rated —</option>
+                {% for s in row.likelihood_scale %}<option value="{{ s.value }}" {% if s.value == row.rating.likelihood %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+              </select>
+            </label>
+            <button type="submit">Save rating</button>
+          </form>
+        {% endif %}
+
+        {% if row.rating %}
+          <h4>Treatment</h4>
+          {% if row.treatment %}
+            <p>
+              {{ row.treatment.get_treatment_type_display }} ·
+              residual {% if row.residual.level %}<span class="risk-level risk-level-{{ row.residual.level }}">{{ row.residual.level }}</span> <span class="field-hint">S{{ row.treatment.residual_severity }} × L{{ row.treatment.residual_likelihood }} · {{ row.residual.acceptance }}</span>{% else %}<span class="field-hint">not assessed</span>{% endif %}
+            </p>
+            {% if row.treatment.justification %}<p class="field-hint">{{ row.treatment.justification }}</p>{% endif %}
+          {% elif not can_edit %}<p class="field-hint">None yet.</p>{% endif %}
+          {% if can_edit %}
+            <details {% if not row.treatment and row.acceptance and row.acceptance != "accept" %}open{% endif %}>
+              <summary>{% if row.treatment %}Change treatment{% else %}+ Add treatment{% endif %}</summary>
+              <form method="post" action="{% url 'risk:treatment_save' configuration.pk entry.pk %}" class="form-vertical">
+                {% csrf_token %}
+                <input type="hidden" name="method" value="{{ row.method.pk }}">
+                <div class="field">
+                  <label for="id_treatment_type_{{ row.method.pk }}">Treatment</label>
+                  <select id="id_treatment_type_{{ row.method.pk }}" name="treatment_type" required>
+                    {% for value, label in treatment_types %}<option value="{{ value }}" {% if row.treatment.treatment_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div class="inline-form">
+                  <label>Residual severity
+                    <select name="residual_severity">
+                      <option value="">—</option>
+                      {% for s in row.severity_scale %}<option value="{{ s.value }}" {% if s.value == row.treatment.residual_severity %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+                    </select>
+                  </label>
+                  <label>Residual likelihood
+                    <select name="residual_likelihood">
+                      <option value="">—</option>
+                      {% for s in row.likelihood_scale %}<option value="{{ s.value }}" {% if s.value == row.treatment.residual_likelihood %}selected{% endif %}>{{ s.label }}</option>{% endfor %}
+                    </select>
+                  </label>
+                </div>
+                <div class="field">
+                  <label for="id_justification_{{ row.method.pk }}">Justification</label>
+                  <textarea id="id_justification_{{ row.method.pk }}" name="justification" rows="2">{{ row.treatment.justification }}</textarea>
+                  <p class="field-hint">Required unless you mitigate down to an acceptable residual risk.</p>
+                </div>
+                <button type="submit" class="button-primary">Save treatment</button>
+              </form>
+            </details>
+          {% endif %}
+        {% endif %}
+      </section>
+    {% empty %}
+      <p class="field-hint">{% if methods %}No approved risk method applies to this entry{% if entry.entry_type == "threat" %} — it violates “{{ entry.violates }}”, which no method rates{% endif %}.{% else %}No risk method is approved yet. Ask an administrator to import and approve one.{% endif %}</p>
+    {% endfor %}
   {% endif %}
 
   {% if entry.entry_type == "hazard" %}
@@ -103,10 +239,69 @@
   {% endif %}
 
   {% if entry.entry_type != "asset" %}
-    <h2>Controls</h2>
-    <ul>
-      {% for c in controls %}<li>{{ c.name }} <span class="badge">{{ c.get_status_display }}</span></li>{% empty %}<li class="field-hint">None linked.</li>{% endfor %}
-    </ul>
+    <h2 id="controls">Controls</h2>
+    {% if controls %}
+      <table>
+        <thead><tr><th>Control</th><th>Status</th>{% if can_edit and entry.entry_type == "threat" %}<th></th>{% endif %}</tr></thead>
+        <tbody>
+          {% for c in controls %}
+            <tr>
+              <td>{{ c.name }}{% if c.description %}<div class="field-hint">{{ c.description }}</div>{% endif %}</td>
+              <td>
+                {% if can_edit and entry.entry_type == "threat" %}
+                  <form method="post" action="{% url 'risk:control_status' configuration.pk entry.pk c.pk %}" class="inline-form">
+                    {% csrf_token %}
+                    <select name="status" aria-label="Status of {{ c.name }}" onchange="this.form.submit()">
+                      {% for value, label in control_statuses %}<option value="{{ value }}" {% if c.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                    </select>
+                    <noscript><button type="submit">Set</button></noscript>
+                  </form>
+                {% else %}<span class="badge">{{ c.get_status_display }}</span>{% endif %}
+              </td>
+              {% if can_edit and entry.entry_type == "threat" %}
+                <td>
+                  <form method="post" action="{% url 'risk:control_unlink' configuration.pk entry.pk c.pk %}">
+                    {% csrf_token %}
+                    <button type="submit">Unlink</button>
+                  </form>
+                </td>
+              {% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}<p class="field-hint">None linked.</p>{% endif %}
+    {% if can_edit and entry.entry_type == "threat" %}
+      <details>
+        <summary>+ Link a control</summary>
+        {% if available_controls %}
+          <form method="post" action="{% url 'risk:control_link' configuration.pk entry.pk %}" class="inline-form">
+            {% csrf_token %}
+            <label>Existing control
+              <select name="control" required>
+                {% for c in available_controls %}<option value="{{ c.pk }}">{{ c.name }} ({{ c.get_status_display }})</option>{% endfor %}
+              </select>
+            </label>
+            <button type="submit">Link</button>
+          </form>
+        {% endif %}
+        <form method="post" action="{% url 'risk:control_link' configuration.pk entry.pk %}" class="form-vertical">
+          {% csrf_token %}
+          <h4>New control</h4>
+          <div class="field"><label for="id_control_name">Name</label><input type="text" id="id_control_name" name="name" maxlength="200" required placeholder="e.g. Secure boot"></div>
+          <div class="field"><label for="id_control_description">Description</label><textarea id="id_control_description" name="description" rows="2"></textarea></div>
+          <div class="field">
+            <label for="id_control_status">Status</label>
+            <select id="id_control_status" name="status">
+              {% for value, label in control_statuses %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="button-primary">Create and link</button>
+        </form>
+      </details>
+    {% elif entry.entry_type == "hazard" and can_edit %}
+      <p class="field-hint">A hazard's controls are linked to its causes; editing them in the app comes later.</p>
+    {% endif %}
   {% endif %}
 
   {% if deltas %}

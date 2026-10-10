@@ -979,3 +979,223 @@ class EntryAuthoringTests(RiskFixture):
         hazard_threat.refresh_from_db()
         self.assertEqual(hazard_threat.label, "Unsafe state renamed")
         self.assertEqual(hazard_threat.violates, "safety")
+
+
+class RatingAndTreatmentAuthoringTests(RiskFixture):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        self.asset = self.make_asset()
+        self.threat = self.make_threat(self.asset, violates="integrity")
+        self.hazard = self.make_hazard()
+
+    def url(self, entry, action=""):
+        base = f"/risk/configurations/{self.configuration.pk}/entries/{entry.pk}/"
+        return f"{base}{action}/" if action else base
+
+    def test_asset_rating_saves_and_clears_per_property(self):
+        self.client.post(
+            self.url(self.asset, "asset-rating"),
+            {"method": self.cia_method.pk, "confidentiality": "2", "integrity": "4"},
+        )
+        ratings = {r.property: r.severity for r in self.asset.asset_ratings.all()}
+        self.assertEqual(ratings, {"confidentiality": 2, "integrity": 4})
+        self.client.post(
+            self.url(self.asset, "asset-rating"),
+            {"method": self.cia_method.pk, "confidentiality": "", "integrity": "5"},
+        )
+        ratings = {r.property: r.severity for r in self.asset.asset_ratings.all()}
+        self.assertEqual(ratings, {"integrity": 5})
+
+    def test_asset_rating_out_of_scale_is_rejected(self):
+        response = self.client.post(
+            self.url(self.asset, "asset-rating"),
+            {"method": self.cia_method.pk, "integrity": "9"},
+            follow=True,
+        )
+        self.assertContains(response, "Choose a severity between 1 and 5.")
+        self.assertFalse(self.asset.asset_ratings.exists())
+
+    def test_consequence_inherits_asset_rating_or_needs_justification(self):
+        AssetRating.objects.create(
+            entry=self.asset, method=self.cia_method, property="integrity", severity=4
+        )
+        self.assertContains(self.client.get(self.url(self.threat)), "starts at 4")
+        self.client.post(
+            self.url(self.threat, "consequences"),
+            {"impact_category": "operational", "severity": "4"},
+        )
+        inherited = self.threat.consequences.get()
+        self.assertFalse(inherited.severity_is_override)
+
+        response = self.client.post(
+            self.url(self.threat, "consequences"),
+            {"impact_category": "financial", "severity": "2"},
+            follow=True,
+        )
+        self.assertContains(response, "needs a justification")
+        self.client.post(
+            self.url(self.threat, "consequences"),
+            {
+                "impact_category": "financial",
+                "severity": "2",
+                "override_justification": "Recall is cheap for this product",
+            },
+        )
+        override = self.threat.consequences.get(impact_category="financial")
+        self.assertTrue(override.severity_is_override)
+
+    def test_consequence_links_hazard_only_for_safety_categories(self):
+        response = self.client.post(
+            self.url(self.threat, "consequences"),
+            {"impact_category": "privacy", "severity": "3", "hazard": self.hazard.pk},
+            follow=True,
+        )
+        self.assertContains(response, "Only safety or property-damage consequences")
+        self.client.post(
+            self.url(self.threat, "consequences"),
+            {"impact_category": "safety", "severity": "3", "hazard": self.hazard.pk},
+        )
+        self.assertEqual(self.threat.consequences.get().hazard, self.hazard)
+
+    def test_consequence_delete(self):
+        c = ThreatConsequence.objects.create(
+            threat=self.threat, impact_category=ImpactCategory.OPERATIONAL, severity=3
+        )
+        self.client.post(self.url(self.threat, f"consequences/{c.pk}/delete"))
+        self.assertFalse(self.threat.consequences.exists())
+
+    def test_threat_rating_uses_applicable_method_only(self):
+        self.client.post(
+            self.url(self.threat, "rating"), {"method": self.cia_method.pk, "likelihood": "3"}
+        )
+        self.assertEqual(Rating.objects.get(entry=self.threat).likelihood, 3)
+        response = self.client.post(
+            self.url(self.threat, "rating"),
+            {"method": self.safety_method.pk, "likelihood": "3"},
+            follow=True,
+        )
+        self.assertContains(response, "doesn&#x27;t apply to this entry")
+        self.assertEqual(Rating.objects.filter(entry=self.threat).count(), 1)
+
+    def test_hazard_rated_under_safety_method_with_severity(self):
+        detail = self.client.get(self.url(self.hazard))
+        rows = [r["method"] for r in detail.context["method_rows"]]
+        self.assertEqual(rows, [self.safety_method])
+        self.client.post(
+            self.url(self.hazard, "rating"),
+            {"method": self.safety_method.pk, "severity": "4", "likelihood": "4"},
+        )
+        result = evaluate_entry_rating(self.hazard, self.safety_method)
+        self.assertEqual(result["acceptance"], "must_treat")
+        response = self.client.post(
+            self.url(self.hazard, "rating"),
+            {"method": self.safety_method.pk, "severity": "", "likelihood": "2"},
+            follow=True,
+        )
+        self.assertContains(response, "Hazards must have a directly-rated severity.")
+
+    def test_clearing_likelihood_removes_rating_and_treatment(self):
+        Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=3)
+        Treatment.objects.create(
+            entry=self.threat, method=self.cia_method, treatment_type=TreatmentType.MITIGATE
+        )
+        self.client.post(
+            self.url(self.threat, "rating"), {"method": self.cia_method.pk, "likelihood": ""}
+        )
+        self.assertFalse(Rating.objects.filter(entry=self.threat).exists())
+        self.assertFalse(Treatment.objects.filter(entry=self.threat).exists())
+
+    def test_treatment_needs_a_rating_first(self):
+        response = self.client.post(
+            self.url(self.threat, "treatment"),
+            {"method": self.cia_method.pk, "treatment_type": "mitigate"},
+            follow=True,
+        )
+        self.assertContains(response, "Rate the entry under default-cia-5x5 first.")
+        self.assertFalse(Treatment.objects.exists())
+
+    def test_treatment_mitigated_to_acceptable_needs_no_justification(self):
+        Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=4)
+        self.client.post(
+            self.url(self.threat, "treatment"),
+            {
+                "method": self.cia_method.pk,
+                "treatment_type": "mitigate",
+                "residual_severity": "2",
+                "residual_likelihood": "2",
+            },
+        )
+        treatment = Treatment.objects.get(entry=self.threat)
+        self.assertEqual(evaluate_residual_rating(treatment)["acceptance"], "accept")
+        self.assertEqual(treatment.history.first().history_user, self.editor)
+
+    def test_accept_or_justify_level_residual_needs_justification(self):
+        Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=4)
+        for treatment_type, sev, lik in (("accept", "", ""), ("mitigate", "3", "3")):
+            response = self.client.post(
+                self.url(self.threat, "treatment"),
+                {
+                    "method": self.cia_method.pk,
+                    "treatment_type": treatment_type,
+                    "residual_severity": sev,
+                    "residual_likelihood": lik,
+                },
+                follow=True,
+            )
+            self.assertContains(response, "Explain this treatment decision")
+        self.assertFalse(Treatment.objects.exists())
+
+    def test_residual_needs_both_values(self):
+        Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=4)
+        response = self.client.post(
+            self.url(self.threat, "treatment"),
+            {
+                "method": self.cia_method.pk,
+                "treatment_type": "mitigate",
+                "residual_severity": "2",
+                "residual_likelihood": "",
+            },
+            follow=True,
+        )
+        self.assertContains(response, "Give both residual severity and likelihood")
+
+    def test_create_link_status_and_unlink_control(self):
+        self.client.post(
+            self.url(self.threat, "controls"), {"name": "Secure boot", "status": "planned"}
+        )
+        control = Control.objects.get(name="Secure boot")
+        self.assertEqual(list(control.threats.all()), [self.threat])
+        self.client.post(
+            self.url(self.threat, f"controls/{control.pk}/status"), {"status": "implemented"}
+        )
+        control.refresh_from_db()
+        self.assertEqual(control.status, "implemented")
+        other = self.make_threat(self.asset, label="Rollback", violates="integrity")
+        self.client.post(self.url(other, "controls"), {"control": control.pk})
+        self.assertEqual(control.threats.count(), 2)
+        self.client.post(self.url(self.threat, f"controls/{control.pk}/unlink"))
+        self.assertEqual(list(control.threats.all()), [other])
+
+    def test_control_of_another_product_cannot_be_linked(self):
+        other = Product.objects.create(product_family=self.family, name="Other", slug="other")
+        foreign = Control.objects.create(product=other, name="Foreign")
+        response = self.client.post(self.url(self.threat, "controls"), {"control": foreign.pk})
+        self.assertEqual(response.status_code, 404)
+
+    def test_viewer_cannot_change_anything(self):
+        viewer = User.objects.create_user(username="vic", password="x")
+        RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
+        self.client.force_login(viewer)
+        self.client.post(
+            self.url(self.threat, "rating"), {"method": self.cia_method.pk, "likelihood": "3"}
+        )
+        self.client.post(self.url(self.threat, "controls"), {"name": "Sneaky"})
+        self.assertFalse(Rating.objects.exists())
+        self.assertFalse(Control.objects.exists())
+        page = self.client.get(self.url(self.threat))
+        self.assertNotContains(page, "Save rating")
+
+    def test_get_is_not_allowed_on_actions(self):
+        response = self.client.get(self.url(self.threat, "rating"))
+        self.assertEqual(response.status_code, 405)

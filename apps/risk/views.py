@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.html import format_html, format_html_join
 from django.utils.http import urlencode
+from django.views.decorators.http import require_POST
 
 from apps.core.readiness import register_readiness
 from apps.orgs.models import Role
@@ -22,7 +23,20 @@ from apps.packages.models import PackageKind, PackageStatus, RequirementPackage
 from apps.products.models import Configuration, HardwareVariant, SoftwareOption, SoftwareRelease
 
 from .consistency import check_threat_hazard_consistency
-from .models import CIAProperty, EntryType, RiskEntry, SuggestionStatus
+from .models import (
+    AssetRating,
+    CIAProperty,
+    Control,
+    ControlStatus,
+    EntryType,
+    ImpactCategory,
+    Rating,
+    RiskEntry,
+    SuggestionStatus,
+    ThreatConsequence,
+    Treatment,
+    TreatmentType,
+)
 from .rating import evaluate_entry_rating, evaluate_residual_rating
 from .resolution import register_for_configuration
 from .suggestions import pending_suggestions
@@ -42,12 +56,14 @@ def _scope_label(entry: RiskEntry) -> str:
     return f"Delta · {scope}" if entry.base_entry_id else f"Added · {scope}"
 
 
+def _approved_methods():
+    return RequirementPackage.objects.filter(
+        kind=PackageKind.METHOD, status=PackageStatus.APPROVED
+    ).order_by("source")
+
+
 def _methods() -> list[RequirementPackage]:
-    return list(
-        RequirementPackage.objects.filter(
-            kind=PackageKind.METHOD, status=PackageStatus.APPROVED
-        ).order_by("source")
-    )
+    return list(_approved_methods())
 
 
 def _rating_cells(entry: RiskEntry, methods) -> list[dict]:
@@ -156,18 +172,58 @@ def entry_detail(request, pk, entry_pk):
         product=configuration.hardware_revision.hardware_variant.product,
     )
     methods = _methods()
+    ratings = {r.method_id: r for r in entry.ratings.all()}
     treatments = {t.method_id: t for t in entry.treatments.select_related("method")}
+    applicable = applicable_methods(entry, methods)
+    # Every applicable method gets a row (rated or not, so it can be rated),
+    # plus any other approved method the entry already carries a rating under.
+    row_methods = [m for m in methods if m in applicable or m.pk in ratings]
     method_rows = []
-    for cell in _rating_cells(entry, methods):
-        method = next(m for m in methods if m.source == cell["method"])
+    for method in row_methods:
+        rating = ratings.get(method.pk)
         treatment = treatments.get(method.pk)
+        result = (
+            evaluate_entry_rating(entry, method)
+            if rating
+            else {"severity": None, "likelihood": None, "level": None, "acceptance": None}
+        )
         method_rows.append(
             {
-                **cell,
+                **result,
+                "method": method,
+                "rating": rating,
+                "applicable": method in applicable,
+                "severity_scale": _scale(method, "severity"),
+                "likelihood_scale": _scale(method, "likelihood"),
                 "treatment": treatment,
                 "residual": evaluate_residual_rating(treatment) if treatment else None,
             }
         )
+
+    asset_rows = []
+    if entry.entry_type == EntryType.ASSET:
+        current = {(r.method_id, r.property): r.severity for r in entry.asset_ratings.all()}
+        for row in _asset_methods(methods):
+            method = row["method"]
+            asset_rows.append(
+                {
+                    "method": method,
+                    "scale": _scale(method, "severity"),
+                    "properties": [
+                        {
+                            "value": prop,
+                            "label": prop.replace("_", " ").capitalize(),
+                            "severity": current.get((method.pk, prop)),
+                        }
+                        for prop in row["properties"]
+                    ],
+                }
+            )
+
+    consequence_scale = (
+        _scale((applicable or methods)[0], "severity") if (applicable or methods) else []
+    )
+    linked_controls = entry.controls.order_by("name")
     return render(
         request,
         "risk/entry_detail.html",
@@ -175,12 +231,28 @@ def entry_detail(request, pk, entry_pk):
             "configuration": configuration,
             "entry": entry,
             "scope": _scope_label(entry),
+            "methods": methods,
             "method_rows": method_rows,
+            "asset_rows": asset_rows,
             "asset_ratings": entry.asset_ratings.select_related("method"),
             "consequences": entry.consequences.select_related("hazard"),
+            "consequence_scale": consequence_scale,
+            "inherited_severity": inherited_severity(entry)
+            if entry.entry_type == EntryType.THREAT
+            else None,
+            "impact_categories": ImpactCategory.choices,
+            "hazard_categories": [ImpactCategory.SAFETY, ImpactCategory.PROPERTY_DAMAGE],
+            "hazards": RiskEntry.objects.filter(product=entry.product, entry_type=EntryType.HAZARD)
+            .exclude(suggestion_status=SuggestionStatus.DISMISSED)
+            .order_by("label"),
+            "treatment_types": TreatmentType.choices,
             "causes": entry.causes.select_related("threat"),
             "threats": entry.threats.exclude(suggestion_status=SuggestionStatus.DISMISSED),
-            "controls": entry.controls.all(),
+            "controls": linked_controls,
+            "available_controls": Control.objects.filter(product=entry.product)
+            .exclude(pk__in=linked_controls.values("pk"))
+            .order_by("name"),
+            "control_statuses": ControlStatus.choices,
             "deltas": entry.deltas.all(),
             "issues": (
                 check_threat_hazard_consistency(entry)
@@ -429,3 +501,323 @@ def entry_edit(request, pk, entry_pk):
         django_messages.error(request, "You need the editor role to edit register entries.")
         return redirect("risk:entry_detail", pk=pk, entry_pk=entry_pk)
     return _entry_form(request, configuration, entry, is_new=False)
+
+
+# --- Rating, consequences, treatment and controls --------------------------------
+#
+# Small POST-only forms on the entry page, in the flash-and-redirect shape of
+# ADR 0010. See docs/adr/0028-risk-rating-and-treatment.md.
+
+
+def _editable_entry(request, pk, entry_pk):
+    """(configuration, entry) when the user may edit, else (None, redirect)."""
+    configuration = get_object_or_404(Configuration, pk=pk)
+    product = configuration.hardware_revision.hardware_variant.product
+    entry = get_object_or_404(RiskEntry, pk=entry_pk, product=product)
+    if not has_role(request.user, Role.EDITOR, product=product):
+        django_messages.error(request, "You need the editor role to change register entries.")
+        return None, redirect("risk:entry_detail", pk=pk, entry_pk=entry_pk)
+    return configuration, entry
+
+
+def _back(configuration, entry, anchor=""):
+    url = reverse("risk:entry_detail", args=[configuration.pk, entry.pk])
+    return redirect(f"{url}#{anchor}" if anchor else url)
+
+
+def _scale(method: RequirementPackage, kind: str) -> list[dict]:
+    """[{value, label}] for a method's severity or likelihood scale."""
+    spec = method.content.get(kind, {})
+    low, high = spec.get("scale", [1, 5])
+    labels = spec.get("labels", [])
+    return [
+        {
+            "value": value,
+            "label": f"{value} – {labels[value - low].replace('_', ' ')}"
+            if value - low < len(labels)
+            else str(value),
+        }
+        for value in range(low, high + 1)
+    ]
+
+
+def _in_scale(method: RequirementPackage, kind: str, raw: str, *, field: str) -> int | None:
+    """Parse ``raw`` as a value on the method's scale; "" means not set."""
+    if raw == "":
+        return None
+    low, high = method.content.get(kind, {}).get("scale", [1, 5])
+    if not raw.isdigit() or not low <= int(raw) <= high:
+        raise ValidationError({field: f"Choose a {kind} between {low} and {high}."})
+    return int(raw)
+
+
+def applicable_methods(entry: RiskEntry, methods) -> list[RequirementPackage]:
+    """Methods an entry is rated under: a threat under each method that has its
+    violated property; a hazard under each method without CIA properties (the
+    safety-style methods), or every method if there is none."""
+    if entry.entry_type == EntryType.THREAT:
+        return [m for m in methods if entry.violates in m.content.get("properties", [])]
+    if entry.entry_type == EntryType.HAZARD:
+        cia = set(CIAProperty.values)
+        safety = [m for m in methods if not cia & set(m.content.get("properties", []))]
+        return safety or list(methods)
+    return []
+
+
+def _asset_methods(methods) -> list[dict]:
+    """Methods with CIA properties, and which of those properties they rate."""
+    rows = []
+    for method in methods:
+        props = [p for p in method.content.get("properties", []) if p in CIAProperty.values]
+        if props:
+            rows.append({"method": method, "properties": props})
+    return rows
+
+
+def inherited_severity(threat: RiskEntry) -> int | None:
+    """The targeted asset's rating for the violated property, under the first
+    applicable method that has one; a consequence defaults to it."""
+    if not threat.asset_id or not threat.violates:
+        return None
+    ratings = {
+        r.method_id: r.severity
+        for r in AssetRating.objects.filter(entry=threat.asset, property=threat.violates)
+    }
+    for method in applicable_methods(threat, _methods()):
+        if method.pk in ratings:
+            return ratings[method.pk]
+    return next(iter(ratings.values()), None)
+
+
+@login_required
+@require_POST
+def asset_rating_save(request, pk, entry_pk):
+    configuration, entry = _editable_entry(request, pk, entry_pk)
+    if configuration is None:
+        return entry
+    method = get_object_or_404(_approved_methods(), pk=request.POST.get("method"))
+    row = next((r for r in _asset_methods([method])), None)
+    if entry.entry_type != EntryType.ASSET or row is None:
+        django_messages.error(request, "Only assets are rated per property.")
+        return _back(configuration, entry)
+    try:
+        values = {
+            prop: _in_scale(method, "severity", request.POST.get(prop, ""), field=prop)
+            for prop in row["properties"]
+        }
+    except ValidationError as exc:
+        _flash_errors(request, exc)
+        return _back(configuration, entry, "rating")
+    for prop, severity in values.items():
+        if severity is None:
+            AssetRating.objects.filter(entry=entry, method=method, property=prop).delete()
+        else:
+            AssetRating.objects.update_or_create(
+                entry=entry, method=method, property=prop, defaults={"severity": severity}
+            )
+    django_messages.success(request, f"Asset rating under {method.source} saved.")
+    return _back(configuration, entry, "rating")
+
+
+@login_required
+@require_POST
+def rating_save(request, pk, entry_pk):
+    """Likelihood (and, for hazards, severity) of an entry under one method."""
+    configuration, entry = _editable_entry(request, pk, entry_pk)
+    if configuration is None:
+        return entry
+    method = get_object_or_404(_approved_methods(), pk=request.POST.get("method"))
+    if method not in applicable_methods(entry, _methods()):
+        django_messages.error(request, f"{method.source} doesn't apply to this entry.")
+        return _back(configuration, entry, "rating")
+    try:
+        likelihood = _in_scale(
+            method, "likelihood", request.POST.get("likelihood", ""), field="likelihood"
+        )
+        severity = (
+            _in_scale(method, "severity", request.POST.get("severity", ""), field="severity")
+            if entry.entry_type == EntryType.HAZARD
+            else None
+        )
+        if likelihood is None:
+            Rating.objects.filter(entry=entry, method=method).delete()
+            Treatment.objects.filter(entry=entry, method=method).delete()
+            django_messages.success(request, f"Rating under {method.source} removed.")
+            return _back(configuration, entry, "rating")
+        rating = Rating.objects.filter(entry=entry, method=method).first() or Rating(
+            entry=entry, method=method
+        )
+        rating.likelihood = likelihood
+        rating.severity = severity
+        rating.full_clean()
+    except ValidationError as exc:
+        _flash_errors(request, exc)
+        return _back(configuration, entry, "rating")
+    rating.save()
+    django_messages.success(request, f"Rating under {method.source} saved.")
+    return _back(configuration, entry, "rating")
+
+
+@login_required
+@require_POST
+def consequence_add(request, pk, entry_pk):
+    configuration, entry = _editable_entry(request, pk, entry_pk)
+    if configuration is None:
+        return entry
+    if entry.entry_type != EntryType.THREAT:
+        django_messages.error(request, "Only threats have consequences.")
+        return _back(configuration, entry)
+    default = inherited_severity(entry)
+    raw = request.POST.get("severity", "")
+    hazard_id = request.POST.get("hazard", "")
+    consequence = ThreatConsequence(
+        threat=entry,
+        impact_category=request.POST.get("impact_category", ""),
+        override_justification=request.POST.get("override_justification", "").strip(),
+        hazard=RiskEntry.objects.filter(
+            pk=int(hazard_id), product=entry.product, entry_type=EntryType.HAZARD
+        ).first()
+        if hazard_id.isdigit()
+        else None,
+    )
+    try:
+        if not raw.isdigit():
+            raise ValidationError({"severity": "Choose a severity."})
+        consequence.severity = int(raw)
+        # Inherits the asset's rating by default; anything else is an override.
+        consequence.severity_is_override = default is not None and consequence.severity != default
+        if hazard_id and consequence.hazard is None:
+            raise ValidationError({"hazard": "Choose a hazard of this product."})
+        consequence.full_clean()
+    except ValidationError as exc:
+        _flash_errors(request, exc)
+        return _back(configuration, entry, "consequences")
+    consequence.save()
+    django_messages.success(request, "Consequence added.")
+    return _back(configuration, entry, "consequences")
+
+
+@login_required
+@require_POST
+def consequence_delete(request, pk, entry_pk, consequence_pk):
+    configuration, entry = _editable_entry(request, pk, entry_pk)
+    if configuration is None:
+        return entry
+    get_object_or_404(ThreatConsequence, pk=consequence_pk, threat=entry).delete()
+    django_messages.success(request, "Consequence removed.")
+    return _back(configuration, entry, "consequences")
+
+
+@login_required
+@require_POST
+def treatment_save(request, pk, entry_pk):
+    configuration, entry = _editable_entry(request, pk, entry_pk)
+    if configuration is None:
+        return entry
+    method = get_object_or_404(_approved_methods(), pk=request.POST.get("method"))
+    if not Rating.objects.filter(entry=entry, method=method).exists():
+        django_messages.error(request, f"Rate the entry under {method.source} first.")
+        return _back(configuration, entry, "rating")
+    treatment = Treatment.objects.filter(entry=entry, method=method).first() or Treatment(
+        entry=entry, method=method
+    )
+    treatment.treatment_type = request.POST.get("treatment_type", "")
+    treatment.justification = request.POST.get("justification", "").strip()
+    treatment._history_user = request.user
+    try:
+        treatment.residual_severity = _in_scale(
+            method,
+            "severity",
+            request.POST.get("residual_severity", ""),
+            field="residual_severity",
+        )
+        treatment.residual_likelihood = _in_scale(
+            method,
+            "likelihood",
+            request.POST.get("residual_likelihood", ""),
+            field="residual_likelihood",
+        )
+        if (treatment.residual_severity is None) != (treatment.residual_likelihood is None):
+            raise ValidationError(
+                "Give both residual severity and likelihood, or neither (not assessed yet)."
+            )
+        treatment.full_clean()
+        residual = evaluate_residual_rating(treatment)
+        # Anything but mitigation is a decision someone must explain, and so is
+        # a residual risk the method only accepts with a justification.
+        needs_reason = treatment.treatment_type != TreatmentType.MITIGATE or residual[
+            "acceptance"
+        ] in ("justify", "must_treat")
+        if needs_reason and not treatment.justification:
+            raise ValidationError(
+                {"justification": "Explain this treatment decision in the justification."}
+            )
+    except ValidationError as exc:
+        _flash_errors(request, exc)
+        return _back(configuration, entry, "rating")
+    treatment.save()
+    django_messages.success(request, f"Treatment under {method.source} saved.")
+    return _back(configuration, entry, "rating")
+
+
+@login_required
+@require_POST
+def control_link(request, pk, entry_pk):
+    """Link an existing control, or create a new one and link it."""
+    configuration, entry = _editable_entry(request, pk, entry_pk)
+    if configuration is None:
+        return entry
+    if entry.entry_type != EntryType.THREAT:
+        django_messages.error(request, "Controls are linked to threats here.")
+        return _back(configuration, entry)
+    control_id = request.POST.get("control", "")
+    if control_id.isdigit():
+        control = get_object_or_404(Control, pk=int(control_id), product=entry.product)
+    else:
+        control = Control(
+            product=entry.product,
+            name=request.POST.get("name", "").strip(),
+            description=request.POST.get("description", "").strip(),
+            status=request.POST.get("status", ControlStatus.PLANNED),
+        )
+        control._history_user = request.user
+        try:
+            control.full_clean()
+        except ValidationError as exc:
+            _flash_errors(request, exc)
+            return _back(configuration, entry, "controls")
+        control.save()
+    control.threats.add(entry)
+    django_messages.success(request, f"Control “{control.name}” linked.")
+    return _back(configuration, entry, "controls")
+
+
+@login_required
+@require_POST
+def control_unlink(request, pk, entry_pk, control_pk):
+    configuration, entry = _editable_entry(request, pk, entry_pk)
+    if configuration is None:
+        return entry
+    control = get_object_or_404(Control, pk=control_pk, product=entry.product)
+    control.threats.remove(entry)
+    django_messages.success(request, f"Control “{control.name}” unlinked.")
+    return _back(configuration, entry, "controls")
+
+
+@login_required
+@require_POST
+def control_status(request, pk, entry_pk, control_pk):
+    configuration, entry = _editable_entry(request, pk, entry_pk)
+    if configuration is None:
+        return entry
+    control = get_object_or_404(Control, pk=control_pk, product=entry.product)
+    control.status = request.POST.get("status", "")
+    control._history_user = request.user
+    try:
+        control.full_clean()
+    except ValidationError as exc:
+        _flash_errors(request, exc)
+        return _back(configuration, entry, "controls")
+    control.save()
+    django_messages.success(request, f"“{control.name}” is now {control.get_status_display()}.")
+    return _back(configuration, entry, "controls")
