@@ -24,18 +24,22 @@ def _check(label, ok, detail="", url="", url_label="", *, keep_detail=False):
 
 def _target_markets_check(configuration) -> dict:
     variant = configuration.hardware_revision.hardware_variant
-    codes = sorted(variant.target_markets.values_list("code", flat=True))
+    release = configuration.software_release
+    codes = sorted(configuration.effective_market_codes())
     product_url = reverse("products:product_detail", args=[variant.product_id])
     if codes:
         return _check(f"Target markets set ({', '.join(codes)})", True)
-    return _check(
-        "Target markets set",
-        False,
-        f"Hardware variant “{variant.name}” has none. Target markets decide which "
-        "requirement packages apply and what gets suggested.",
-        product_url,
-        "Open the product",
-    )
+    if variant.target_markets.exists() and release.target_markets.exists():
+        detail = (
+            f"Hardware variant “{variant.name}” and release “{release}” share no market. "
+            "A configuration is sold only where both its parts are."
+        )
+    else:
+        detail = (
+            f"Neither hardware variant “{variant.name}” nor release “{release}” has any. "
+            "Target markets decide which requirement packages apply and what gets suggested."
+        )
+    return _check("Target markets set", False, detail, product_url, "Open the product")
 
 
 def _approved(kind: str):
@@ -84,8 +88,7 @@ def register_readiness(configuration, *, pending_suggestions: int) -> list[dict]
 
 def assessment_readiness(configuration) -> list[dict]:
     """Prerequisites for a configuration to have active requirement packages."""
-    variant = configuration.hardware_revision.hardware_variant
-    codes = sorted(variant.target_markets.values_list("code", flat=True))
+    codes = sorted(configuration.effective_market_codes())
     checks = [_target_markets_check(configuration)]
     if codes:
         checks.append(

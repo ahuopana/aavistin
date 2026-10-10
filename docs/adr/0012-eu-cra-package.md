@@ -1,6 +1,6 @@
 # 12. EU CRA package: scope, and a linter gap it surfaced
 
-Status: Accepted (content is a first pass, not legally reviewed -- see "Consequences")
+Status: Accepted (content is a first pass, not legally reviewed -- see "Consequences"). Addendum superseded by ADR 0022: the scaffold package was replaced by the full `eu-cra` package and deleted.
 
 ## Context
 

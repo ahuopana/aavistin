@@ -35,6 +35,11 @@
     }
   }">
   <h2 id="questions">Questions</h2>
+  {% if packages %}
+    <p class="field-hint">Assessing against:
+      {% for package in packages %}<strong>{{ package.title|default:package.source }}</strong> ({{ package.source }} {{ package.version }}){% if not forloop.last %}, {% endif %}{% endfor %}
+    </p>
+  {% endif %}
   {% if progress.total %}
     <p x-cloak>
       <label><input type="checkbox" :checked="openOnly" @change="setOpenOnly($event.target.checked)"> Show only questions still to answer ({{ progress.open }})</label>
@@ -46,6 +51,9 @@
     </thead>
     <tbody>
       {% for row in rows %}
+        {% if row.group_start %}
+          <tr class="question-group"{% if not row.group_has_open %} x-show="!openOnly"{% endif %}><th colspan="4" scope="colgroup">{% if row.group %}{{ row.group.title }}{% else %}Other questions{% endif %}</th></tr>
+        {% endif %}
         <tr id="q-{{ row.question.id }}"{% if not row.is_open %} x-show="!openOnly"{% endif %}>
           <td class="cell-question">
             {{ row.question.label|default:row.question.id }}
@@ -61,7 +69,18 @@
               </details>
             {% endif %}
           </td>
-          <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% else %}{{ row.value }}{% endif %}</td>
+          <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% else %}{{ row.value }}{% endif %}
+            {% if row.justification %}
+              {% if row.justification|length > 80 %}
+                <span class="field-hint" x-data="{ open: false }">Justification:
+                  <span x-show="!open">{{ row.justification|truncatechars:80 }}</span>
+                  <span x-show="open" x-cloak>{{ row.justification }}</span>
+                  <button type="button" class="link-button" @click="open = !open" x-text="open ? 'Show less' : 'Read more'">Read more</button>
+                </span>
+              {% else %}
+                <span class="field-hint">Justification: {{ row.justification }}</span>
+              {% endif %}
+            {% endif %}</td>
           <td><span class="badge badge-{{ row.origin|default:'unanswered' }}">{% if row.origin == "derived" %}derived{% else %}{{ row.origin|default:"unanswered" }}{% endif %}</span></td>
           {% if can_edit %}
             <td>
@@ -89,12 +108,14 @@
                   {% elif row.question.type == "number" %}
                     <input type="number" step="any" name="value" value="{{ row.value|default_if_none:'' }}" aria-label="Answer">
                     {% if row.question.unit %}<span class="field-hint">{{ row.question.unit }}</span>{% endif %}
+                  {% elif row.question.type == "date" %}
+                    <input type="date" name="value" value="{{ row.value|default_if_none:'' }}" aria-label="Answer">
                   {% else %}
                     <input type="text" name="value" value="{{ row.value|default_if_none:'' }}" placeholder="value" aria-label="Answer">
                   {% endif %}
                   <button type="submit" class="button-primary">Save</button>
                   <span class="info" tabindex="0" role="note" aria-label="{{ justification_help }}" data-tip="{{ justification_help }}">i</span>
-                  <input type="text" name="justification" class="answer-justification" x-cloak x-show="changed"
+                  <input type="text" name="justification" class="answer-justification" x-cloak x-show="changed" value="{{ row.justification }}"
                          placeholder="justification (if overriding)" aria-label="Justification">
                 </form>
               {% endif %}

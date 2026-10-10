@@ -1,12 +1,16 @@
+from datetime import date
+
 from django.contrib import messages as django_messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from apps.core.readiness import assessment_readiness
 from apps.orgs.models import Role
 from apps.orgs.services import has_role
+from apps.packages.models import PackageKind
 from apps.products.models import Configuration
 
 from .evaluation import evaluate_configuration
@@ -39,6 +43,12 @@ def _coerce_value(raw: str, question_type: str = ""):
             return raw
     if question_type == "choice":
         return raw
+    if question_type == "date":
+        # Stored as an ISO string (ADR 0018); the date input already sends one.
+        try:
+            return date.fromisoformat(raw).isoformat()
+        except ValueError:
+            return None
     # No (or unrecognised) declared type: best-effort guess, kept for
     # backward compatibility with callers that don't send question_type.
     if raw in ("true", "True"):
@@ -51,11 +61,30 @@ def _coerce_value(raw: str, question_type: str = ""):
         return raw
 
 
+def _display_order(item):
+    """Sort key for ``(question_id, ResolvedAnswer)``: grouped questions in
+    their package order, then ungrouped ones by id."""
+    group = item[1].question.get("group")
+    return (0, group["order"], "") if group else (1, 0, item[0])
+
+
+def _next_open_question(configuration, saved_question_id: str) -> str:
+    """The first unanswered question after the one just saved (wrapping to the
+    start), or the saved question itself when nothing is left open."""
+    resolved, _packages = resolve_answers(configuration)
+    ordered = [qid for qid, _ in sorted(resolved.items(), key=_display_order)]
+    start = ordered.index(saved_question_id) + 1 if saved_question_id in ordered else 0
+    for qid in ordered[start:] + ordered[:start]:
+        if qid != saved_question_id and resolved[qid].value is None:
+            return qid
+    return saved_question_id
+
+
 @login_required
 def configuration_detail(request, pk):
     configuration = get_object_or_404(Configuration, pk=pk)
     family = _product_family(configuration)
-    resolved, _packages = resolve_answers(configuration)
+    resolved, packages = resolve_answers(configuration)
 
     product = configuration.hardware_revision.hardware_variant.product
     first_option = configuration.software_options.order_by("id").first()
@@ -66,14 +95,24 @@ def configuration_detail(request, pk):
         "option": first_option,
     }
 
+    any_grouped = any(r.question.get("group") for r in resolved.values())
     rows = []
-    for _question_id, resolved_answer in sorted(resolved.items()):
+    previous_group = object()
+    for _question_id, resolved_answer in sorted(resolved.items(), key=_display_order):
+        group = resolved_answer.question.get("group")
+        group_start = any_grouped and (group["id"] if group else None) != previous_group
+        previous_group = group["id"] if group else None
         level = resolved_answer.question.get("level")
         owner = owner_by_level.get(level)
         rows.append(
             {
                 "question": resolved_answer.question,
+                "group": group,
+                "group_start": group_start,
                 "value": resolved_answer.value,
+                "justification": (
+                    resolved_answer.answer.override_justification if resolved_answer.answer else ""
+                ),
                 "origin": resolved_answer.origin,
                 "needs_confirmation": resolved_answer.needs_confirmation,
                 "is_open": is_open(resolved_answer),
@@ -81,6 +120,11 @@ def configuration_detail(request, pk):
                 "owner_id": owner.pk if owner else None,
             }
         )
+    # A group header stays visible under the "only open" filter while any
+    # of its questions is still open.
+    open_groups = {r["group"]["id"] if r["group"] else None for r in rows if r["is_open"]}
+    for row in rows:
+        row["group_has_open"] = (row["group"]["id"] if row["group"] else None) in open_groups
 
     return render(
         request,
@@ -90,6 +134,7 @@ def configuration_detail(request, pk):
             "product": product,
             "rows": rows,
             "progress": questionnaire_progress(configuration, resolved),
+            "packages": [p for p in packages if p.kind == PackageKind.REQUIREMENT],
             "assessments": configuration.assessments.all(),
             "can_edit": has_role(request.user, Role.EDITOR, product_family=family),
             "justification_help": Answer._meta.get_field("override_justification").help_text,
@@ -124,6 +169,9 @@ def answer_question(request, pk):
     owner_field = f"{owner_type}_id"
     question_type = request.POST.get("question_type", "")
     value = _coerce_value(request.POST.get("value", ""), question_type)
+    if question_type == "date" and value is None:
+        django_messages.error(request, "Enter the date as YYYY-MM-DD.")
+        return redirect("assessments:configuration_detail", pk=pk)
     justification = request.POST.get("justification", "")
 
     try:
@@ -146,7 +194,8 @@ def answer_question(request, pk):
         return redirect("assessments:configuration_detail", pk=pk)
 
     answer.save()
-    return redirect("assessments:configuration_detail", pk=pk)
+    next_question = _next_open_question(configuration, question_id)
+    return redirect(reverse("assessments:configuration_detail", args=[pk]) + f"#q-{next_question}")
 
 
 @login_required

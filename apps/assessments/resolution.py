@@ -2,8 +2,8 @@
 
 Walks the precedence chain (option -> SW release -> HW revision ->
 product) per docs/architecture.md, "Answer inheritance", and filters the
-questionnaire by target market (only packages for the hardware variant's
-selected markets are active) and by each question's own condition
+questionnaire by target market (only packages for the configuration's effective
+markets are active, see Configuration.effective_market_codes) and by each question's own condition
 (evaluated against answers already resolved).
 """
 
@@ -50,11 +50,7 @@ class ResolvedAnswer:
 
 def active_packages(configuration):
     """Approved packages whose jurisdiction matches the configuration's target markets."""
-    market_codes = set(
-        configuration.hardware_revision.hardware_variant.target_markets.values_list(
-            "code", flat=True
-        )
-    )
+    market_codes = configuration.effective_market_codes()
     if not market_codes:
         return RequirementPackage.objects.none()
     return RequirementPackage.objects.filter(
@@ -85,9 +81,32 @@ def package_questions(packages) -> dict[str, dict]:
         for question in package.content.get("questions", []):
             questions.setdefault(question["id"], question)
             used_by.setdefault(question["id"], []).append(package.source)
+    groups = _question_groups(packages)
     return {
-        qid: {**q, "used_by": sorted(set(used_by.get(qid, [])))} for qid, q in questions.items()
+        qid: {
+            **q,
+            "used_by": sorted(set(used_by.get(qid, []))),
+            "group": groups.get(qid),
+        }
+        for qid, q in questions.items()
     }
+
+
+def _question_groups(packages) -> dict[str, dict]:
+    """Question id -> ``{"id", "title", "order"}`` from the packages' ordered
+    ``question_groups`` (ADR 0025). ``order`` ranks a question across all
+    groups; the first package that groups a question wins."""
+    placed: dict[str, dict] = {}
+    for package in packages:
+        for group in package.content.get("question_groups", []):
+            for qid in group["questions"]:
+                if qid not in placed:
+                    placed[qid] = {
+                        "id": group["id"],
+                        "title": group["title"],
+                        "order": len(placed),
+                    }
+    return placed
 
 
 def resolve_answer(configuration, question_id: str) -> Answer | None:

@@ -14,6 +14,7 @@ Open-source compliance tool for product manufacturers: users assess which regula
 - PostgreSQL in development, CI and production (`docker compose` for local). Never rely on SQLite-only behaviour.
 - Rule expressions in requirement packages are evaluated by a safe interpreter (JSONLogic or equivalent). Never `eval`/`exec`.
 - Never commit text from standards (EN, IEC, ISO). Standards appear only as references, clause numbers and own summaries.
+- Every directory under `packages/` has a `README.md` with what it is, its dependencies and the import/approve commands (ADR 0024).
 - Regulation content lives in packages under `packages/`, validated by the JSON Schema in `schemas/`. Application code must not hard-code any regulation's scope or requirements.
 - Rendered Markdown is always sanitized with `nh3`.
 - Configuration comes from environment variables; no secrets in the repository.

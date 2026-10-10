@@ -26,6 +26,7 @@
           <a href="{% url 'core:compliance' %}">Compliance</a>
         {% endif %}
         <a href="{% url 'userguide:index' %}">User Guide</a>
+        {% if user.is_staff %}<a href="{% url 'admin:index' %}">Admin</a>{% endif %}
         {% block nav %}{% endblock %}
       </nav>
       <div class="app-header-actions">

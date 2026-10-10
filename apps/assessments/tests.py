@@ -230,9 +230,10 @@ class CarryForwardTests(ConfigurationFixture):
 
 
 class EuCraConfigurationFixture(TestCase):
-    """Mirrors ConfigurationFixture but approves the real eu-cra-partial
-    package, to exercise its classification -> assessment_routes/finding_rules
-    wiring (the class__ synthetic vars) through evaluate_configuration.
+    """Mirrors ConfigurationFixture but approves the shared question library
+    and the real eu-cra package, to exercise library questions, derived
+    answers, classifications, roles and dated requirements end to end
+    through evaluate_configuration.
     """
 
     def setUp(self):
@@ -255,7 +256,10 @@ class EuCraConfigurationFixture(TestCase):
             software_release=self.release,
         )
 
-        self.package = import_package(load_package("eu-cra-partial", "1.0.0"), is_official=True)
+        approve_package(
+            import_package(load_package("common", "1.1.0"), kind="question_set", is_official=True)
+        )
+        self.package = import_package(load_package("eu-cra", "1.0.0"), is_official=True)
         approve_package(self.package)
 
     def _answer(self, **values):
@@ -264,44 +268,86 @@ class EuCraConfigurationFixture(TestCase):
                 question_id=question_id, value=value, hardware_revision=self.revision
             )
 
+    def _category(self, fragment):
+        question = next(
+            q
+            for q in self.package.content["questions"]
+            if q["id"] == "core_functionality_category"
+        )
+        return next(choice for choice in question["choices"] if fragment in choice)
+
+    def _manufacturer(self, **extra):
+        self._answer(
+            product_form="hardware_with_software",
+            has_data_connection=True,
+            is_commercial_activity=True,
+            economic_operator_role="manufacturer",
+            **extra,
+        )
+
+    def _result(self, evaluation):
+        return next(r for r in evaluation["results"] if r["source"] == "eu-cra")
+
 
 class EuCraEvaluationTests(EuCraConfigurationFixture):
-    def test_default_classification_gets_internal_control_route(self):
-        self._answer(
-            is_free_and_open_source=False,
-            is_commercial_activity=True,
-            is_annex_iii_important_product=False,
-            is_annex_iii_critical_product=False,
-        )
+    def test_default_category_allows_internal_control(self):
+        self._manufacturer(core_functionality_category="None of these")
         evaluation = evaluate_configuration(self.configuration)
-        result = evaluation["results"][0]
+        result = self._result(evaluation)
         self.assertTrue(result["in_scope"])
         self.assertEqual(result["classifications"], ["default"])
-        self.assertEqual(result["assessment_routes"], ["internal_control"])
+        self.assertIn("module_a_internal_control", result["assessment_routes"])
         self.assertEqual(evaluation["findings"], [])
 
-    def test_important_classification_gets_third_party_route_and_finding(self):
-        self._answer(
-            is_free_and_open_source=False,
-            is_commercial_activity=True,
-            is_annex_iii_important_product=True,
-            is_annex_iii_critical_product=False,
-        )
+    def test_class_i_without_standard_needs_third_party(self):
+        self._manufacturer(core_functionality_category=self._category("(SIEM)"))
         evaluation = evaluate_configuration(self.configuration)
-        result = evaluation["results"][0]
-        self.assertTrue(result["in_scope"])
-        self.assertEqual(result["classifications"], ["important"])
-        self.assertEqual(result["assessment_routes"], ["third_party_assessment"])
-        finding_ids = [f["id"] for f in evaluation["findings"]]
-        self.assertIn("important_or_critical_needs_third_party", finding_ids)
+        result = self._result(evaluation)
+        self.assertEqual(result["classifications"], ["important_class_i"])
+        self.assertNotIn("module_a_internal_control", result["assessment_routes"])
+        self.assertIn("class_i_needs_third_party", [f["id"] for f in evaluation["findings"]])
 
     def test_foss_non_commercial_is_out_of_scope(self):
         self._answer(is_free_and_open_source=True, is_commercial_activity=False)
         evaluation = evaluate_configuration(self.configuration)
-        result = evaluation["results"][0]
-        self.assertFalse(result["in_scope"])
-        finding_ids = [f["id"] for f in evaluation["findings"]]
-        self.assertIn("monetisation_changes_scope", finding_ids)
+        self.assertFalse(self._result(evaluation)["in_scope"])
+        self.assertIn("monetisation_changes_scope", [f["id"] for f in evaluation["findings"]])
+
+    def test_radio_capability_derives_data_connection_from_the_library(self):
+        self._answer(wireless_interface_capability="present")
+        resolved, _ = resolve_answers(self.configuration)
+        self.assertEqual(resolved["has_data_connection"].value, True)
+        self.assertEqual(resolved["has_data_connection"].origin, "derived")
+
+    def test_reporting_in_force_before_the_main_obligations(self):
+        from datetime import date
+
+        self._manufacturer()
+        result = self._result(evaluate_configuration(self.configuration, as_of=date(2026, 10, 1)))
+        self.assertEqual(
+            sorted(result["requirements"]),
+            [
+                "art_14_8_inform_users",
+                "art_14_report_exploited_vulnerabilities",
+                "art_14_report_severe_incidents",
+            ],
+        )
+        upcoming = {r["id"]: r["applies_from"] for r in result["upcoming_requirements"]}
+        self.assertEqual(upcoming["annex_i_2a_no_known_exploitable_vulnerabilities"], "2027-12-11")
+
+    def test_importer_role_selects_importer_obligations(self):
+        from datetime import date
+
+        self._answer(
+            product_form="hardware_with_software",
+            has_data_connection=True,
+            is_commercial_activity=True,
+            economic_operator_role="importer",
+            hardware_still_placed_on_market=True,
+        )
+        result = self._result(evaluate_configuration(self.configuration, as_of=date(2028, 3, 1)))
+        self.assertEqual(result["role"], "importer")
+        self.assertTrue(all(r.startswith("art_19_") for r in result["requirements"]))
 
     def test_confirm_answers_clears_flag(self):
         Answer.objects.create(
@@ -315,10 +361,32 @@ class EuCraEvaluationTests(EuCraConfigurationFixture):
         self.assertFalse(Answer.objects.get().needs_confirmation)
 
 
+class EuCraResultsPageTests(EuCraConfigurationFixture):
+    def test_assessment_page_lists_requirements_not_in_force_yet(self):
+        from datetime import date
+        from unittest import mock
+
+        editor = User.objects.create_user(username="edna", password="x")
+        RoleAssignment.objects.create(role=Role.EDITOR, user=editor, product_family=self.family)
+        self._manufacturer()
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        self.client.force_login(editor)
+        with mock.patch("django.utils.timezone.localdate", return_value=date(2026, 10, 1)):
+            response = self.client.get(
+                reverse("assessments:assessment_detail", args=[assessment.pk])
+            )
+        self.assertContains(response, "Economic operator role: manufacturer")
+        self.assertContains(response, "art_14_report_exploited_vulnerabilities")
+        self.assertContains(response, "Not in force yet:")
+        self.assertContains(
+            response, "annex_i_2a_no_known_exploitable_vulnerabilities (from 2027-12-11)"
+        )
+
+
 class EuCraGuidanceRenderingTests(EuCraConfigurationFixture):
-    """The eu-cra-partial package's self-assessed questions (FOSS status,
-    Annex III/IV) carry guidance text precisely because the package can't
-    reproduce those lists itself -- check it actually reaches the page."""
+    """The eu-cra package's self-assessed questions (core functionality,
+    FOSS status, remote data processing) carry guidance text, because the
+    answer depends on a test the user applies -- check it reaches the page."""
 
     def setUp(self):
         super().setUp()
@@ -337,6 +405,18 @@ class EuCraGuidanceRenderingTests(EuCraConfigurationFixture):
         self.assertContains(
             response, "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
         )
+
+    def test_questions_are_shown_under_group_headings_in_package_order(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        html = response.content.decode()
+        scope = html.index("Product and your role")
+        security = html.index("Security by design: interfaces and exposure")
+        after_release = html.index("After release: vulnerability handling")
+        self.assertLess(scope, security)
+        self.assertLess(security, after_release)
 
 
 class ApprovalTests(ConfigurationFixture):
@@ -687,6 +767,30 @@ class ViewTests(ConfigurationFixture):
         self.assertEqual(answer.value, True)
         self.assertEqual(answer.hardware_revision, self.revision)
 
+    def test_saving_an_answer_jumps_to_next_open_question(self):
+        self.client.force_login(self.editor)
+        url = reverse("assessments:answer_question", args=[self.configuration.pk])
+        detail = reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        response = self.client.post(url, self._answer_payload())
+        self.assertEqual(response["Location"], f"{detail}#q-is_toy_widget")
+
+        # Everything else answered: stay on the question just saved.
+        Answer.objects.create(question_id="is_toy_widget", value=False, product=self.product)
+        Answer.objects.create(
+            question_id="rated_power_watts", value=10, hardware_revision=self.revision
+        )
+        response = self.client.post(url, self._answer_payload())
+        self.assertEqual(response["Location"], f"{detail}#q-has_power_source")
+
+    def test_failed_save_returns_to_top_of_page(self):
+        self.client.force_login(self.editor)
+        detail = reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        response = self.client.post(
+            reverse("assessments:answer_question", args=[self.configuration.pk]),
+            self._answer_payload(owner_id=""),
+        )
+        self.assertEqual(response["Location"], detail)
+
     def test_viewer_cannot_answer_question(self):
         viewer = User.objects.create_user(username="vera", password="x")
         RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
@@ -737,6 +841,46 @@ class ViewTests(ConfigurationFixture):
         )
         help_text = Answer._meta.get_field("override_justification").help_text
         self.assertContains(response, help_text)
+
+    def test_saved_justification_is_shown_and_kept_on_resave(self):
+        Answer.objects.create(question_id="rated_power_watts", value=20, product=self.product)
+        Answer.objects.create(
+            question_id="rated_power_watts",
+            value=150,
+            hardware_revision=self.revision,
+            override_justification="Rev A uses a higher-power supply.",
+        )
+        self.client.force_login(self.editor)
+        url = reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        response = self.client.get(url)
+        self.assertContains(response, "Justification: Rev A uses a higher-power supply.")
+        # The hidden input is prefilled, so saving without touching it keeps the text.
+        self.assertContains(response, 'value="Rev A uses a higher-power supply."')
+
+    def test_page_names_the_package_being_assessed(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, "Assessing against:")
+        self.assertContains(response, self.package.source)
+
+    def test_long_justification_is_truncated_with_read_more(self):
+        long_text = "Higher-power supply fitted. " * 10
+        Answer.objects.create(question_id="rated_power_watts", value=20, product=self.product)
+        Answer.objects.create(
+            question_id="rated_power_watts",
+            value=150,
+            hardware_revision=self.revision,
+            override_justification=long_text,
+        )
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, "Read more")
+        self.assertContains(response, "Higher-power supply fitted. Higher-power")  # truncated copy
+        self.assertContains(response, long_text.strip())  # full copy, revealed on click
 
     def test_question_without_guidance_has_no_guidance_block(self):
         # The demo package's questions carry no guidance; the block must
@@ -841,3 +985,134 @@ class SharedQuestionTests(ConfigurationFixture):
         )
         admin = resolve_answers(self.configuration)[0]["mfa_for_admin_access"]
         self.assertEqual((admin.value, admin.origin), (False, "software_release"))
+
+
+def _import_approved(content):
+    package = import_package(content, is_official=True)
+    approve_package(package)
+    return package
+
+
+DATED_PACKAGE = {
+    "source": "demo-dated",
+    "type": "legislation",
+    "jurisdiction": "EU",
+    "version": "1",
+    "questions": [
+        {
+            "id": "release_adds_interfaces",
+            "type": "boolean",
+            "level": "software",
+            "carry_forward": False,
+        },
+        {"id": "first_shipped", "type": "date", "level": "software"},
+    ],
+    "scope": {"include": True},
+    "requirements": [{"id": "reporting", "roles": ["manufacturer"], "applies_from": "2026-09-11"}],
+    "fixtures": [{"id": "in_scope", "answers": {}, "expected": {"in_scope": True}}],
+}
+
+
+class ReleaseMarketTests(ConfigurationFixture):
+    """ADR 0020: effective markets of a configuration."""
+
+    def active_sources(self):
+        from .resolution import active_packages
+
+        return {p.source for p in active_packages(self.configuration)}
+
+    def test_variant_markets_apply_when_release_sets_none(self):
+        self.assertEqual(self.configuration.effective_market_codes(), {"EU"})
+        self.assertIn("demo-widget-safety", self.active_sources())
+
+    def test_release_markets_intersect_with_variant_markets(self):
+        self.release.target_markets.set(TargetMarket.objects.filter(code__in=["EU", "US"]))
+        self.assertEqual(self.configuration.effective_market_codes(), {"EU"})
+        self.release.target_markets.set(TargetMarket.objects.filter(code="US"))
+        self.assertEqual(self.configuration.effective_market_codes(), set())
+        self.assertEqual(self.active_sources(), set())
+
+    def test_release_markets_alone_apply_to_software_only_setups(self):
+        self.variant.target_markets.clear()
+        self.release.target_markets.set(TargetMarket.objects.filter(code="EU"))
+        self.assertEqual(self.configuration.effective_market_codes(), {"EU"})
+        self.assertIn("demo-widget-safety", self.active_sources())
+
+
+class CarryForwardFlagTests(ConfigurationFixture):
+    """ADR 0021: per-release questions start unanswered on a new release."""
+
+    def test_questions_with_carry_forward_false_are_not_copied(self):
+        _import_approved(DATED_PACKAGE)
+        Answer.objects.create(
+            question_id="release_adds_interfaces", value=True, software_release=self.release
+        )
+        Answer.objects.create(
+            question_id="first_shipped", value="2028-01-01", software_release=self.release
+        )
+        new_release = SoftwareRelease.objects.create(product=self.product, version="2.0")
+
+        created = copy_answers_forward(self.release, new_release)
+
+        self.assertEqual([a.question_id for a in created], ["first_shipped"])
+
+
+class DatedRequirementTests(ConfigurationFixture):
+    """ADR 0019: calendar dates compare with the assessment date, and staleness follows."""
+
+    def setUp(self):
+        super().setUp()
+        _import_approved(DATED_PACKAGE)
+
+    def dated_result(self, evaluation):
+        return next(r for r in evaluation["results"] if r["source"] == "demo-dated")
+
+    def test_requirement_not_in_force_yet_is_reported_as_upcoming(self):
+        from datetime import date
+
+        result = self.dated_result(
+            evaluate_configuration(self.configuration, as_of=date(2026, 1, 1))
+        )
+        self.assertEqual(result["requirements"], [])
+        self.assertEqual(
+            result["upcoming_requirements"], [{"id": "reporting", "applies_from": "2026-09-11"}]
+        )
+
+    def test_assessment_goes_stale_when_a_date_brings_a_requirement_into_force(self):
+        from datetime import date
+        from unittest import mock
+
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        with mock.patch("django.utils.timezone.localdate", return_value=date(2026, 1, 1)):
+            approve_assessment(assessment, actor=self.approver)
+            self.assertFalse(recompute_staleness(assessment))
+        with mock.patch("django.utils.timezone.localdate", return_value=date(2026, 10, 1)):
+            self.assertTrue(recompute_staleness(assessment))
+
+
+class DateAnswerViewTests(ConfigurationFixture):
+    def setUp(self):
+        super().setUp()
+        _import_approved(DATED_PACKAGE)
+        self.client.force_login(self.editor)
+
+    def post(self, value):
+        return self.client.post(
+            reverse("assessments:answer_question", args=[self.configuration.pk]),
+            {
+                "question_id": "first_shipped",
+                "owner_type": "software_release",
+                "owner_id": str(self.release.pk),
+                "question_type": "date",
+                "value": value,
+                "justification": "",
+            },
+        )
+
+    def test_date_answer_is_stored_as_iso_string(self):
+        self.post("2028-01-15")
+        self.assertEqual(Answer.objects.get(question_id="first_shipped").value, "2028-01-15")
+
+    def test_invalid_date_is_rejected(self):
+        self.post("15.1.2028")
+        self.assertFalse(Answer.objects.filter(question_id="first_shipped").exists())

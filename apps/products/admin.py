@@ -64,6 +64,7 @@ class SoftwareReleaseAdmin(admin.ModelAdmin):
     list_display = ("name", "version", "product", "released_at")
     list_filter = ("product",)
     inlines = [SoftwareOptionInline]
+    filter_horizontal = ("target_markets",)
 
 
 @admin.register(SoftwareOption)

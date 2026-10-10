@@ -119,7 +119,7 @@ Dashboards refresh per widget with HTMX polling (`hx-trigger="every 60s"`); no W
 
 **Product status.** The product detail page (`apps.products`) shows the questions progress and the same two ratios for that one product, computed live the same way — so "how compliant is this product" doesn't require a trip to the portfolio page. Not linked to any configuration in particular: it's the same all-configurations rollup `compliance_ratio` already computes.
 
-**Questionnaire progress.** How much of a configuration's questionnaire is still to do (`apps.assessments.progress`), computed live from `resolve_answers`: over the *active* questions (approved packages for the target markets, conditions currently holding), a question is *done* when it has a value — answered directly or derived via `implied_by` — that isn't a carried-forward answer awaiting confirmation; otherwise it is *unanswered* or *needs confirmation*. Shown as a widget at the top of the questionnaire page, with a "show only questions still to answer" filter deep-linked as `?show=open` (Alpine `x-show` on rows; without Alpine every row stays visible), and as a count with a link to that filter on a draft assessment. The product-level `questions_ratio` (`apps.products.services`) sums done/total over the product's configurations — a product-level answer counts once per configuration, since each configuration's questionnaire must be complete on its own — and feeds the *questions* bar on the product page and the Compliance Overview (row and portfolio total). The total can grow as answers activate conditional questions. See docs/adr/0018-questionnaire-progress.md.
+**Questionnaire progress.** How much of a configuration's questionnaire is still to do (`apps.assessments.progress`), computed live from `resolve_answers`: over the *active* questions (approved packages for the target markets, conditions currently holding), a question is *done* when it has a value — answered directly or derived via `implied_by` — that isn't a carried-forward answer awaiting confirmation; otherwise it is *unanswered* or *needs confirmation*. Shown as a widget at the top of the questionnaire page, with a "show only questions still to answer" filter deep-linked as `?show=open` (Alpine `x-show` on rows; without Alpine every row stays visible), and as a count with a link to that filter on a draft assessment. The product-level `questions_ratio` (`apps.products.services`) sums done/total over the product's configurations — a product-level answer counts once per configuration, since each configuration's questionnaire must be complete on its own — and feeds the *questions* bar on the product page and the Compliance Overview (row and portfolio total). The total can grow as answers activate conditional questions. See docs/adr/0026-questionnaire-progress.md.
 
 ## API, jobs, tooling and operations
 
@@ -149,10 +149,10 @@ Only legislation can create legal obligations; the schema enforces this, and the
 A package contains:
 
 - **Identity:** id (namespaced), version, jurisdiction, legal sources (CELEX/ELI), dates of application, supersedes/amends links.
-- **Questions:** typed (boolean, choice, number with unit), each declaring its natural level (product, hardware, software, option), with optional conditions (radio band questions only if a radio is present). Questions are shared across packages. A question may also carry plain-text `guidance` (our own summary, never standards/legal text verbatim) and a `guidance_url`, shown in the UI as a "Good to understand before you answer" note -- for self-assessed questions where a package deliberately doesn't encode the full rule (e.g. CRA Annex III/IV category lists; see ADR 0014).
+- **Questions:** typed (boolean, choice, number with unit, date), each declaring its natural level (product, hardware, software, option), with optional conditions (radio band questions only if a radio is present). Questions are shared across packages. A question may also carry plain-text `guidance` (our own summary, never standards/legal text verbatim) and a `guidance_url`, shown in the UI as a "Good to understand before you answer" note -- for self-assessed questions where a package deliberately doesn't encode the full rule (e.g. CRA Annex III/IV category lists; see ADR 0014).
 - **Scope rules:** inclusion, exclusions and exemptions, each with a legal reference.
 - **Classifications:** classes or categories that change requirements and assessment routes (CRA default / important I / important II / critical; RED 3(3)(d)(e)(f) categories).
-- **Requirements:** tagged by role (manufacturer, importer, distributor), class and date.
+- **Requirements:** tagged by role (manufacturer, importer, distributor, authorised representative, steward) and class, with an optional condition (`applies_when`, e.g. placed on the market after a date) and calendar dates (`applies_from`/`applies_until`, compared with the assessment date). A package may derive the economic operator role from answers. See ADR 0019.
 - **Assessment routes:** internal control, type examination, notified body, and when each is allowed.
 - **Finding rules:** info, caution or action-required findings raised by answer combinations.
 - **Test fixtures:** example products with expected outcomes.
@@ -160,7 +160,7 @@ A package contains:
 Rules are declarative expressions (JSONLogic or a small custom language) evaluated safely, never Python `eval`.
 
 ```yaml
-source: eu-cra-partial
+source: eu-cra
 type: legislation
 jurisdiction: EU
 version: 2024-2847@2026-10
@@ -207,13 +207,13 @@ flowchart TD
 
 Only configurations actually shipped are defined, to avoid assessing every combination.
 
-**Target markets first.** Each hardware variant selects its target markets (e.g. EU, US). Only packages for those jurisdictions are active, so their questions alone are asked; FCC questions never appear for an EU-only variant. Adding a market later adds unanswered questions and marks approved assessments stale.
+**Target markets first.** Each hardware variant and software release selects its target markets (e.g. EU, US). A configuration's markets are the intersection when both are set, otherwise whichever is set (ADR 0020). Only packages for those jurisdictions are active, so their questions alone are asked; FCC questions never appear for an EU-only variant. Adding a market later adds unanswered questions and marks approved assessments stale.
 
 **Answer inheritance.**
 
 1. Each question declares its natural level in the package: product (intended use), hardware (radio, supply voltage), software (network services, personal data) or option.
 2. Answers resolve by precedence: option → SW release → HW variant → product. The UI shows each answer's origin ("inherited from HW rev B"); overriding requires a justification.
-3. A new release copies answers forward as "needs confirmation". Reviewers may confirm in bulk, but must confirm actively.
+3. A new release copies answers forward as "needs confirmation". Reviewers may confirm in bulk, but must confirm actively. Questions about one release's change (`carry_forward: false`) are not copied (ADR 0021).
 4. Options are deltas: they override a few answers and inherit the rest, which shows exactly why an option changes scope.
 
 **Capability vs enablement.** Features such as radios are two answers at two levels:
@@ -373,7 +373,7 @@ The tool ships with a demo dataset in which Aavistin is the product under assess
 | LVD | Out of scope: no electrical equipment | Out of scope |
 | GDPR | Info finding: the deploying organisation is controller for user, LDAP and audit data | Same |
 
-The CRA interpretation of monetised support sits in the eu-cra-partial package with its legal reference, not in the seed; the seed only states the expected outcome.
+The CRA interpretation of monetised support sits in the eu-cra package with its legal reference, not in the seed; the seed only states the expected outcome.
 
 **Findings.** A caution on the Community release: "Offering paid support or other monetisation changes CRA scope and requires re-assessment." Selecting the Paid support option triggers that re-assessment, as for any flagged option.
 
@@ -402,5 +402,5 @@ The CRA interpretation of monetised support sits in the eu-cra-partial package w
 - [ ] API framework: django-ninja or DRF?
 - [ ] Which identity provider will SSO target first?
 - [ ] Severity mappings between methods: which method pairs need one first (e.g. CIA 5×5 ↔ LVD safety)?
-- [ ] Software-only products: target markets are set on the HW variant, so where do they live for a product with no hardware, such as Aavistin itself?
+- [ ] Software-only products: target markets can now be set on the SW release (ADR 0020), but a configuration still needs a hardware revision. Make it optional?
 - [ ] Organisation wiki: a separate, per-organisation, user-authored Markdown wiki (likely built on the "Documents and concurrent editing" system above) — not yet designed. Not to be confused with the User Guide, which is maintainer-authored and the same for everyone.
