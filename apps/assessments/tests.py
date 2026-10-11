@@ -17,6 +17,7 @@ from apps.products.models import (
     HardwareRevision,
     HardwareVariant,
     Product,
+    SoftwareOption,
     SoftwareRelease,
     TargetMarket,
 )
@@ -1117,6 +1118,98 @@ class DateAnswerViewTests(ConfigurationFixture):
     def test_invalid_date_is_rejected(self):
         self.post("15.1.2028")
         self.assertFalse(Answer.objects.filter(question_id="first_shipped").exists())
+
+
+class EuRedEvaluationTests(TestCase):
+    """The real eu-red package end to end: radio enablement per option,
+    Delegated Regulation 2022/30 dates, and roles."""
+
+    def setUp(self):
+        org = Organisation.objects.create(name="Acme", slug="acme")
+        family = ProductFamily.objects.create(organisation=org, name="Cameras", slug="cameras")
+        product = Product.objects.create(product_family=family, name="CamOne", slug="camone")
+        variant = HardwareVariant.objects.create(product=product, name="EU", slug="eu")
+        variant.target_markets.add(TargetMarket.objects.get(code="EU"))
+        self.revision = HardwareRevision.objects.create(hardware_variant=variant, label="A")
+        self.release = SoftwareRelease.objects.create(product=product, version="1.0")
+        self.configuration = Configuration.objects.create(
+            name="CamOne EU 1.0", hardware_revision=self.revision, software_release=self.release
+        )
+        approve_package(
+            import_package(load_package("common", "1.2.0"), kind="question_set", is_official=True)
+        )
+        approve_package(import_package(load_package("eu-red", "1.0.0"), is_official=True))
+        self._answer(
+            self.revision,
+            product_form="hardware_with_software",
+            wireless_interface_capability="present",
+            is_commercial_activity=True,
+            economic_operator_role="manufacturer",
+            communicates_over_internet=True,
+            processes_personal_data=True,
+            transfers_money_or_value=False,
+            common_charger_category="None of these",
+            hardware_first_placed_on_market="2024-03-01",
+            hardware_still_placed_on_market=True,
+        )
+
+    def _answer(self, owner, **values):
+        field = {
+            HardwareRevision: "hardware_revision",
+            SoftwareRelease: "software_release",
+            SoftwareOption: "software_option",
+        }[type(owner)]
+        for question_id, value in values.items():
+            Answer.objects.create(question_id=question_id, value=value, **{field: owner})
+
+    def _result(self, **kwargs):
+        evaluation = evaluate_configuration(self.configuration, **kwargs)
+        return evaluation, next(r for r in evaluation["results"] if r["source"] == "eu-red")
+
+    def test_cyber_requirements_in_force_for_units_still_placed(self):
+        from datetime import date
+
+        _, result = self._result(as_of=date(2026, 10, 1))
+        self.assertTrue(result["in_scope"])
+        self.assertEqual(
+            sorted(result["classifications"]),
+            ["art_3_3_d_network_protection", "art_3_3_e_privacy"],
+        )
+        self.assertIn("art_3_3_d_no_harm_to_network", result["requirements"])
+        self.assertIn("art_3_3_e_protect_personal_data", result["requirements"])
+
+    def test_cyber_requirements_upcoming_before_august_2025(self):
+        from datetime import date
+
+        _, result = self._result(as_of=date(2025, 3, 1))
+        upcoming = {r["id"]: r["applies_from"] for r in result["upcoming_requirements"]}
+        self.assertEqual(upcoming["art_3_3_d_no_harm_to_network"], "2025-08-01")
+        self.assertIn("art_3_1_a_health_and_safety", result["requirements"])
+
+    def test_option_that_disables_radio_takes_release_out_of_scope(self):
+        self._answer(self.release, wireless_enablement="enabled")
+        option = SoftwareOption.objects.create(
+            software_release=self.release, name="Radio off", slug="radio-off"
+        )
+        self._answer(option, wireless_enablement="disabled_manufacturer_update_only")
+        _, result = self._result()
+        self.assertTrue(result["in_scope"])
+
+        self.configuration.software_options.add(option)
+        evaluation, result = self._result()
+        self.assertFalse(result["in_scope"])
+        self.assertIn("dormant_radio", [f["id"] for f in evaluation["findings"]])
+
+    def test_distributor_gets_only_distributor_obligations(self):
+        from datetime import date
+
+        Answer.objects.filter(question_id="economic_operator_role").update(value="distributor")
+        _, result = self._result(as_of=date(2026, 10, 1))
+        self.assertEqual(result["role"], "distributor")
+        self.assertEqual(
+            sorted(result["requirements"]),
+            ["art_13_distributor_checks", "art_13_distributor_cooperation"],
+        )
 
 
 class ChoiceLabelTests(TestCase):

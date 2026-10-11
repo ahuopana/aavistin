@@ -340,6 +340,27 @@ class ImportPipelineTests(TestCase):
         self.assertEqual(package.lint_report, [])
         self.assertTrue(all(r["passed"] for r in package.fixture_report), package.fixture_report)
 
+    def test_import_eu_red_package_reaches_fixtures_passed(self):
+        approve_package(
+            import_package(
+                load_package("common", "1.2.0"), kind=PackageKind.QUESTION_SET, is_official=True
+            )
+        )
+        package = import_package(load_package("eu-red", "1.0.0"), is_official=True)
+        self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+        self.assertEqual(package.lint_report, [])
+        self.assertTrue(all(r["passed"] for r in package.fixture_report), package.fixture_report)
+
+    def test_eu_cra_still_lints_clean_against_common_1_2_0(self):
+        approve_package(
+            import_package(
+                load_package("common", "1.2.0"), kind=PackageKind.QUESTION_SET, is_official=True
+            )
+        )
+        package = import_package(load_package("eu-cra", "1.0.0"), is_official=True)
+        self.assertEqual(package.lint_report, [])
+        self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+
 
 class ManagementCommandTests(TestCase):
     def test_import_and_approve_via_management_commands(self):
@@ -1042,14 +1063,16 @@ class QuestionGroupLintTests(TestCase):
             "ungrouped_question", self.lint([{"id": "g", "title": "G", "questions": ["a"]}])
         )
 
-    def test_eu_cra_groups_every_question(self):
-        content = load_package("eu-cra", "1.0.0")
-        grouped = [q for g in content["question_groups"] for q in g["questions"]]
-        self.assertEqual(len(grouped), len(set(grouped)))
-        known = {q["id"] for q in content["questions"]} | {
-            r.partition(":")[2] for r in content["uses"]
-        }
-        self.assertEqual(set(grouped), known)
+    def test_eu_cra_and_eu_red_group_every_question(self):
+        for source in ("eu-cra", "eu-red"):
+            with self.subTest(source=source):
+                content = load_package(source, "1.0.0")
+                grouped = [q for g in content["question_groups"] for q in g["questions"]]
+                self.assertEqual(len(grouped), len(set(grouped)))
+                known = {q["id"] for q in content["questions"]} | {
+                    r.partition(":")[2] for r in content["uses"]
+                }
+                self.assertEqual(set(grouped), known)
 
 
 class PackageAdminListTests(TestCase):

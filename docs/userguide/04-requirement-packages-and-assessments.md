@@ -89,3 +89,22 @@ The "Good to understand before you answer" notes are our own summaries of
 the Commission's guidance on the application of the CRA, C(2026) 5252,
 not the guidance itself. The package is not legal advice and is pending
 legal review; see the package README.
+
+## EU Radio Equipment Directive
+
+The EU RED package applies to products with a radio that can be used. It
+asks whether the radio is enabled per software release and option, so an
+option that switches the radio off or on shows why the scope changes. The
+network protection, privacy and fraud requirements of Delegated Regulation
+(EU) 2022/30 are derived from what the product does (internet connection,
+personal data, money transfer, toys, childcare and wearables), and apply
+only to units placed on the market from 1 August 2025.
+
+For general EU product rules (placing on the market, the roles of
+manufacturers, importers and distributors, harmonised standards,
+conformity assessment and CE marking), the package links to the
+Commission's [Blue Guide on the implementation of EU product rules
+2022](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=oj%3AJOC_2022_247_R_0001).
+The "Good to understand before you answer" notes are our own summaries.
+The package is not legal advice and is pending legal review; see the
+package README.

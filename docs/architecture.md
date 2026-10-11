@@ -373,7 +373,7 @@ The tool ships with a demo dataset in which Aavistin is the product under assess
 | LVD | Out of scope: no electrical equipment | Out of scope |
 | GDPR | Info finding: the deploying organisation is controller for user, LDAP and audit data | Same |
 
-The CRA interpretation of monetised support sits in the eu-cra package with its legal reference, not in the seed; the seed only states the expected outcome.
+The CRA interpretation of monetised support sits in the eu-cra package with its legal reference, not in the seed; the seed only states the expected outcome. The RED row is a fixture of the eu-red package.
 
 **Findings.** A caution on the Community release: "Offering paid support or other monetisation changes CRA scope and requires re-assessment." Selecting the Paid support option triggers that re-assessment, as for any flagged option.
 
