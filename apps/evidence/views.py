@@ -2,8 +2,10 @@ from django.contrib import messages as django_messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from apps.core.navigation import breadcrumbs
 from apps.orgs.models import Role
 from apps.orgs.services import has_role
 from apps.products.models import Product
@@ -29,6 +31,7 @@ def product_evidence_list(request, product_pk):
         "evidence/product_list.html",
         {
             "product": product,
+            "crumbs": breadcrumbs(product=product, trail=[("Evidence", None)]),
             "evidence_list": suggest_evidence(product),
             "can_edit": has_role(request.user, Role.EDITOR, product=product),
         },
@@ -77,6 +80,13 @@ def evidence_detail(request, pk):
         "evidence/detail.html",
         {
             "evidence": evidence,
+            "crumbs": breadcrumbs(
+                product=evidence.product,
+                trail=[
+                    ("Evidence", reverse("evidence:product_list", args=[evidence.product_id])),
+                    (evidence.title, None),
+                ],
+            ),
             "links": evidence.links.select_related("control").all(),
             "controls": Control.objects.filter(product=evidence.product).order_by("name"),
             "can_edit": has_role(request.user, Role.EDITOR, product=evidence.product),

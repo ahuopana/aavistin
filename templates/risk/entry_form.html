@@ -3,9 +3,7 @@
 {% block title %}{% if is_new %}Add register entry{% else %}Edit {{ entry.label }}{% endif %} · Risk register · Aavistin{% endblock %}
 
 {% block content %}
-  <p class="field-hint">
-    <a href="{% url 'risk:register' configuration.pk %}">&larr; Risk register</a> · {{ configuration.name }}
-  </p>
+  {% include "core/_breadcrumb.html" %}
   <h1>{% if is_new %}Add register entry{% else %}Edit {{ entry.get_entry_type_display|lower }}{% endif %}</h1>
   <p class="field-hint">Entries belong to the product's register ({{ entry.product.name }}), not just this configuration; the scope decides which configurations they apply to.</p>
 

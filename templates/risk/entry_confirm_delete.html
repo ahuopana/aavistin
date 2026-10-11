@@ -3,9 +3,7 @@
 {% block title %}Delete {{ entry.label }} · Risk register · Aavistin{% endblock %}
 
 {% block content %}
-  <p class="field-hint">
-    <a href="{% url 'risk:entry_detail' configuration.pk entry.pk %}">&larr; {{ entry.label }}</a>
-  </p>
+  {% include "core/_breadcrumb.html" %}
   <h1>Delete {{ entry.get_entry_type_display|lower }} “{{ entry.label }}”?</h1>
   <p>This removes the entry from the product's register in every configuration. It can't be undone in the app.</p>
 

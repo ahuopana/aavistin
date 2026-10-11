@@ -1,17 +1,10 @@
 {% extends "base.html" %}
+{% load nav_tags %}
 
 {% block title %}{{ product.name }} · Aavistin{% endblock %}
 
 {% block content %}
-  <nav class="breadcrumb" aria-label="Breadcrumb">
-    <a href="{% url 'orgs:portfolio' %}">Portfolio</a>
-    <span class="breadcrumb-sep">/</span>
-    <a href="{% url 'orgs:detail' product.product_family.organisation.slug %}">{{ product.product_family.organisation.name }}</a>
-    <span class="breadcrumb-sep">/</span>
-    <span>{{ product.product_family.name }}</span>
-    <span class="breadcrumb-sep">/</span>
-    <span class="breadcrumb-current">{{ product.name }}</span>
-  </nav>
+  {% include "core/_breadcrumb.html" %}
 
   <div x-data="{ editingProduct: false }">
     <div class="page-header">
@@ -20,7 +13,10 @@
           {{ product.name }}
           <span class="badge badge-{{ product.status }}">{{ product.get_status_display }}</span>
         </h1>
-        <p class="page-header-meta"><a href="{% url 'evidence:product_list' product.pk %}">Evidence</a></p>
+        <p class="page-header-meta">
+          {% if question_links.product %}<a href="{{ question_links.product }}">Product questions</a> · {% endif %}
+          <a href="{% url 'evidence:product_list' product.pk %}">Evidence</a>
+        </p>
         {% if product.description %}<p>{{ product.description }}</p>{% endif %}
       </div>
 
@@ -92,7 +88,7 @@
           {% csrf_token %}
           <h4>Edit product: {{ product.name }}</h4>
           <div class="field"><label>Name<input type="text" name="name" value="{{ product.name }}" required></label></div>
-          <div class="field"><label>Slug<input type="text" name="slug" value="{{ product.slug }}" required></label></div>
+          <div class="field"><label>Slug<input type="text" name="slug" value="{{ product.slug }}"></label><span class="field-hint">Leave empty to derive it from the name.</span></div>
           <div class="field"><label>Description<textarea name="description">{{ product.description }}</textarea></label></div>
           <button type="submit" class="button-primary">Save</button>
         </form>
@@ -164,7 +160,7 @@
                     {% csrf_token %}
                     <h4>Edit hardware variant: {{ variant.name }}</h4>
                     <div class="field"><label>Name<input type="text" name="name" value="{{ variant.name }}" required></label></div>
-                    <div class="field"><label>Slug<input type="text" name="slug" value="{{ variant.slug }}" required></label></div>
+                    <div class="field"><label>Slug<input type="text" name="slug" value="{{ variant.slug }}"></label><span class="field-hint">Leave empty to derive it from the name.</span></div>
                     <div class="field">
                       <label for="id_variant_{{ variant.pk }}_target_markets">Target markets</label>
                       <select id="id_variant_{{ variant.pk }}_target_markets" name="target_markets" multiple size="{{ target_markets|length }}">
@@ -181,7 +177,9 @@
 
             {% for revision in variant.revisions.all %}
               <tr class="row-child">
-                <td>Rev {{ revision.label }}</td>
+                <td>Rev {{ revision.label }}
+                  {% with url=question_links.revision|get_item:revision.pk %}{% if url %}<a class="field-hint" href="{{ url }}">Hardware questions</a>{% endif %}{% endwith %}
+                </td>
                 <td>{{ revision.released_at|default:"unreleased" }}</td>
                 <td>
                   {% if revision.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
@@ -246,7 +244,6 @@
         <form method="post" action="{% url 'products:hardware_variant_create' product.pk %}" class="inline-form add-row">
           {% csrf_token %}
           <input type="text" name="name" placeholder="New hardware variant name" aria-label="New hardware variant name" required>
-          <input type="text" name="slug" placeholder="slug" aria-label="Slug" required>
           <button type="submit">+ Add</button>
         </form>
       {% endif %}
@@ -262,6 +259,7 @@
             <tr>
               <td>
                 {{ release.name }} {{ release.version }}
+                {% with url=question_links.release|get_item:release.pk %}{% if url %}<a class="field-hint" href="{{ url }}">Software questions</a>{% endif %}{% endwith %}
                 <span class="field-hint">Markets: {% for tm in release.target_markets.all %}{{ tm.code }}{% if not forloop.last %}, {% endif %}{% empty %}as hardware variant{% endfor %}</span>
               </td>
               <td>{{ release.released_at|default:"unreleased" }}</td>
@@ -316,7 +314,9 @@
 
             {% for option in release.options.all %}
               <tr class="row-child">
-                <td>{{ option.name }}</td>
+                <td>{{ option.name }}
+                  {% with url=question_links.option|get_item:option.pk %}{% if url %}<a class="field-hint" href="{{ url }}">Option questions</a>{% endif %}{% endwith %}
+                </td>
                 <td></td>
                 <td>
                   {% if option.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
@@ -350,7 +350,7 @@
                       {% csrf_token %}
                       <h4>Edit software option: {{ option.name }}</h4>
                       <div class="field"><label>Name<input type="text" name="name" value="{{ option.name }}" required></label></div>
-                      <div class="field"><label>Slug<input type="text" name="slug" value="{{ option.slug }}" required></label></div>
+                      <div class="field"><label>Slug<input type="text" name="slug" value="{{ option.slug }}"></label><span class="field-hint">Leave empty to derive it from the name.</span></div>
                       <div class="field"><label>Description<textarea name="description">{{ option.description }}</textarea></label></div>
                       <button type="submit" class="button-primary">Save</button>
                     </form>
@@ -367,7 +367,6 @@
                   <form method="post" action="{% url 'products:software_option_create' release.pk %}" class="inline-form add-row">
                     {% csrf_token %}
                     <input type="text" name="name" placeholder="New option name" aria-label="New option name" required>
-                    <input type="text" name="slug" placeholder="slug" aria-label="Slug" required>
                     <button type="submit">+ Add</button>
                   </form>
                 </td>
@@ -392,20 +391,28 @@
     <div class="tab-panel" x-show="tab === 'configurations'">
       <table class="entity-table">
         <thead>
-          <tr><th>Name</th><th>Hardware / software</th><th>Status</th><th>Actions</th></tr>
+          <tr><th>Name</th><th>Hardware / software</th><th>Progress</th><th>Status</th><th>Actions</th></tr>
         </thead>
         {% for configuration in configurations %}
           <tbody x-data="{ editingConfiguration: false }">
             <tr>
               <td>
-                <a href="{% url 'assessments:configuration_detail' configuration.pk %}">{{ configuration.name }}</a>
-                <a class="field-hint" href="{% url 'risk:register' configuration.pk %}">Risk register</a>
+                <strong>{{ configuration.name }}</strong>
+                <div class="row-actions">
+                  <a href="{% url 'assessments:configuration_detail' configuration.pk %}">Questions</a>
+                  <a href="{% url 'risk:register' configuration.pk %}">Risk register</a>
+                  {% if configuration.workflow.assessment %}<a href="{% url 'assessments:assessment_detail' configuration.workflow.assessment.pk %}">Assessment #{{ configuration.workflow.assessment.pk }}</a>{% endif %}
+                </div>
               </td>
               <td>
                 {{ configuration.hardware_revision }} / {{ configuration.software_release }}
                 {% with options=configuration.software_options.all %}
                   {% if options %} + {% for o in options %}{{ o.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
                 {% endwith %}
+              </td>
+              <td>
+                {% include "core/_workflow_chips.html" with workflow=configuration.workflow %}
+                <div class="field-hint">Next: {{ configuration.workflow.next.label }}</div>
               </td>
               <td>
                 {% if configuration.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
@@ -428,7 +435,7 @@
             </tr>
             {% if can_edit %}
               <tr x-show="editingConfiguration" x-cloak>
-                <td colspan="4">
+                <td colspan="5">
                   <form method="post" action="{% url 'products:configuration_edit' configuration.pk %}" class="form-vertical">
                     {% csrf_token %}
                     <h4>Edit configuration: {{ configuration.name }}</h4>
@@ -466,7 +473,7 @@
             {% endif %}
           </tbody>
         {% empty %}
-          <tbody><tr><td colspan="4">No configurations yet.</td></tr></tbody>
+          <tbody><tr><td colspan="5">No configurations yet. A configuration combines a hardware revision and a software release; questions, assessments and the risk register are worked per configuration.</td></tr></tbody>
         {% endfor %}
       </table>
       {% if can_edit %}

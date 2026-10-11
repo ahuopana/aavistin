@@ -43,6 +43,19 @@ def _editors_of(resolved) -> set[int]:
     return editor_ids
 
 
+def sod_preview(assessment: Assessment, user, resolved=None) -> str | None:
+    """What separation of duties would say if ``user`` approved now:
+    ``None`` (no conflict or policy off), ``"warn"`` or ``"enforce"``."""
+    if resolved is None:
+        resolved, _packages = resolve_answers(assessment.configuration)
+    if user.id not in _editors_of(resolved):
+        return None
+    policy = effective_sod_policy(product_family=_product_family(assessment.configuration))
+    if policy in (SoDPolicy.WARN, SoDPolicy.ENFORCE):
+        return policy
+    return None
+
+
 def approve_assessment(assessment: Assessment, *, actor) -> Assessment:
     if assessment.status == AssessmentStatus.APPROVED:
         raise AssessmentError("assessment is already approved")

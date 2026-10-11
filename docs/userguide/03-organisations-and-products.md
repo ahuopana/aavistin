@@ -40,6 +40,10 @@ A **Product** belongs to a product family. Under it:
   software release, with optional software options — this is the unit
   an assessment is actually performed against.
 
+New products, hardware variants and software options only need a name:
+the short identifier in addresses (the "slug") is derived from it, and
+can be changed later in the edit form.
+
 ## Approval
 
 Hardware variants, hardware revisions, software releases, software

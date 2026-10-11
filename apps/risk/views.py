@@ -2,9 +2,11 @@
 plus matching deltas), a detail page per entry, and adding or editing
 entries by hand.
 
-Rating, treatment, causes, controls and suggestion review follow; deltas and
-approval are still admin-only. See docs/adr/0027-risk-entry-authoring.md,
-0028-risk-rating-and-treatment.md and 0029-hazard-causes-and-suggestion-review.md.
+Rating, treatment, causes, controls, suggestion review and approval of
+the configuration's register view follow; deltas are still admin-only.
+See docs/adr/0027-risk-entry-authoring.md, 0028-risk-rating-and-treatment.md,
+0029-hazard-causes-and-suggestion-review.md and
+0032-navigation-and-workflow-guidance.md.
 """
 
 from django.contrib import messages as django_messages
@@ -17,6 +19,7 @@ from django.utils.html import format_html, format_html_join
 from django.utils.http import urlencode
 from django.views.decorators.http import require_POST
 
+from apps.core.navigation import breadcrumbs, configuration_workflow, latest_risk_assessment
 from apps.core.readiness import register_readiness
 from apps.orgs.models import Role
 from apps.orgs.services import has_role
@@ -24,6 +27,7 @@ from apps.packages.models import PackageKind, PackageStatus, RequirementPackage
 from apps.products.models import Configuration, HardwareVariant, SoftwareOption, SoftwareRelease
 
 from . import mitigation
+from .approval import RiskAssessmentError, approve_risk_assessment
 from .consistency import check_threat_hazard_consistency
 from .mitigation import mitigation_controls, mitigation_state
 from .models import (
@@ -36,6 +40,8 @@ from .models import (
     HazardCause,
     ImpactCategory,
     Rating,
+    RiskAssessment,
+    RiskAssessmentStatus,
     RiskEntry,
     SuggestionStatus,
     ThreatConsequence,
@@ -133,11 +139,20 @@ def register(request, pk):
     ]
     counts = {t.value: sum(1 for e in entries if e.entry_type == t) for t in TYPE_ORDER}
 
-    pending_count = len(pending_suggestions(configuration))
+    pending = pending_suggestions(configuration)
+    pending_count = len(pending)
+    workflow = configuration_workflow(
+        configuration, request.user, entries=entries, pending=pending
+    )
     return render(
         request,
         "risk/register.html",
         {
+            "crumbs": breadcrumbs(configuration=configuration, trail=[("Risk register", None)]),
+            "workflow": workflow,
+            "risk_assessment": workflow["risk_assessment"],
+            "risk_state": workflow["risk_state"],
+            "can_approve": has_role(request.user, Role.APPROVER, product=product),
             "readiness": register_readiness(configuration, pending_suggestions=pending_count)
             if not entries
             else [],
@@ -252,6 +267,13 @@ def entry_detail(request, pk, entry_pk):
         request,
         "risk/entry_detail.html",
         {
+            "crumbs": breadcrumbs(
+                configuration=configuration,
+                trail=[
+                    ("Risk register", reverse("risk:register", args=[configuration.pk])),
+                    (entry.label, None),
+                ],
+            ),
             "configuration": configuration,
             "entry": entry,
             "scope": _scope_label(entry),
@@ -512,6 +534,21 @@ def _entry_form(request, configuration, entry: RiskEntry, *, is_new: bool):
         request,
         "risk/entry_form.html",
         {
+            "crumbs": breadcrumbs(
+                configuration=configuration,
+                trail=[("Risk register", reverse("risk:register", args=[configuration.pk]))]
+                + (
+                    [("Add entry", None)]
+                    if is_new
+                    else [
+                        (
+                            entry.label,
+                            reverse("risk:entry_detail", args=[configuration.pk, entry.pk]),
+                        ),
+                        ("Edit", None),
+                    ]
+                ),
+            ),
             "configuration": configuration,
             "entry": entry,
             "is_new": is_new,
@@ -978,6 +1015,14 @@ def entry_delete(request, pk, entry_pk):
         request,
         "risk/entry_confirm_delete.html",
         {
+            "crumbs": breadcrumbs(
+                configuration=configuration,
+                trail=[
+                    ("Risk register", reverse("risk:register", args=[configuration.pk])),
+                    (entry.label, reverse("risk:entry_detail", args=[configuration.pk, entry.pk])),
+                    ("Delete", None),
+                ],
+            ),
             "configuration": configuration,
             "entry": entry,
             "ratings": entry.ratings.count() + entry.asset_ratings.count(),
@@ -1015,6 +1060,13 @@ def suggestions(request, pk):
         request,
         "risk/suggestions.html",
         {
+            "crumbs": breadcrumbs(
+                configuration=configuration,
+                trail=[
+                    ("Risk register", reverse("risk:register", args=[configuration.pk])),
+                    ("Suggestions", None),
+                ],
+            ),
             "configuration": configuration,
             "product": product,
             "pending": _suggestion_rows(configuration),
@@ -1131,3 +1183,34 @@ def suggestion_restore(request, pk, entry_pk):
         request, format_html('Accepted <a href="{}">{}</a> after all.', detail_url, entry.label)
     )
     return redirect("risk:suggestions", pk=pk)
+
+
+@login_required
+@require_POST
+def approve(request, pk):
+    """Approve the configuration's register view: a new RiskAssessment with a
+    frozen snapshot (apps.risk.approval). Re-approving after changes starts a
+    new one; earlier snapshots stay as history."""
+    configuration = get_object_or_404(Configuration, pk=pk)
+    product = configuration.hardware_revision.hardware_variant.product
+    if not has_role(request.user, Role.APPROVER, product=product):
+        django_messages.error(request, "You need the approver role to approve the risk register.")
+        return redirect(reverse("risk:register", args=[pk]) + "#approval")
+    if not register_for_configuration(configuration):
+        django_messages.error(request, "The risk register is empty; there is nothing to approve.")
+        return redirect(reverse("risk:register", args=[pk]) + "#approval")
+    current = latest_risk_assessment(configuration)
+    if current and current.status == RiskAssessmentStatus.APPROVED and not current.stale:
+        django_messages.info(request, "The risk register is already approved and up to date.")
+        return redirect(reverse("risk:register", args=[pk]) + "#approval")
+    risk_assessment = (
+        current
+        if current and current.status != RiskAssessmentStatus.APPROVED
+        else RiskAssessment.objects.create(configuration=configuration)
+    )
+    try:
+        approve_risk_assessment(risk_assessment, actor=request.user)
+        django_messages.success(request, "Risk register approved.")
+    except RiskAssessmentError as exc:
+        django_messages.error(request, str(exc))
+    return redirect(reverse("risk:register", args=[pk]) + "#approval")

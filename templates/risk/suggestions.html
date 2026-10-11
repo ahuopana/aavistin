@@ -3,9 +3,7 @@
 {% block title %}Suggestions · Risk register · {{ configuration.name }} · Aavistin{% endblock %}
 
 {% block content %}
-  <p class="field-hint">
-    <a href="{% url 'risk:register' configuration.pk %}">&larr; Risk register</a> · {{ configuration.name }}
-  </p>
+  {% include "core/_breadcrumb.html" %}
   <h1>Suggested register entries</h1>
   <p>Risk catalogs suggest threats and hazards from this configuration's answers and findings. Accept a suggestion to add it to {{ product.name }}'s register, or dismiss it with a reason; either way it isn't suggested again.</p>
 

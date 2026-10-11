@@ -70,6 +70,7 @@ urlpatterns = [
         views.cause_delete,
         name="cause_delete",
     ),
+    path("configurations/<int:pk>/approve/", views.approve, name="approve"),
     path("configurations/<int:pk>/suggestions/", views.suggestions, name="suggestions"),
     path(
         "configurations/<int:pk>/suggestions/accept/",

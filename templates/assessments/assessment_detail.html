@@ -4,17 +4,21 @@
 {% block title %}Assessment #{{ assessment.pk }} · Aavistin{% endblock %}
 
 {% block content %}
-  <h1>Assessment #{{ assessment.pk }}</h1>
+  {% include "core/_breadcrumb.html" %}
+  <h1>Assessment #{{ assessment.pk }}
+    <span class="badge badge-{% if assessment.status == 'approved' %}approved{% else %}draft{% endif %}">{{ assessment.get_status_display }}</span>
+    {% if assessment.stale %}<span class="badge badge-warning">stale</span>{% endif %}
+  </h1>
   <p>
-    {{ assessment.configuration }} — {{ assessment.get_status_display }}
-    {% if assessment.stale %}<span class="message message-warning">stale</span>{% endif %}
+    {{ assessment.configuration }}
+    {% if assessment.approved_at %} · approved {{ assessment.approved_at|date:"Y-m-d" }}{% if assessment.approved_by %} by {{ assessment.approved_by }}{% endif %}{% endif %}
     {% if assessment.sod_warning %}<span class="message message-warning">approved despite separation-of-duties warning</span>{% endif %}
   </p>
+  {% if assessment.stale %}
+    <p class="message message-warning">Answers or packages changed after approval. Start a new assessment to re-review.</p>
+  {% endif %}
 
-  <p>
-    <a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}#questions">{% if assessment.status == "draft" %}Answer questions{% else %}View questions{% endif %} &rarr;</a>
-    · <a href="{% url 'risk:register' assessment.configuration.pk %}">Risk register</a>
-  </p>
+  {% include "core/_workflow.html" with current_step="assessment" %}
 
   {% if progress and progress.open %}
     <p class="message message-warning">
@@ -24,11 +28,92 @@
     </p>
   {% endif %}
 
-  {% if assessment.status == "draft" and can_approve %}
-    <form method="post" action="{% url 'assessments:assessment_approve' assessment.pk %}">
-      {% csrf_token %}
-      <button type="submit">Approve (freezes a snapshot)</button>
-    </form>
+  {% if approval_check %}
+    <section class="approval-check" id="approve">
+      <h2>Before you approve</h2>
+      <ul>
+        <li>{% if approval_check.open %}<strong>{{ approval_check.open }} question{{ approval_check.open|pluralize }} still open.</strong>{% else %}All questions are answered.{% endif %}</li>
+        <li>Findings: {{ approval_check.findings.action_required }} action required, {{ approval_check.findings.caution }} caution, {{ approval_check.findings.info }} info (listed below).</li>
+        <li>Risk register: {{ approval_check.risk_entries }} entr{{ approval_check.risk_entries|pluralize:"y,ies" }};
+          {% if approval_check.risk_state == "approved" %}approved{% elif approval_check.risk_state == "stale" %}approved but stale{% else %}not approved yet{% endif %}
+          (<a href="{% url 'risk:register' assessment.configuration.pk %}#approval">open</a>).</li>
+        {% if approval_check.sod == "warn" %}
+          <li class="workflow-waiting">You edited answers in this assessment. Your organisation's separation-of-duties policy is "warn": approving is allowed but recorded.</li>
+        {% elif approval_check.sod == "enforce" %}
+          <li class="workflow-waiting">You edited answers in this assessment, and separation of duties is enforced: another approver has to approve it.</li>
+        {% endif %}
+      </ul>
+      <form method="post" action="{% url 'assessments:assessment_approve' assessment.pk %}">
+        {% csrf_token %}
+        {% if approval_check.open %}
+          <p><label><input type="checkbox" name="confirm_open" value="1" required> Approve with {{ approval_check.open }} open question{{ approval_check.open|pluralize }}</label></p>
+        {% endif %}
+        <button type="submit" class="button-primary">Approve (freezes a snapshot)</button>
+      </form>
+    </section>
+  {% endif %}
+
+  <h2>Results</h2>
+  {% for result in results %}
+    <h3>{{ result.title }} <small class="field-hint">{{ result.source }}@{{ result.version }}</small></h3>
+    <p>
+      <span class="badge {% if result.in_scope %}badge-approved{% else %}badge-unanswered{% endif %}">{% if result.in_scope %}In scope{% else %}Out of scope{% endif %}</span>
+      {% if not result.creates_legal_obligations %}(non-binding){% endif %}
+    </p>
+    {% if result.classification_labels %}
+      <p>Classifications: {% for c in result.classification_labels %}{{ c.label }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+    {% endif %}
+    {% if result.role %}
+      <p>Economic operator role: {{ result.role|choice_label }}</p>
+    {% endif %}
+    {% if result.route_labels %}
+      <p>Assessment routes: {% for r in result.route_labels %}{{ r.label }}{% if not forloop.last %}; {% endif %}{% endfor %}</p>
+    {% endif %}
+    {% if result.requirement_labels %}
+      <details>
+        <summary>Requirements in force ({{ result.requirement_labels|length }})</summary>
+        <ul>
+          {% for r in result.requirement_labels %}<li>{{ r.label }} <span class="field-hint">{{ r.ref }}</span></li>{% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+    {% if result.upcoming_labels %}
+      <details>
+        <summary>Not in force yet ({{ result.upcoming_labels|length }})</summary>
+        <ul>
+          {% for r in result.upcoming_labels %}<li>{{ r.label }} <span class="field-hint">from {{ r.date }} · {{ r.ref }}</span></li>{% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+    {% if result.ended_labels %}
+      <details>
+        <summary>No longer in force ({{ result.ended_labels|length }})</summary>
+        <ul>
+          {% for r in result.ended_labels %}<li>{{ r.label }} <span class="field-hint">until {{ r.date }} · {{ r.ref }}</span></li>{% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+  {% empty %}
+    <p>No requirement packages are active for this configuration. Here is what is set up so far:</p>
+    {% include "core/_readiness.html" with checks=readiness %}
+  {% endfor %}
+
+  <h2>Findings</h2>
+  {% if evaluation.findings %}
+    <table>
+      <thead><tr><th>Level</th><th>Message</th><th>Source</th></tr></thead>
+      <tbody>
+        {% for finding in evaluation.findings %}
+          <tr>
+            <td><span class="badge {% if finding.level == 'action_required' %}badge-deleted{% elif finding.level == 'caution' %}badge-warning{% endif %}">{{ finding.level|choice_label }}</span></td>
+            <td>{{ finding.message }}</td>
+            <td>{{ finding.source }}@{{ finding.version }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No findings.</p>
   {% endif %}
 
   <h2>Answers</h2>
@@ -50,57 +135,5 @@
     </table>
   {% else %}
     <p>No questions apply to this configuration.</p>
-  {% endif %}
-
-  <h2>Results</h2>
-  {% for result in evaluation.results %}
-    <h3>{{ result.source }}@{{ result.version }}</h3>
-    <p>
-      {% if result.in_scope %}In scope{% else %}Out of scope{% endif %}
-      {% if not result.creates_legal_obligations %}(non-binding){% endif %}
-    </p>
-    {% if result.classifications %}
-      <p>Classifications: {{ result.classifications|join:", " }}</p>
-    {% endif %}
-    {% if result.role %}
-      <p>Economic operator role: {{ result.role }}</p>
-    {% endif %}
-    {% if result.requirements %}
-      <p>Requirements: {{ result.requirements|join:", " }}</p>
-    {% endif %}
-    {% if result.upcoming_requirements %}
-      <p>Not in force yet:
-        {% for r in result.upcoming_requirements %}{{ r.id }} (from {{ r.applies_from }}){% if not forloop.last %}, {% endif %}{% endfor %}
-      </p>
-    {% endif %}
-    {% if result.ended_requirements %}
-      <p>No longer in force:
-        {% for r in result.ended_requirements %}{{ r.id }} (until {{ r.applies_until }}){% if not forloop.last %}, {% endif %}{% endfor %}
-      </p>
-    {% endif %}
-    {% if result.assessment_routes %}
-      <p>Assessment routes: {{ result.assessment_routes|join:", " }}</p>
-    {% endif %}
-  {% empty %}
-    <p>No requirement packages are active for this configuration. Here is what is set up so far:</p>
-    {% include "core/_readiness.html" with checks=readiness %}
-  {% endfor %}
-
-  <h2>Findings</h2>
-  {% if evaluation.findings %}
-    <table>
-      <thead><tr><th>Level</th><th>Message</th><th>Source</th></tr></thead>
-      <tbody>
-        {% for finding in evaluation.findings %}
-          <tr>
-            <td>{{ finding.level }}</td>
-            <td>{{ finding.message }}</td>
-            <td>{{ finding.source }}@{{ finding.version }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p>No findings.</p>
   {% endif %}
 {% endblock %}

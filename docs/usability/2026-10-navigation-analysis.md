@@ -1,5 +1,42 @@
 # Aavistin usability analysis: navigation and task flow
 
+## Update after implementation (2026-10-11)
+
+The suggestions in section 6 were implemented on the same branch (ADR 0032), and the browser walkthrough was repeated as the editor (edna), the approver (ana) and the user with both roles (sam). In the re-run, the editor answered a hardware question through the product page's "Hardware questions" link; the remaining 80-odd questions were then filled by a script to save time. From there the editor followed only the workflow bar's "Next step" button to the first risk entry. The approver followed the Approvals page and the same button through assessment, risk register and configuration approval, until the bar said "All steps are complete". Every page below the portfolio now has a breadcrumb back to the product and the portfolio.
+
+| # | Suggestion | Status |
+| --- | --- | --- |
+| P1.1 | Breadcrumb on every page below the portfolio | Solved. The family crumb links to its anchor on the portfolio; the family has no page of its own. |
+| P1.2 | "Next step" workflow bar | Solved: on the questionnaire, assessment and risk register. Another role's step reads "Waiting for …". |
+| P1.3 | Per-configuration status on the product page | Solved: step chips and the next step per configuration, plus equal Questions / Risk register / Assessment links. |
+| P1.4 | Approver worklist | Solved: Approvals page, nav link for approvers, dashboard widget. |
+| P1.5 | Readable labels in results | Solved: package titles; labels for classifications, requirements and routes; requirements folded by in force / upcoming / ended. |
+| P2.6 | Question level and owner, level filter, per-level entry points | Solved: level badge with owner ("Hardware · EU variant rev A"), "Answered at" filter with open counts, Hardware / Software / Option / Product question links on the product page, option choice when there are several, owner checked server-side. |
+| P2.7 | Risk register approval in the app | Solved: Approval section on the register (status, summary, approve), on the approver worklist. |
+| P2.8 | Check before approving an assessment | Solved: "Before you approve" summary (open questions, findings, risk state, separation of duties); open questions need explicit confirmation. |
+| P2.9 | Success messages after saving | Solved for answers ("Answer saved on … It applies to every configuration that uses it"). Correction: product-page actions already showed messages. |
+| P3.10 | Slugs derived from names | Solved: add forms ask only for a name; edit forms keep an optional slug. |
+| P3.11 | One product overview | Partly: the Organisation page has a breadcrumb, and the portfolio links to organisations. Merging the two pages is deferred. |
+| P3.12 | Progress columns on the Portfolio | Solved. |
+| P3.13 | Evidence links from controls | Solved for controls on the risk entry page (linked evidence, or a link to add some). Requirement-level evidence links are not shown on the assessment page yet. |
+
+**Found and fixed during the work**
+
+- Assessment pages checked roles at product-family scope only, so roles granted on a single product were ignored there. They now use product scope like the product and risk pages.
+- In the first re-run, an empty register's next step pointed back to the register itself; it now opens the add-entry form.
+- The Approval step originally ignored the configuration's own approval; it now includes it.
+
+**Still open**
+
+- **HW and SW editors are still one Editor role.** The level badges, filter and shortcuts make clear who should answer what, but nothing restricts it. A scoped role needs a design decision.
+- **The questionnaire is long** (88 questions for CRA + RED in the demo), and its total grows as answers make conditional questions apply. The level and open filters help; a per-group progress view could help more.
+- **Entity approvals stay one row at a time** (product, variants, revisions, releases, options, configurations); there is no bulk approve.
+- **Risk register approval has no separation-of-duties check**, as before in admin.
+- **Cost:** the workflow, worklist and portfolio progress are computed per request. Fine at demo scale; watch with larger portfolios.
+
+The original analysis follows unchanged.
+
+
 `main` at `a4cfd14`, 2026-10-11. Based on a review of every page template and a browser walkthrough with realistic data:
 
 - one product (TempSense: one HW variant and revision, one SW release with an option, one configuration);

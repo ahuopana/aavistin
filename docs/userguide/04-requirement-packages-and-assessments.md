@@ -27,6 +27,17 @@ to the configuration with the most specific answer winning — an answer
 at a more specific level can override one inherited from above, with a
 justification if the value actually differs.
 
+Each question shows the level it is answered at, and where the answer is
+stored, e.g. "Hardware · EU variant rev A" or "Software · Firmware 1.0".
+The answer applies to every configuration that uses that revision,
+release or option. Use the **Answered at** filter to see only one level:
+a hardware engineer can work through the hardware questions and a
+software engineer through the software ones. The product page also links
+straight to them from each hardware revision ("Hardware questions"),
+software release and option. When a configuration has several options,
+an option-level question lets you pick which option the answer belongs
+to.
+
 ### Questionnaire progress
 
 The top of the questionnaire shows how far it has got: how many active
@@ -74,6 +85,12 @@ answers) for audit purposes. If the underlying data changes afterwards
 (an answer changes, the package itself is updated, or a date passes that
 brings a requirement into force or ends it), the approved assessment is
 flagged **stale** and due for re-review — it is not silently recalculated.
+
+Before approving, the assessment page shows a **Before you approve**
+summary: open questions, findings by level, the risk register's state
+and, if you edited answers yourself, what the separation-of-duties
+policy says. Approving with questions still open needs an explicit
+confirmation.
 
 ## EU Cyber Resilience Act
 

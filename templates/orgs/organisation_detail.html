@@ -3,13 +3,14 @@
 {% block title %}{{ organisation.name }} · Aavistin{% endblock %}
 
 {% block content %}
+  {% include "core/_breadcrumb.html" %}
   <h1>{{ organisation.name }}</h1>
   <p>Separation of duties: {{ organisation.get_sod_policy_display }}</p>
 
   <h2>Product families</h2>
   {% if product_families %}
     {% for family in product_families %}
-      <h3>{{ family.name }} <small>({{ family.effective_sod_policy }})</small></h3>
+      <h3 id="family-{{ family.pk }}">{{ family.name }} <small>({{ family.effective_sod_policy }})</small></h3>
       {% with products=family.products.all %}
         {% if products %}
           <ul>
@@ -27,8 +28,7 @@
       {% if family.id in editable_family_ids %}
         <form method="post" action="{% url 'products:product_create' family.id %}">
           {% csrf_token %}
-          <input type="text" name="name" placeholder="Product name" required>
-          <input type="text" name="slug" placeholder="slug" required>
+          <input type="text" name="name" placeholder="Product name" aria-label="New product name" required>
           <button type="submit">+ Add product</button>
         </form>
       {% endif %}

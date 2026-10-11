@@ -4,10 +4,11 @@
 {% block title %}{{ configuration.name }} · Aavistin{% endblock %}
 
 {% block content %}
-  <h1>{{ configuration.name }}</h1>
-  <p>{{ product.name }} — {{ configuration.hardware_revision }} / {{ configuration.software_release }}</p>
+  {% include "core/_breadcrumb.html" %}
+  <h1>{{ configuration.name }} <small class="page-header-meta">Questionnaire</small></h1>
+  <p>{{ configuration.hardware_revision }} / {{ configuration.software_release }}{% with options=configuration.software_options.all %}{% if options %} + {% for o in options %}{{ o.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}{% endwith %}</p>
 
-  <p><a href="{% url 'risk:register' configuration.pk %}">Risk register for this configuration &rarr;</a></p>
+  {% include "core/_workflow.html" with current_step="questions" %}
 
   <div class="dashboard-widgets">
     <section class="dashboard-widget questionnaire-progress">
@@ -27,13 +28,16 @@
 
   <div x-data="{
     openOnly: new URLSearchParams(window.location.search).get('show') === 'open',
-    setOpenOnly(value) {
-      this.openOnly = value;
+    level: new URLSearchParams(window.location.search).get('level') || '',
+    query() { return window.location.search.replace(/^\?/, ''); },
+    setParam(name, value) {
       const params = new URLSearchParams(window.location.search);
-      if (value) { params.set('show', 'open'); } else { params.delete('show'); }
+      if (value) { params.set(name, value); } else { params.delete(name); }
       const query = params.toString();
       history.replaceState(null, '', window.location.pathname + (query ? '?' + query : '') + window.location.hash);
-    }
+    },
+    setOpenOnly(value) { this.openOnly = value; this.setParam('show', value ? 'open' : ''); },
+    setLevel(value) { this.level = value; this.setParam('level', value); }
   }">
   <h2 id="questions">Questions</h2>
   {% if packages %}
@@ -42,9 +46,18 @@
     </p>
   {% endif %}
   {% if progress.total %}
-    <p x-cloak>
+    <div class="level-filter" x-cloak>
       <label><input type="checkbox" :checked="openOnly" @change="setOpenOnly($event.target.checked)"> Show only questions still to answer ({{ progress.open }})</label>
-    </p>
+      <label>Answered at
+        <select aria-label="Filter by level" @change="setLevel($event.target.value)">
+          <option value="" :selected="level === ''">All levels ({{ progress.total }})</option>
+          {% for c in level_counts %}
+            <option value="{{ c.level }}" :selected="level === '{{ c.level }}'">{{ c.label }} ({{ c.open }} open of {{ c.total }})</option>
+          {% endfor %}
+        </select>
+      </label>
+      <span class="info" tabindex="0" role="note" aria-label="Each question is answered at one level: product, hardware revision, software release or option. The answer is stored there and applies to every configuration that uses it." data-tip="Each question is answered at one level: product, hardware revision, software release or option. The answer is stored there and applies to every configuration that uses it.">i</span>
+    </div>
   {% endif %}
   <table>
     <thead>
@@ -53,11 +66,12 @@
     <tbody>
       {% for row in rows %}
         {% if row.group_start %}
-          <tr class="question-group"{% if not row.group_has_open %} x-show="!openOnly"{% endif %}><th colspan="4" scope="colgroup">{% if row.group %}{{ row.group.title }}{% else %}Other questions{% endif %}</th></tr>
+          <tr class="question-group" x-show="level === '' ? (!openOnly || {{ row.group_has_open|yesno:'true,false' }}) : (openOnly ? {{ row.group_open_levels }}.includes(level) : {{ row.group_levels }}.includes(level))"><th colspan="4" scope="colgroup">{% if row.group %}{{ row.group.title }}{% else %}Other questions{% endif %}</th></tr>
         {% endif %}
-        <tr id="q-{{ row.question.id }}"{% if not row.is_open %} x-show="!openOnly"{% endif %}>
+        <tr id="q-{{ row.question.id }}" x-show="(!openOnly || {{ row.is_open|yesno:'true,false' }}) && (level === '' || level === '{{ row.level }}')">
           <td class="cell-question">
             {{ row.question.label|default:row.question.id }}
+            <span class="badge badge-level" title="Answered at this level; the answer applies to every configuration that uses it">{{ row.owner_label }}</span>
             {% if row.question.used_by|length > 1 %}<span class="field-hint">also used by: {{ row.question.used_by|join:", " }}</span>{% endif %}
             {% if row.needs_confirmation %}<span class="badge badge-warning">needs confirmation</span>{% endif %}
             {% if row.question.guidance %}
@@ -91,7 +105,14 @@
                   {% csrf_token %}
                   <input type="hidden" name="question_id" value="{{ row.question.id }}">
                   <input type="hidden" name="owner_type" value="{{ row.owner_type }}">
-                  <input type="hidden" name="owner_id" value="{{ row.owner_id }}">
+                  {% if row.owner_choices %}
+                    <select name="owner_id" aria-label="Option this answer belongs to">
+                      {% for o in row.owner_choices %}<option value="{{ o.pk }}" {% if o.pk == row.owner_id %}selected{% endif %}>{{ o.name }}</option>{% endfor %}
+                    </select>
+                  {% else %}
+                    <input type="hidden" name="owner_id" value="{{ row.owner_id }}">
+                  {% endif %}
+                  <input type="hidden" name="return_query" :value="query()">
                   <input type="hidden" name="question_type" value="{{ row.question.type }}">
                   {% if row.question.type == "boolean" %}
                     <select name="value" aria-label="Answer">
@@ -130,7 +151,7 @@
   </table>
   </div>
 
-  <h2>Assessments</h2>
+  <h2 id="assessments">Assessments</h2>
   {% if assessments %}
     <ul>
       {% for a in assessments %}

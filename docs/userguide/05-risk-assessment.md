@@ -134,3 +134,9 @@ Like assessments, a product's risk register can be **approved** per
 configuration view, recording exactly which method and catalog versions
 were used — and goes **stale** the same way if the underlying data
 changes afterwards.
+
+An Approver approves from the **Approval** section at the bottom of the
+risk register, which also summarises what is still open (ratings that
+must be treated, unrated entries, consistency issues, pending
+suggestions). Each control lists the evidence linked to it, with a link
+to add some when there is none.

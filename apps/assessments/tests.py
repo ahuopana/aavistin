@@ -377,11 +377,15 @@ class EuCraResultsPageTests(EuCraConfigurationFixture):
             response = self.client.get(
                 reverse("assessments:assessment_detail", args=[assessment.pk])
             )
-        self.assertContains(response, "Economic operator role: manufacturer")
-        self.assertContains(response, "art_14_report_exploited_vulnerabilities")
-        self.assertContains(response, "Not in force yet:")
+        # Results show the package's labels, not requirement ids.
+        self.assertContains(response, "Economic operator role: Manufacturer")
+        self.assertContains(response, "Notify actively exploited vulnerabilities")
+        self.assertNotContains(response, "art_14_report_exploited_vulnerabilities")
+        self.assertContains(response, "Not in force yet (")
         self.assertContains(
-            response, "annex_i_2a_no_known_exploitable_vulnerabilities (from 2027-12-11)"
+            response,
+            "Place the product on the market without known exploitable vulnerabilities "
+            '<span class="field-hint">from 2027-12-11',
         )
 
 
@@ -712,7 +716,8 @@ class ViewTests(ConfigurationFixture):
         self.client.force_login(self.editor)
         response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
         config_url = reverse("assessments:configuration_detail", args=[self.configuration.pk])
-        self.assertContains(response, f'href="{config_url}#questions"')
+        # The workflow bar's Questions step links to the open questions.
+        self.assertContains(response, f'href="{config_url}?show=open#questions"')
         self.assertContains(response, f'href="{config_url}#q-has_power_source"')
         self.assertContains(response, "Does the widget have a power source?")
 
@@ -728,8 +733,13 @@ class ViewTests(ConfigurationFixture):
         self.assertContains(response, "1/3")
         self.assertEqual(response.context["progress"]["open"], 2)
         # Answered rows hide under the "only open" filter; open rows never do.
-        self.assertContains(response, 'id="q-has_power_source" x-show="!openOnly"')
-        self.assertContains(response, '<tr id="q-is_toy_widget">', html=False)
+        # Both also follow the level filter.
+        self.assertContains(
+            response,
+            'id="q-has_power_source" x-show="(!openOnly || false) && '
+            "(level === '' || level === 'hardware')",
+        )
+        self.assertContains(response, 'id="q-is_toy_widget" x-show="(!openOnly || true)')
 
     def test_draft_assessment_links_to_open_questions(self):
         assessment = Assessment.objects.create(configuration=self.configuration)
