@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_new %}Add register entry{% else %}Edit {{ entry.label }}{% endif %} · Risk register · Aavistin{% endblock %}
+
+{% block content %}
+  <p class="field-hint">
+    <a href="{% url 'risk:register' configuration.pk %}">&larr; Risk register</a> · {{ configuration.name }}
+  </p>
+  <h1>{% if is_new %}Add register entry{% else %}Edit {{ entry.get_entry_type_display|lower }}{% endif %}</h1>
+  <p class="field-hint">Entries belong to the product's register ({{ entry.product.name }}), not just this configuration; the scope decides which configurations they apply to.</p>
+
+  <form method="post" class="form-vertical risk-entry-form" x-data="{ type: '{{ entry.entry_type|escapejs }}' }">
+    {% csrf_token %}
+    {% if is_new %}
+      <fieldset class="field">
+        <legend>Type</legend>
+        {% for t in entry_types %}
+          <label class="radio-option">
+            <input type="radio" name="entry_type" value="{{ t.value }}" x-model="type" {% if entry.entry_type == t.value %}checked{% endif %} required>
+            {{ t.label }}
+          </label>
+        {% endfor %}
+        <p class="field-hint">
+          <strong>Asset:</strong> something worth protecting, e.g. firmware or user data.
+          <strong>Threat:</strong> intentional compromise of an asset's confidentiality, integrity or availability.
+          <strong>Hazard:</strong> harm to people or property, e.g. electric shock or fire.
+        </p>
+      </fieldset>
+    {% endif %}
+
+    <div class="field">
+      <label for="id_label">Label</label>
+      <input type="text" id="id_label" name="label" value="{{ entry.label }}" maxlength="200" required{% if is_new %} autofocus{% endif %}>
+    </div>
+    <div class="field">
+      <label for="id_description">Description</label>
+      <textarea id="id_description" name="description" rows="4">{{ entry.description }}</textarea>
+    </div>
+
+    <div class="field" x-show="type === 'threat'">
+      <label for="id_asset">Targets asset</label>
+      <select id="id_asset" name="asset">
+        <option value="">— none yet —</option>
+        {% for asset in assets %}
+          <option value="{{ asset.pk }}" {% if entry.asset_id == asset.pk %}selected{% endif %}>{{ asset.label }}</option>
+        {% endfor %}
+      </select>
+      {% if not assets %}<p class="field-hint">This product has no assets yet. Add one first to link it here, or link it later.</p>{% endif %}
+    </div>
+    {% if is_new %}
+      <fieldset class="field" x-show="type === 'threat'">
+        <legend>Violates</legend>
+        {% for choice in violates_choices %}
+          <label class="radio-option">
+            <input type="checkbox" name="violates" value="{{ choice.value }}" {% if choice.value in violates_selected %}checked{% endif %}>
+            {{ choice.label }}
+          </label>
+        {% endfor %}
+        <p class="field-hint">Threats only; pick at least one. Picking several adds one threat per property, labelled "Label (Property)", because each property is rated and treated on its own.</p>
+      </fieldset>
+    {% else %}
+      <div class="field" x-show="type === 'threat'">
+        <label for="id_violates">Violates</label>
+        <select id="id_violates" name="violates">
+          <option value="">— property —</option>
+          {% for choice in violates_choices %}
+            <option value="{{ choice.value }}" {% if choice.value in violates_selected %}selected{% endif %}>{{ choice.label }}</option>
+          {% endfor %}
+        </select>
+        <p class="field-hint">Threats only. Required for a threat.</p>
+      </div>
+    {% endif %}
+
+    <div class="field">
+      <label for="id_scope">Applies to</label>
+      <select id="id_scope" name="scope" {% if scope_locked %}disabled{% endif %}>
+        {% for choice in scope_choices %}
+          <option value="{{ choice.value }}" {% if scope_value == choice.value %}selected{% endif %}>{{ choice.label }}</option>
+        {% endfor %}
+      </select>
+      {% if scope_locked %}
+        <p class="field-hint">This entry is part of a baseline/delta pair, so its scope can't change here.</p>
+      {% else %}
+        <p class="field-hint">Baseline applies to every configuration of the product. Pick a HW variant, SW release or option when the risk only exists there, e.g. a wireless threat brought by a Wi-Fi option.</p>
+      {% endif %}
+    </div>
+
+    <button type="submit" class="button-primary">{% if is_new %}Add entry{% else %}Save changes{% endif %}</button>
+    {% if is_new %}<button type="submit" name="next" value="another">Save and add another</button>{% endif %}
+    <a href="{% if is_new %}{% url 'risk:register' configuration.pk %}{% else %}{% url 'risk:entry_detail' configuration.pk entry.pk %}{% endif %}">Cancel</a>
+  </form>
+{% endblock %}

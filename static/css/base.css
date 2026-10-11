@@ -524,20 +524,33 @@ button:hover {
   border-color: var(--color-text-muted);
 }
 
-button.button-primary {
+a.button {
+  display: inline-block;
+  text-decoration: none;
+}
+
+a.button:hover {
+  background: var(--color-surface);
+  border-color: var(--color-text-muted);
+}
+
+button.button-primary,
+a.button.button-primary {
   background: var(--color-accent-fill);
   border-color: var(--color-accent-fill);
   color: var(--color-on-accent-fill);
   font-weight: 600;
 }
 
-button.button-primary:hover {
+button.button-primary:hover,
+a.button.button-primary:hover {
   filter: brightness(1.08);
   background: var(--color-accent-fill);
   border-color: var(--color-accent-fill);
 }
 
-button.button-danger {
+button.button-danger,
+a.button.button-danger {
   color: var(--color-danger);
   border-color: transparent;
 }
@@ -938,6 +951,26 @@ input[type="date"] {
   gap: var(--space-2);
 }
 
+.field .radio-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-right: var(--space-4);
+}
+
+.risk-entry-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 var(--space-3);
+}
+
+.risk-entry-form textarea,
+.risk-entry-form input[type="text"],
+.risk-entry-form select {
+  width: 100%;
+  max-width: 48rem;
+}
+
 .page-header-actions form {
   display: inline;
 }
@@ -1145,4 +1178,47 @@ input[type="date"] {
 
 .readiness-todo .readiness-state {
   color: var(--color-warning);
+}
+
+.risk-method {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.risk-method h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 0;
+}
+
+.risk-method h4 {
+  margin: var(--space-3) 0 var(--space-1);
+}
+
+.risk-edit-table select {
+  min-width: 10rem;
+}
+
+.cause-remove {
+  margin-top: var(--space-2);
+  text-align: right;
+}
+
+.suggestion-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+a.risk-stat {
+  text-decoration: none;
+}
+
+a.risk-stat:hover {
+  border-color: var(--color-text-muted);
 }

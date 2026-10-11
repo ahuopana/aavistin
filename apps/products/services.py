@@ -12,6 +12,7 @@ from django.utils.text import slugify
 from apps.assessments.evaluation import evaluate_configuration
 from apps.assessments.progress import questionnaire_progress
 from apps.orgs.models import ProductFamily, Role, RoleAssignment
+from apps.risk.mitigation import mitigation_controls, treatment_counts
 from apps.risk.models import EntryType, RiskEntry
 from apps.risk.rating import evaluate_residual_rating
 
@@ -85,7 +86,9 @@ def risk_ratio(product) -> tuple[int, int]:
     "acceptable" means every method treatment on the entry has a
     residual acceptance of "accept" or "justify" -- an entry with no
     treatment yet, or one still rated "must_treat" under any method,
-    doesn't count.
+    doesn't count. A mitigation also only counts once its controls are
+    in place (apps.risk.mitigation): a planned control is not yet a
+    reduced risk.
     """
     entries = RiskEntry.objects.filter(
         product=product,
@@ -100,8 +103,10 @@ def risk_ratio(product) -> tuple[int, int]:
     for entry in entries:
         total += 1
         treatments = list(entry.treatments.all())
+        controls = mitigation_controls(entry) if treatments else []
         if treatments and all(
             evaluate_residual_rating(t)["acceptance"] in ACCEPTABLE_RESIDUAL_RATINGS
+            and treatment_counts(t, controls)
             for t in treatments
         ):
             acceptable += 1

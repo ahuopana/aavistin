@@ -13,7 +13,7 @@ from apps.assessments.models import Answer
 from apps.orgs.models import Organisation, ProductFamily, Role, RoleAssignment
 from apps.packages.importer import approve_package, import_package
 from apps.packages.models import PackageKind
-from apps.risk.models import EntryType, RiskEntry, Treatment
+from apps.risk.models import Control, ControlStatus, EntryType, HazardCause, RiskEntry, Treatment
 
 from .models import (
     Configuration,
@@ -173,14 +173,62 @@ class RiskRatioTests(RatioFixture):
         self._make_threat()
         self.assertEqual(risk_ratio(self.product), (0, 1))
 
-    def test_accepted_residual_is_acceptable(self):
+    def _mitigate(self, entry, *, residual=1):
+        return Treatment.objects.create(
+            entry=entry,
+            method=self.method,
+            treatment_type="mitigate",
+            residual_severity=residual,
+            residual_likelihood=residual,
+        )
+
+    def test_mitigation_with_controls_in_place_is_acceptable(self):
+        threat = self._make_threat()
+        self._mitigate(threat)
+        Control.objects.create(
+            product=self.product, name="TLS", status=ControlStatus.IMPLEMENTED
+        ).threats.add(threat)
+        self.assertEqual(risk_ratio(self.product), (1, 1))
+
+    def test_mitigation_without_controls_does_not_count(self):
+        self._mitigate(self._make_threat())
+        self.assertEqual(risk_ratio(self.product), (0, 1))
+
+    def test_planned_mitigation_does_not_count_yet(self):
+        threat = self._make_threat()
+        self._mitigate(threat)
+        done = Control.objects.create(
+            product=self.product, name="TLS", status=ControlStatus.VERIFIED
+        )
+        planned = Control.objects.create(product=self.product, name="Key rotation")
+        done.threats.add(threat)
+        planned.threats.add(threat)
+        self.assertEqual(risk_ratio(self.product), (0, 1))
+        planned.status = ControlStatus.IMPLEMENTED
+        planned.save()
+        self.assertEqual(risk_ratio(self.product), (1, 1))
+
+    def test_hazard_mitigation_counts_controls_on_its_causes(self):
+        hazard = RiskEntry.objects.create(
+            product=self.product, entry_type=EntryType.HAZARD, label="Fire"
+        )
+        self._mitigate(hazard)
+        cause = HazardCause.objects.create(hazard=hazard, cause_type="hardware_failure")
+        self.assertEqual(risk_ratio(self.product), (0, 1))
+        Control.objects.create(
+            product=self.product, name="Thermal fuse", status=ControlStatus.IMPLEMENTED
+        ).hazard_causes.add(cause)
+        self.assertEqual(risk_ratio(self.product), (1, 1))
+
+    def test_accepted_treatment_needs_no_controls(self):
         threat = self._make_threat()
         Treatment.objects.create(
             entry=threat,
             method=self.method,
-            treatment_type="mitigate",
+            treatment_type="accept",
             residual_severity=1,
             residual_likelihood=1,
+            justification="Low exposure",
         )
         self.assertEqual(risk_ratio(self.product), (1, 1))
 
