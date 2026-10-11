@@ -132,7 +132,8 @@ def import_package(
 
     Raises PackageImportError on structural (schema) failure or when this
     source/version already exists — the package is not saved at all in that
-    case. Semantic lint and fixture failures do *not* raise: the package is saved with the failures
+    case. Semantic lint and fixture failures do *not* raise: the package is
+    saved with the failures
     recorded on it (status stays below 'fixtures_passed'), so a curator
     can review and fix the content. Importing never implies approval.
     """

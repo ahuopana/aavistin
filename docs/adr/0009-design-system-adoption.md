@@ -1,6 +1,6 @@
 # 9. Design system adoption: palette, typography and logo
 
-Status: Accepted
+Status: Accepted. The logo, palette and display font were replaced by ADR 0030; the token names and structure below still apply.
 
 ## Context
 

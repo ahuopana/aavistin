@@ -24,6 +24,5 @@ class Command(BaseCommand):
         header = ("SOURCE", "VERSION", "KIND", "STATUS", "LINT ERRORS")
         widths = [max(len(r[i]) for r in [header, *rows]) for i in range(len(header))]
         for row in [header, *rows]:
-            self.stdout.write(
-                "  ".join(c.ljust(w) for c, w in zip(row, widths, strict=True)).rstrip()
-            )
+            cells = (c.ljust(w) for c, w in zip(row, widths, strict=True))
+            self.stdout.write("  ".join(cells).rstrip())

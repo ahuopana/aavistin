@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load assessment_tags %}
 
 {% block title %}{{ configuration.name }} · Aavistin{% endblock %}
 
@@ -8,10 +9,41 @@
 
   <p><a href="{% url 'risk:register' configuration.pk %}">Risk register for this configuration &rarr;</a></p>
 
+  <div class="dashboard-widgets">
+    <section class="dashboard-widget questionnaire-progress">
+      <h2>Questionnaire progress</h2>
+      {% include "core/_stat_bar.html" with label="Answered" ok=progress.done total=progress.total fill="questions" %}
+      {% if progress.total %}
+        <ul class="progress-counts">
+          <li><span class="progress-count{% if progress.open %} progress-count-alert{% endif %}">{{ progress.open }}</span> still to answer</li>
+          <li><span class="progress-count">{{ progress.unanswered }}</span> unanswered</li>
+          <li><span class="progress-count">{{ progress.needs_confirmation }}</span> need confirmation</li>
+          <li><span class="progress-count">{{ progress.derived }}</span> derived from other answers</li>
+        </ul>
+        <p class="field-hint">Answering a question can make further questions apply, so the total may grow as you go.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <div x-data="{
+    openOnly: new URLSearchParams(window.location.search).get('show') === 'open',
+    setOpenOnly(value) {
+      this.openOnly = value;
+      const params = new URLSearchParams(window.location.search);
+      if (value) { params.set('show', 'open'); } else { params.delete('show'); }
+      const query = params.toString();
+      history.replaceState(null, '', window.location.pathname + (query ? '?' + query : '') + window.location.hash);
+    }
+  }">
   <h2 id="questions">Questions</h2>
   {% if packages %}
     <p class="field-hint">Assessing against:
       {% for package in packages %}<strong>{{ package.title|default:package.source }}</strong> ({{ package.source }} {{ package.version }}){% if not forloop.last %}, {% endif %}{% endfor %}
+    </p>
+  {% endif %}
+  {% if progress.total %}
+    <p x-cloak>
+      <label><input type="checkbox" :checked="openOnly" @change="setOpenOnly($event.target.checked)"> Show only questions still to answer ({{ progress.open }})</label>
     </p>
   {% endif %}
   <table>
@@ -21,9 +53,9 @@
     <tbody>
       {% for row in rows %}
         {% if row.group_start %}
-          <tr class="question-group"><th colspan="4" scope="colgroup">{% if row.group %}{{ row.group.title }}{% else %}Other questions{% endif %}</th></tr>
+          <tr class="question-group"{% if not row.group_has_open %} x-show="!openOnly"{% endif %}><th colspan="4" scope="colgroup">{% if row.group %}{{ row.group.title }}{% else %}Other questions{% endif %}</th></tr>
         {% endif %}
-        <tr id="q-{{ row.question.id }}">
+        <tr id="q-{{ row.question.id }}"{% if not row.is_open %} x-show="!openOnly"{% endif %}>
           <td class="cell-question">
             {{ row.question.label|default:row.question.id }}
             {% if row.question.used_by|length > 1 %}<span class="field-hint">also used by: {{ row.question.used_by|join:", " }}</span>{% endif %}
@@ -38,7 +70,7 @@
               </details>
             {% endif %}
           </td>
-          <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% else %}{{ row.value }}{% endif %}
+          <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% elif row.question.type == "choice" %}{{ row.value|choice_label }}{% else %}{{ row.value }}{% endif %}
             {% if row.justification %}
               {% if row.justification|length > 80 %}
                 <span class="field-hint" x-data="{ open: false }">Justification:
@@ -71,7 +103,7 @@
                     <select name="value" aria-label="Answer">
                       <option value="" {% if row.value is None %}selected{% endif %}>—</option>
                       {% for choice in row.question.choices %}
-                        <option value="{{ choice }}" {% if row.value == choice %}selected{% endif %}>{{ choice }}</option>
+                        <option value="{{ choice }}" {% if row.value == choice %}selected{% endif %}>{{ choice|choice_label }}</option>
                       {% endfor %}
                     </select>
                   {% elif row.question.type == "number" %}
@@ -96,6 +128,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 
   <h2>Assessments</h2>
   {% if assessments %}

@@ -75,32 +75,9 @@
     </div>
 
     <div class="page-status">
-      <div class="stat-bar-row">
-        <span class="stat-bar-label">Compliance</span>
-        {% with ok=compliance.0 total=compliance.1 %}
-          {% if total %}
-            <div class="stat-bar" role="img" aria-label="Compliance {{ ok }} of {{ total }}">
-              <div class="stat-bar-fill stat-bar-fill-compliance" style="width: {% widthratio ok total 100 %}%"></div>
-            </div>
-            <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
-          {% else %}
-            <span class="stat-bar-value">no data yet</span>
-          {% endif %}
-        {% endwith %}
-      </div>
-      <div class="stat-bar-row">
-        <span class="stat-bar-label">Risk</span>
-        {% with ok=risk.0 total=risk.1 %}
-          {% if total %}
-            <div class="stat-bar" role="img" aria-label="Risk {{ ok }} of {{ total }}">
-              <div class="stat-bar-fill stat-bar-fill-risk" style="width: {% widthratio ok total 100 %}%"></div>
-            </div>
-            <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
-          {% else %}
-            <span class="stat-bar-value">no data yet</span>
-          {% endif %}
-        {% endwith %}
-      </div>
+      {% include "core/_stat_bar.html" with label="Questions" ok=questions.0 total=questions.1 fill="questions" %}
+      {% include "core/_stat_bar.html" with label="Compliance" ok=compliance.0 total=compliance.1 fill="compliance" %}
+      {% include "core/_stat_bar.html" with label="Risk" ok=risk.0 total=risk.1 fill="risk" %}
     </div>
 
     {% if product.status == "deleted" %}

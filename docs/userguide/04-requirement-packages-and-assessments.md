@@ -27,6 +27,23 @@ to the configuration with the most specific answer winning — an answer
 at a more specific level can override one inherited from above, with a
 justification if the value actually differs.
 
+### Questionnaire progress
+
+The top of the questionnaire shows how far it has got: how many active
+questions are answered, and how many are still to answer — split into
+**unanswered** (no value yet) and **needs confirmation** (carried forward
+from a previous software release and not yet confirmed). Questions filled
+in automatically from other answers count as answered and are shown as
+**derived**. Tick *Show only questions still to answer* to hide the
+finished ones; the filter is kept in the link (`?show=open`), so it can
+be shared. Answering a question can make further questions apply, so
+the total may grow as you go.
+
+A draft assessment repeats the count with a link straight to the open
+questions. The same progress, summed over a product's configurations,
+appears as the **Questions** bar on the product page and on the
+Compliance Overview.
+
 ## What evaluation produces
 
 For each active package, evaluating a configuration works out:

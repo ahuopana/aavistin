@@ -25,6 +25,7 @@ from apps.products.models import (
 from .carryforward import confirm_answers, copy_answers_forward
 from .evaluation import evaluate_configuration
 from .models import Answer, Assessment, AssessmentStatus
+from .progress import questionnaire_progress
 from .resolution import resolve_answer, resolve_answers
 from .services import (
     AssessmentError,
@@ -34,6 +35,7 @@ from .services import (
     recompute_staleness,
 )
 from .tasks import refresh_staleness_task
+from .templatetags.assessment_tags import choice_label
 from .views import _coerce_value
 
 DEMO_DIR = Path(settings.BASE_DIR) / "packages" / "demo-widget-safety"
@@ -648,6 +650,48 @@ class BackgroundTaskTests(ConfigurationFixture):
         self.assertTrue(assessment.stale)
 
 
+class QuestionnaireProgressTests(ConfigurationFixture):
+    def test_nothing_answered(self):
+        progress = questionnaire_progress(self.configuration)
+        self.assertEqual(progress["total"], 3)
+        self.assertEqual(progress["done"], 0)
+        self.assertEqual(progress["unanswered"], 3)
+        self.assertEqual(progress["open"], 3)
+
+    def test_answered_and_needs_confirmation_counted_separately(self):
+        Answer.objects.create(
+            question_id="has_power_source", value=True, hardware_revision=self.revision
+        )
+        Answer.objects.create(
+            question_id="is_toy_widget",
+            value=False,
+            product=self.product,
+            needs_confirmation=True,
+        )
+        progress = questionnaire_progress(self.configuration)
+        self.assertEqual(
+            progress,
+            {
+                "total": 3,
+                "done": 1,
+                "unanswered": 1,
+                "needs_confirmation": 1,
+                "derived": 0,
+                "open": 2,
+            },
+        )
+
+    def test_cleared_answer_counts_as_unanswered(self):
+        Answer.objects.create(question_id="is_toy_widget", value="", product=self.product)
+        self.assertEqual(questionnaire_progress(self.configuration)["unanswered"], 3)
+
+    def test_no_active_packages(self):
+        self.package.__class__.objects.update(status="superseded")
+        progress = questionnaire_progress(self.configuration)
+        self.assertEqual(progress["total"], 0)
+        self.assertEqual(progress["open"], 0)
+
+
 class ViewTests(ConfigurationFixture):
     def _answer_payload(self, **overrides):
         payload = {
@@ -671,6 +715,29 @@ class ViewTests(ConfigurationFixture):
         self.assertContains(response, f'href="{config_url}#questions"')
         self.assertContains(response, f'href="{config_url}#q-has_power_source"')
         self.assertContains(response, "Does the widget have a power source?")
+
+    def test_configuration_detail_shows_questionnaire_progress(self):
+        Answer.objects.create(
+            question_id="has_power_source", value=True, hardware_revision=self.revision
+        )
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, "Questionnaire progress")
+        self.assertContains(response, "1/3")
+        self.assertEqual(response.context["progress"]["open"], 2)
+        # Answered rows hide under the "only open" filter; open rows never do.
+        self.assertContains(response, 'id="q-has_power_source" x-show="!openOnly"')
+        self.assertContains(response, '<tr id="q-is_toy_widget">', html=False)
+
+    def test_draft_assessment_links_to_open_questions(self):
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
+        config_url = reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        self.assertContains(response, "3 of 3 questions still to answer")
+        self.assertContains(response, f'href="{config_url}?show=open#questions"')
 
     def test_assessment_without_active_packages_explains_why(self):
         assessment = Assessment.objects.create(configuration=self.configuration)
@@ -1143,3 +1210,47 @@ class EuRedEvaluationTests(TestCase):
             sorted(result["requirements"]),
             ["art_13_distributor_checks", "art_13_distributor_cooperation"],
         )
+
+
+class ChoiceLabelTests(TestCase):
+    def test_choice_id_becomes_sentence_case_label(self):
+        self.assertEqual(choice_label("hardware_with_software"), "Hardware with software")
+
+    def test_non_strings_and_empty_pass_through(self):
+        self.assertEqual(choice_label(""), "")
+        self.assertIsNone(choice_label(None))
+        self.assertIs(choice_label(True), True)
+
+
+class ChoiceLabelRenderingTests(EuCraConfigurationFixture):
+    def setUp(self):
+        super().setUp()
+        self.editor = User.objects.create_user(username="edna", password="x")
+        RoleAssignment.objects.create(
+            role=Role.EDITOR, user=self.editor, product_family=self.family
+        )
+        RoleAssignment.objects.create(
+            role=Role.VIEWER, user=self.editor, product_family=self.family
+        )
+        Answer.objects.create(
+            question_id="product_form", value="hardware_with_software", product=self.product
+        )
+
+    def test_questionnaire_shows_labels_but_posts_ids(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, "<td>Hardware with software", html=False)
+        self.assertContains(
+            response,
+            '<option value="hardware_with_software" selected>Hardware with software</option>',
+            html=True,
+        )
+
+    def test_assessment_answers_show_labels(self):
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
+        self.assertContains(response, "Hardware with software")
+        self.assertNotContains(response, ">hardware_with_software<")
