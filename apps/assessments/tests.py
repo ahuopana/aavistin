@@ -377,11 +377,15 @@ class EuCraResultsPageTests(EuCraConfigurationFixture):
             response = self.client.get(
                 reverse("assessments:assessment_detail", args=[assessment.pk])
             )
-        self.assertContains(response, "Economic operator role: manufacturer")
-        self.assertContains(response, "art_14_report_exploited_vulnerabilities")
-        self.assertContains(response, "Not in force yet:")
+        # Results show the package's labels, not requirement ids.
+        self.assertContains(response, "Economic operator role: Manufacturer")
+        self.assertContains(response, "Notify actively exploited vulnerabilities")
+        self.assertNotContains(response, "art_14_report_exploited_vulnerabilities")
+        self.assertContains(response, "Not in force yet (")
         self.assertContains(
-            response, "annex_i_2a_no_known_exploitable_vulnerabilities (from 2027-12-11)"
+            response,
+            "Place the product on the market without known exploitable vulnerabilities "
+            '<span class="field-hint">from 2027-12-11',
         )
 
 
@@ -712,7 +716,8 @@ class ViewTests(ConfigurationFixture):
         self.client.force_login(self.editor)
         response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
         config_url = reverse("assessments:configuration_detail", args=[self.configuration.pk])
-        self.assertContains(response, f'href="{config_url}#questions"')
+        # The workflow bar's Questions step links to the open questions.
+        self.assertContains(response, f'href="{config_url}?show=open#questions"')
         self.assertContains(response, f'href="{config_url}#q-has_power_source"')
         self.assertContains(response, "Does the widget have a power source?")
 
@@ -728,8 +733,13 @@ class ViewTests(ConfigurationFixture):
         self.assertContains(response, "1/3")
         self.assertEqual(response.context["progress"]["open"], 2)
         # Answered rows hide under the "only open" filter; open rows never do.
-        self.assertContains(response, 'id="q-has_power_source" x-show="!openOnly"')
-        self.assertContains(response, '<tr id="q-is_toy_widget">', html=False)
+        # Both also follow the level filter.
+        self.assertContains(
+            response,
+            'id="q-has_power_source" x-show="(!openOnly || false) && '
+            "(level === '' || level === 'hardware')",
+        )
+        self.assertContains(response, 'id="q-is_toy_widget" x-show="(!openOnly || true)')
 
     def test_draft_assessment_links_to_open_questions(self):
         assessment = Assessment.objects.create(configuration=self.configuration)
@@ -1254,3 +1264,50 @@ class ChoiceLabelRenderingTests(EuCraConfigurationFixture):
         response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
         self.assertContains(response, "Hardware with software")
         self.assertNotContains(response, ">hardware_with_software<")
+
+
+class StalenessReportTests(EuCraConfigurationFixture):
+    """What changed since an approved assessment, itemised (ADR 0032)."""
+
+    def setUp(self):
+        super().setUp()
+        from apps.assessments.services import approve_assessment
+
+        self.approver = User.objects.create_user(username="ana", password="x")
+        RoleAssignment.objects.create(
+            role=Role.APPROVER, user=self.approver, product_family=self.family
+        )
+        RoleAssignment.objects.create(
+            role=Role.VIEWER, user=self.approver, product_family=self.family
+        )
+        self._manufacturer()
+        self.assessment = Assessment.objects.create(configuration=self.configuration)
+        approve_assessment(self.assessment, actor=self.approver)
+
+    def test_report_lists_changed_answers_and_matches_staleness(self):
+        from .services import recompute_staleness, staleness_report, staleness_summary
+
+        self.assertFalse(staleness_report(self.assessment)["any"])
+        Answer.objects.filter(question_id="is_commercial_activity").update(value=False)
+        report = staleness_report(self.assessment)
+        self.assertEqual(
+            [(a["id"], a["before"], a["after"]) for a in report["answers"]],
+            [("is_commercial_activity", True, False)],
+        )
+        self.assertEqual(staleness_summary(report), "1 answer")
+        self.assertTrue(recompute_staleness(self.assessment))
+
+    def test_stale_page_summarises_and_marks_changed_answers(self):
+        from .services import recompute_staleness
+
+        Answer.objects.filter(question_id="is_commercial_activity").update(value=False)
+        recompute_staleness(self.assessment)
+        self.client.force_login(self.approver)
+        response = self.client.get(
+            reverse("assessments:assessment_detail", args=[self.assessment.pk])
+        )
+        self.assertContains(response, "Changed since approval")
+        self.assertContains(response, "1 answer.")
+        self.assertContains(response, 'href="?changed=1#answers"')
+        self.assertContains(response, 'class="row-changed"')
+        self.assertContains(response, "Stale: 1 answer changed")

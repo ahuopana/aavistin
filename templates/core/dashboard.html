@@ -26,6 +26,22 @@
       {% endif %}
     </section>
 
+    {% if approvals %}
+      <section class="dashboard-widget">
+        <h2>Waiting for your approval</h2>
+        {% if approvals.items %}
+          <ul class="dashboard-tasks">
+            {% for item in approvals.items %}
+              <li><a href="{{ item.url }}">{{ item.kind }}: {{ item.label }}</a> <span class="field-hint">{{ item.product.name }}</span></li>
+            {% endfor %}
+          </ul>
+          <p><a href="{% url 'core:approvals' %}">All {{ approvals.total }} &rarr;</a></p>
+        {% else %}
+          <p>Nothing is waiting for your approval.</p>
+        {% endif %}
+      </section>
+    {% endif %}
+
     <section class="dashboard-widget">
       <h2>Continue working on</h2>
       {% if tasks %}

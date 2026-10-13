@@ -3,9 +3,7 @@
 {% block title %}{{ entry.label }} · Risk register · Aavistin{% endblock %}
 
 {% block content %}
-  <p class="field-hint">
-    <a href="{% url 'risk:register' configuration.pk %}">&larr; Risk register</a> · {{ configuration.name }}
-  </p>
+  {% include "core/_breadcrumb.html" %}
   <div class="page-header">
     <h1>{{ entry.label }}</h1>
     {% if can_edit %}
@@ -361,7 +359,11 @@
         <tbody>
           {% for c in controls %}
             <tr>
-              <td>{{ c.name }}{% if c.description %}<div class="field-hint">{{ c.description }}</div>{% endif %}</td>
+              <td>{{ c.name }}{% if c.description %}<div class="field-hint">{{ c.description }}</div>{% endif %}
+                <div class="field-hint">Evidence:
+                  {% for link in c.evidence_links.all %}<a href="{% url 'evidence:detail' link.evidence_id %}">{{ link.evidence.title }}</a>{% if not forloop.last %}, {% endif %}{% empty %}none yet · <a href="{% url 'evidence:product_list' entry.product_id %}">add or link evidence</a>{% endfor %}
+                </div>
+              </td>
               <td>
                 {% if can_edit and entry.entry_type == "threat" %}
                   <form method="post" action="{% url 'risk:control_status' configuration.pk entry.pk c.pk %}" class="inline-form">

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Approvals · Aavistin{% endblock %}
+
+{% block content %}
+  <h1>Waiting for your approval <span class="badge">{{ total }}</span></h1>
+  <p class="field-hint">Drafts and stale approvals in products where you hold the approver role. Approving an entity locks it against deletion; approving an assessment or a risk register freezes a snapshot that later changes mark stale.</p>
+
+  {% for group in groups %}
+    <section class="approval-group">
+      <h2><a href="{% url 'products:product_detail' group.product.pk %}">{{ group.product.name }}</a>
+        <small class="field-hint">{{ group.product.product_family.organisation.name }} / {{ group.product.product_family.name }}</small></h2>
+      <table>
+        <thead><tr><th>What</th><th>Item</th></tr></thead>
+        <tbody>
+          {% for item in group.items %}
+            <tr>
+              <td><span class="badge {% if 'Stale' in item.kind %}badge-warning{% else %}badge-draft{% endif %}">{{ item.kind }}</span></td>
+              <td><a href="{{ item.url }}">{{ item.label }}</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  {% empty %}
+    {% if is_approver %}
+      <p>Nothing is waiting for your approval.</p>
+    {% else %}
+      <p>You don't hold the approver role on any product.</p>
+    {% endif %}
+  {% endfor %}
+{% endblock %}

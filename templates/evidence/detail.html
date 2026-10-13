@@ -3,7 +3,7 @@
 {% block title %}{{ evidence.title }} · Aavistin{% endblock %}
 
 {% block content %}
-  <p><a href="{% url 'evidence:product_list' evidence.product_id %}">{{ evidence.product.name }}</a></p>
+  {% include "core/_breadcrumb.html" %}
   <h1>{{ evidence.title }}</h1>
   <p>{{ evidence.description }}</p>
 

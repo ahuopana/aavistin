@@ -129,11 +129,8 @@ flowchart TD
 5. An **Approver** approves the view; it goes stale in the same way as
    an assessment.
 
-> **Current state of the app:** the risk register is shown in the app
-> (register and entry pages, linked from the product and configuration
-> pages), but entries, ratings and treatments are still created in the
-> Django admin. Editing screens, suggestions and approval in the app
-> follow. See [risk assessment](risk-assessment).
+An **Approver** approves the view from the **Approval** section at the
+bottom of the risk register. See [risk assessment](risk-assessment).
 
 ## 6. Evidence
 
@@ -166,4 +163,18 @@ superseded evidence makes the approvals that rely on it stale. See
 | Optional feature differences | Software option | Configuration page, questionnaire | Editor |
 | Assets, threats, hazards, controls | Product (scoped when needed) | Risk register | Editor |
 | Evidence | Requirement or control | Product's Evidence page | Editor |
-| Approval | Assessment / risk view | Assessment page | Approver |
+| Approval | Assessment / risk view | Assessment page / risk register, both listed on the Approvals page | Approver |
+
+## Finding your way
+
+- **Breadcrumbs** at the top of every page below the portfolio lead back
+  up: Portfolio / organisation / family / product / configuration / page.
+- The **workflow bar** on the questionnaire, assessment and risk register
+  shows one configuration's four steps (Questions, Assessment, Risk
+  register, Approval), how far each is, and the **next step** for you. A
+  step that another role has to do says so ("Waiting for an approver").
+- On the product page, the **Configurations** tab shows the same steps as
+  chips for every configuration, with its next step.
+- Approvers get an **Approvals** link in the main navigation and a
+  "Waiting for your approval" list on the dashboard: drafts and stale
+  approvals in every product they can approve.

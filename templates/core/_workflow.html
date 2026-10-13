@@ -1,0 +1,27 @@
+{# Steps of one configuration and its next step (apps.core.navigation.configuration_workflow). #}
+<section class="workflow" aria-label="Workflow for {{ workflow.configuration.name }}">
+  <ol class="workflow-steps">
+    {% for step in workflow.steps %}
+      <li class="workflow-step workflow-step-{{ step.state_class }}{% if step.key == current_step %} workflow-step-here{% endif %}">
+        <a href="{{ step.url }}"{% if step.key == current_step %} aria-current="step"{% endif %}>
+          <span class="workflow-step-marker" aria-hidden="true">{% if step.state_class == "done" %}&#10003;{% else %}{{ forloop.counter }}{% endif %}</span>
+          <span class="workflow-step-label">{{ step.label }}</span>
+          <span class="workflow-step-detail">{{ step.detail }}</span>
+        </a>
+      </li>
+    {% endfor %}
+  </ol>
+  <div class="workflow-next">
+    <span class="workflow-next-label">Next step:</span>
+    {% if workflow.next.post_url %}
+      <form method="post" action="{{ workflow.next.post_url }}" class="inline-form">
+        {% csrf_token %}
+        <button type="submit" class="button-primary">{{ workflow.next.label }}</button>
+      </form>
+    {% elif workflow.next.url %}
+      <a class="button button-primary" href="{{ workflow.next.url }}">{{ workflow.next.label }} &rarr;</a>
+    {% else %}
+      <span class="{% if workflow.next.waiting %}workflow-waiting{% else %}workflow-complete{% endif %}">{{ workflow.next.label }}</span>
+    {% endif %}
+  </div>
+</section>

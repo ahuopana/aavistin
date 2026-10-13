@@ -2,8 +2,11 @@ from django.contrib import messages as django_messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
+from apps.core.navigation import breadcrumbs, configuration_workflow
 from apps.orgs.models import ProductFamily, Role
 from apps.orgs.services import has_role
 
@@ -61,6 +64,38 @@ def _redirect_to_owner(instance):
     return redirect("products:product_detail", pk=product_of(instance).pk)
 
 
+def _slug(siblings, name: str, given: str = "", *, exclude_pk=None) -> str:
+    """The slug the user typed, else one derived from ``name``, made unique
+    among ``siblings`` with a numeric suffix (ADR 0032)."""
+    if given.strip():
+        return given.strip()
+    base = slugify(name)[:190] or "item"
+    if exclude_pk is not None:
+        siblings = siblings.exclude(pk=exclude_pk)
+    candidate, n = base, 2
+    while siblings.filter(slug=candidate).exists():
+        candidate, n = f"{base}-{n}", n + 1
+    return candidate
+
+
+def _question_links(configurations) -> dict:
+    """Shortcuts into a questionnaire filtered to one answer level: for each
+    HW revision, SW release and option, the first configuration using it."""
+    links = {"product": None, "revision": {}, "release": {}, "option": {}}
+    for configuration in configurations:
+        base = reverse("assessments:configuration_detail", args=[configuration.pk])
+        links["product"] = links["product"] or f"{base}?level=product#questions"
+        links["revision"].setdefault(
+            configuration.hardware_revision_id, f"{base}?level=hardware#questions"
+        )
+        links["release"].setdefault(
+            configuration.software_release_id, f"{base}?level=software#questions"
+        )
+        for option in configuration.software_options.all():
+            links["option"].setdefault(option.pk, f"{base}?level=option#questions")
+    return links
+
+
 @login_required
 def product_detail(request, pk):
     product = get_object_or_404(
@@ -73,11 +108,17 @@ def product_detail(request, pk):
     software_releases = product.sw_releases.all()
     can_edit = has_role(request.user, Role.EDITOR, product=product)
     can_approve = has_role(request.user, Role.APPROVER, product=product)
+    configurations = list(configurations)
+    for configuration in configurations:
+        configuration.workflow = configuration_workflow(configuration, request.user)
+    question_links = _question_links(configurations)
     return render(
         request,
         "products/product_detail.html",
         {
             "product": product,
+            "crumbs": breadcrumbs(product=product),
+            "question_links": question_links,
             "target_markets": TargetMarket.objects.all(),
             "configurations": configurations,
             "hardware_revisions": hardware_revisions,
@@ -107,10 +148,13 @@ def product_create(request, family_id):
         return redirect("orgs:portfolio")
 
     if request.method == "POST":
+        name = request.POST.get("name", "")
         product = Product(
             product_family=family,
-            name=request.POST.get("name", ""),
-            slug=request.POST.get("slug", ""),
+            name=name,
+            slug=_slug(
+                Product.objects.filter(product_family=family), name, request.POST.get("slug", "")
+            ),
             description=request.POST.get("description", ""),
         )
         try:
@@ -134,7 +178,12 @@ def product_edit(request, pk):
 
     if request.method == "POST":
         product.name = request.POST.get("name", "")
-        product.slug = request.POST.get("slug", "")
+        product.slug = _slug(
+            Product.objects.filter(product_family=product.product_family),
+            product.name,
+            request.POST.get("slug", ""),
+            exclude_pk=product.pk,
+        )
         product.description = request.POST.get("description", "")
         try:
             product.full_clean()
@@ -154,10 +203,11 @@ def hardware_variant_create(request, product_id):
         return redirect("products:product_detail", pk=product_id)
 
     if request.method == "POST":
+        name = request.POST.get("name", "")
         variant = HardwareVariant(
             product=product,
-            name=request.POST.get("name", ""),
-            slug=request.POST.get("slug", ""),
+            name=name,
+            slug=_slug(product.hw_variants.all(), name, request.POST.get("slug", "")),
         )
         try:
             variant.full_clean()
@@ -180,7 +230,12 @@ def hardware_variant_edit(request, pk):
 
     if request.method == "POST":
         variant.name = request.POST.get("name", "")
-        variant.slug = request.POST.get("slug", "")
+        variant.slug = _slug(
+            product.hw_variants.all(),
+            variant.name,
+            request.POST.get("slug", ""),
+            exclude_pk=variant.pk,
+        )
         try:
             variant.full_clean()
         except ValidationError as exc:
@@ -293,10 +348,11 @@ def software_option_create(request, release_id):
         return redirect("products:product_detail", pk=product.pk)
 
     if request.method == "POST":
+        name = request.POST.get("name", "")
         option = SoftwareOption(
             software_release=release,
-            name=request.POST.get("name", ""),
-            slug=request.POST.get("slug", ""),
+            name=name,
+            slug=_slug(release.options.all(), name, request.POST.get("slug", "")),
             description=request.POST.get("description", ""),
         )
         try:
@@ -319,7 +375,12 @@ def software_option_edit(request, pk):
 
     if request.method == "POST":
         option.name = request.POST.get("name", "")
-        option.slug = request.POST.get("slug", "")
+        option.slug = _slug(
+            option.software_release.options.all(),
+            option.name,
+            request.POST.get("slug", ""),
+            exclude_pk=option.pk,
+        )
         option.description = request.POST.get("description", "")
         try:
             option.full_clean()

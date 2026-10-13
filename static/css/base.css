@@ -473,6 +473,8 @@ td > .stat-bar-row {
 /* Forms */
 
 input[type="text"],
+input[type="search"],
+input[type="password"],
 input[type="date"],
 input[type="url"],
 input[type="number"],
@@ -1221,4 +1223,181 @@ a.risk-stat {
 
 a.risk-stat:hover {
   border-color: var(--color-text-muted);
+}
+
+/* Workflow: one configuration's steps and its next step (ADR 0032) */
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.workflow {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-3);
+  margin: var(--space-3) 0;
+}
+
+.workflow-steps,
+.workflow-chips {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.workflow-step {
+  flex: 1 1 10rem;
+}
+
+.workflow-step a,
+.workflow-chip a {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-top-width: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  text-decoration: none;
+  height: 100%;
+}
+
+.workflow-step a:hover,
+.workflow-chip a:hover {
+  border-color: var(--color-accent);
+}
+
+.workflow-step-marker {
+  grid-row: span 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.workflow-step-label {
+  font-weight: 600;
+}
+
+.workflow-step-detail {
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+}
+
+.workflow-step-done a {
+  border-top-color: var(--color-success);
+}
+
+.workflow-step-done .workflow-step-marker {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--color-bg);
+}
+
+.workflow-step-current a {
+  border-top-color: var(--color-attention);
+}
+
+.workflow-step-current .workflow-step-marker {
+  border-color: var(--color-attention);
+  color: var(--color-attention);
+}
+
+.workflow-step-here a {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.workflow-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.workflow-next-label {
+  font-weight: 600;
+}
+
+.workflow-waiting {
+  color: var(--color-warning);
+}
+
+.workflow-complete {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.workflow-chip a {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: 0.1em 0.6em;
+  border-top-width: 3px;
+  font-size: 0.85em;
+}
+
+.workflow-chip .workflow-step-marker {
+  width: 1.4em;
+  height: 1.4em;
+  font-size: 0.8em;
+}
+
+/* Approval worklist and checks */
+
+.approval-group {
+  margin-bottom: var(--space-4);
+}
+
+.approval-check {
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  border-left-color: var(--color-attention);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  margin: var(--space-3) 0;
+}
+
+.approval-check ul {
+  margin: var(--space-2) 0;
+}
+
+.level-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  margin: var(--space-2) 0;
+}
+
+.badge-level {
+  --badge-color: var(--color-focus-ring);
+}
+
+.cell-answered-at .field-hint,
+.cell-answered-at .badge {
+  display: block;
+  width: fit-content;
+  margin-bottom: var(--space-1);
+}
+
+.row-changed td {
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
 }
