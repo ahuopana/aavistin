@@ -11,6 +11,7 @@
   </h1>
   <p>
     {{ assessment.configuration }}
+    · <a href="{% url 'core:compare' %}?kind=assessment&amp;a={{ assessment.pk }}">Compare with another assessment</a>
     {% if assessment.approved_at %} · approved {{ assessment.approved_at|date:"Y-m-d" }}{% if assessment.approved_by %} by {{ assessment.approved_by }}{% endif %}{% endif %}
     {% if assessment.sod_warning %}<span class="message message-warning">approved despite separation-of-duties warning</span>{% endif %}
   </p>

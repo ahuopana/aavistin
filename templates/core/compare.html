@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Compare · Aavistin{% endblock %}
+
+{% block content %}
+  <h1>Compare</h1>
+  <p class="field-hint">Pick two of the same kind: two products, two hardware revisions, two software releases or options, two configurations, or two assessments. Only what you can see is listed.</p>
+
+  <form method="get" action="{% url 'core:compare' %}" class="compare-form">
+    <div class="field">
+      <label for="id_compare_kind">Compare</label>
+      <select id="id_compare_kind" name="kind" onchange="this.form.a.value='';this.form.b.value='';this.form.submit()">
+        {% for key, label in kinds %}<option value="{{ key }}" {% if key == kind %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="id_compare_a">{{ kind_label }} A</label>
+      <select id="id_compare_a" name="a">
+        <option value="">— choose —</option>
+        {% for pk, label in options %}<option value="{{ pk }}" {% if pk == a %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label for="id_compare_b">{{ kind_label }} B</label>
+      <select id="id_compare_b" name="b">
+        <option value="">— choose —</option>
+        {% for pk, label in options %}<option value="{{ pk }}" {% if pk == b %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="button-primary">Compare</button>
+  </form>
+
+  {% if not options %}
+    <p class="message message-info">Nothing of this kind is available to you yet.</p>
+  {% endif %}
+
+  {% if same_pick %}
+    <p class="message message-warning">A and B are the same {{ kind_label|lower }}; choose two different ones.</p>
+  {% elif diffs is not None %}
+    <div x-data="{ onlyDiff: false }">
+      <h2>
+        <a href="{{ subject_a.url }}">{{ subject_a.label }}</a> vs
+        <a href="{{ subject_b.url }}">{{ subject_b.label }}</a>
+      </h2>
+      <p role="status">
+        {% if differences %}{{ differences }} difference{{ differences|pluralize }}.{% else %}No differences.{% endif %}
+        <label class="field-hint"><input type="checkbox" x-model="onlyDiff"> Show only differences</label>
+      </p>
+      {% for section in diffs %}
+        <section x-show="!onlyDiff || {{ section.differences }} > 0">
+          <h3>{{ section.title }}
+            <span class="badge {% if section.differences %}badge-warning{% else %}badge-approved{% endif %}">{% if section.differences %}{{ section.differences }} differ{% else %}same{% endif %}</span>
+          </h3>
+          <table class="compare-table">
+            <thead><tr><th></th><th>A</th><th>B</th><th></th></tr></thead>
+            <tbody>
+              {% for row in section.rows %}
+                <tr class="diff-{{ row.status }}" x-show="!onlyDiff || '{{ row.status }}' !== 'same'">
+                  <th scope="row">{{ row.label }}</th>
+                  <td>{% if row.a is None %}<span class="field-hint">not present</span>{% else %}{{ row.a }}{% endif %}</td>
+                  <td>{% if row.b is None %}<span class="field-hint">not present</span>{% else %}{{ row.b }}{% endif %}</td>
+                  <td>
+                    {% if row.status == "changed" %}<span class="badge badge-warning">changed</span>
+                    {% elif row.status == "only_a" %}<span class="badge badge-inherited">only in A</span>
+                    {% elif row.status == "only_b" %}<span class="badge badge-inherited">only in B</span>{% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

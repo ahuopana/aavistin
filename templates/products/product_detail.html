@@ -401,6 +401,7 @@
                 <div class="row-actions">
                   <a href="{% url 'assessments:configuration_detail' configuration.pk %}">Questions</a>
                   <a href="{% url 'risk:register' configuration.pk %}">Risk register</a>
+                  <a href="{% url 'core:compare' %}?kind=configuration&amp;a={{ configuration.pk }}">Compare…</a>
                   {% if configuration.workflow.assessment %}<a href="{% url 'assessments:assessment_detail' configuration.workflow.assessment.pk %}">Assessment #{{ configuration.workflow.assessment.pk }}</a>{% endif %}
                 </div>
               </td>

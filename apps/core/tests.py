@@ -649,3 +649,146 @@ class PortfolioProgressTests(NavigationFixture):
         response = self.client.get(reverse("orgs:portfolio"))
         self.assertContains(response, f'id="family-{self.family.pk}"')
         self.assertContains(response, "Questions answered")
+
+
+class CompareTests(DashboardFixture):
+    """ADR 0035: generic comparison of two entities of one kind."""
+
+    def setUp(self):
+        super().setUp()
+        self._ready_answers(has_wireless=False)
+        self.other_release = SoftwareRelease.objects.create(
+            product=self.product, name="Firmware", version="2.0"
+        )
+        self.other_release.target_markets.add(TargetMarket.objects.get(code="EU"))
+        self.revision_b = HardwareRevision.objects.create(hardware_variant=self.variant, label="B")
+        Answer.objects.create(
+            question_id="has_wireless", value=True, hardware_revision=self.revision_b
+        )
+        self.config_b = Configuration.objects.create(
+            name="TempSense EU 2.0 rev B",
+            hardware_revision=self.revision_b,
+            software_release=self.other_release,
+        )
+        self.url = reverse("core:compare")
+        self.client.force_login(self.viewer)
+
+    def get(self, kind, a, b):
+        return self.client.get(self.url, {"kind": kind, "a": a.pk, "b": b.pk})
+
+    def test_requires_login(self):
+        self.client.logout()
+        self.assertEqual(self.client.get(self.url).status_code, 302)
+
+    def test_picker_lists_visible_entities_only(self):
+        other = Product.objects.create(product_family=self.family, name="Hidden", slug="hidden")
+        self.client.force_login(self.outsider)
+        response = self.client.get(self.url, {"kind": "product"})
+        self.assertNotContains(response, "TempSense")
+        self.client.force_login(self.viewer)
+        response = self.client.get(self.url, {"kind": "product"})
+        self.assertContains(response, "TempSense")
+        self.assertEqual(other.name, "Hidden")
+
+    def test_outsider_cannot_compare_by_guessing_ids(self):
+        self.client.force_login(self.outsider)
+        response = self.get("configuration", self.configuration, self.config_b)
+        self.assertNotContains(response, "TempSense EU 1.0")
+        self.assertNotContains(response, "difference")
+
+    def test_unknown_kind_is_404(self):
+        self.assertEqual(self.client.get(self.url, {"kind": "nope"}).status_code, 404)
+
+    def test_same_pick_is_flagged(self):
+        response = self.get("configuration", self.configuration, self.configuration)
+        self.assertContains(response, "are the same configuration")
+
+    def test_configurations_show_answer_and_finding_differences(self):
+        response = self.get("configuration", self.configuration, self.config_b)
+        self.assertEqual(response.status_code, 200)
+        diffs = {d.title: d for d in response.context["diffs"]}
+        rows = {r.label: r for r in diffs["Resolved answers"].rows}
+        wireless = next(r for label, r in rows.items() if "ireless" in label)
+        self.assertEqual((wireless.a.split(" ·")[0], wireless.b.split(" ·")[0]), ("No", "Yes"))
+        self.assertEqual(wireless.status, "changed")
+        self.assertTrue(diffs["Findings"].differences)
+        details = {r.label: r for r in diffs["Details"].rows}
+        self.assertEqual(details["Hardware revision"].status, "changed")
+        self.assertGreater(response.context["differences"], 0)
+
+    def test_identical_configurations_have_no_differences(self):
+        twin = Configuration.objects.create(
+            name="TempSense EU 1.0 copy",
+            hardware_revision=self.revision,
+            software_release=self.release,
+        )
+        response = self.get("configuration", self.configuration, twin)
+        diffs = {d.title: d for d in response.context["diffs"]}
+        self.assertEqual(diffs["Resolved answers"].differences, 0)
+        self.assertEqual(response.context["differences"], 0)
+        self.assertContains(response, "No differences.")
+
+    def test_software_only_configuration_compares_with_full_one(self):
+        software_only = Configuration.objects.create(
+            name="App only", software_release=self.other_release
+        )
+        response = self.get("configuration", self.configuration, software_only)
+        details = {r.label: r for r in response.context["diffs"][0].rows}
+        self.assertEqual(details["Hardware revision"].b, "—")
+
+    def test_hardware_revisions_show_owned_answers(self):
+        response = self.get("hardware_revision", self.revision, self.revision_b)
+        diffs = {d.title: d for d in response.context["diffs"]}
+        statuses = {r.status for r in diffs["Answers set here"].rows}
+        self.assertIn("changed", statuses)
+        self.assertIn("only_a", statuses)
+
+    def test_software_releases_compare_details(self):
+        response = self.get("software_release", self.release, self.other_release)
+        details = {r.label: r for r in response.context["diffs"][0].rows}
+        self.assertEqual(details["Target markets"].status, "changed")
+
+    def test_products_compare_structure(self):
+        other = Product.objects.create(product_family=self.family, name="Other", slug="other")
+        RoleAssignment.objects.create(role=Role.VIEWER, user=self.viewer, product=other)
+        response = self.get("product", self.product, other)
+        diffs = {d.title: d for d in response.context["diffs"]}
+        self.assertEqual(diffs["Hardware variants"].rows[0].status, "only_a")
+
+    def test_assessments_compare_frozen_snapshot_with_live_draft(self):
+        approved = Assessment.objects.create(
+            configuration=self.configuration,
+            status=AssessmentStatus.APPROVED,
+            snapshot=evaluate_snapshot(self.configuration),
+        )
+        draft = Assessment.objects.create(configuration=self.config_b)
+        response = self.get("assessment", approved, draft)
+        self.assertEqual(response.status_code, 200)
+        titles = [d.title for d in response.context["diffs"]]
+        self.assertIn("Resolved answers", titles)
+        self.assertGreater(response.context["differences"], 0)
+
+    def test_assessment_before_and_after_answer_change_shows_the_change(self):
+        frozen = Assessment.objects.create(
+            configuration=self.configuration,
+            status=AssessmentStatus.APPROVED,
+            snapshot=evaluate_snapshot(self.configuration),
+        )
+        Answer.objects.filter(question_id="has_wireless", hardware_revision=self.revision).update(
+            value=True
+        )
+        later = Assessment.objects.create(configuration=self.configuration)
+        response = self.get("assessment", frozen, later)
+        diffs = {d.title: d for d in response.context["diffs"]}
+        self.assertTrue(diffs["Resolved answers"].differences)
+
+    def test_page_renders_labels_not_question_ids(self):
+        response = self.get("configuration", self.configuration, self.config_b)
+        self.assertContains(response, "Does the widget have a wireless radio?")
+        self.assertContains(response, "Show only differences")
+
+
+def evaluate_snapshot(configuration):
+    from apps.assessments.evaluation import evaluate_configuration
+
+    return evaluate_configuration(configuration)
