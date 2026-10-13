@@ -16,5 +16,5 @@ The evidence list, upload, link and delete pages existed (ADR 0011), but evidenc
 
 ## Consequences
 
-- Issue trackers (GitHub, Jira, Redmine) are not modelled: a tracker issue is a work item, not proof. Linking issues to planned controls and showing their status is a separate component (`docs/plans/issue-status-component.md`).
+- Issue trackers (GitHub, Jira, Redmine) are not modelled: a tracker issue is a work item, not proof. Linking issues to planned controls and showing their status is deferred; it would be a separate component outside this repository.
 - Requirement choices run an evaluation per configuration when the evidence page is opened; acceptable at current product sizes.
