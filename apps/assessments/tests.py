@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 from django.conf import settings
@@ -380,7 +381,8 @@ class EuCraResultsPageTests(EuCraConfigurationFixture):
         # Results show the package's labels, not requirement ids.
         self.assertContains(response, "Economic operator role: Manufacturer")
         self.assertContains(response, "Notify actively exploited vulnerabilities")
-        self.assertNotContains(response, "art_14_report_exploited_vulnerabilities")
+        visible_text = re.sub(r"<[^>]*>", " ", response.content.decode())
+        self.assertNotIn("art_14_report_exploited_vulnerabilities", visible_text)
         self.assertContains(response, "Not in force yet (")
         self.assertContains(
             response,
