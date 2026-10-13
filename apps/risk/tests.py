@@ -1052,7 +1052,7 @@ class RatingAndTreatmentAuthoringTests(RiskFixture):
             {"impact_category": "privacy", "severity": "3", "hazard": self.hazard.pk},
             follow=True,
         )
-        self.assertContains(response, "Only safety or property-damage consequences")
+        self.assertContains(response, "Only harm to people or property")
         self.client.post(
             self.url(self.threat, "consequences"),
             {"impact_category": "safety", "severity": "3", "hazard": self.hazard.pk},
