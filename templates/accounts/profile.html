@@ -69,4 +69,33 @@
 
     <button type="submit" class="button-primary">Save</button>
   </form>
+
+  <h2>Password</h2>
+  {% if can_change_password %}
+    <p><a class="button" href="{% url 'accounts:password_change' %}">Change password</a></p>
+  {% else %}
+    <p class="field-hint">Your password is managed by {{ user.get_auth_source_display }}.</p>
+  {% endif %}
+
+  <h2>Your roles</h2>
+  {% if user.is_superuser %}
+    <p class="field-hint">You are a superuser, so you can act in every organisation regardless of the grants below.</p>
+  {% endif %}
+  {% if grants %}
+    <table>
+      <thead><tr><th>Role</th><th>Scope</th><th>Granted</th></tr></thead>
+      <tbody>
+        {% for g in grants %}
+          <tr>
+            <td>{{ g.role }}</td>
+            <td>{{ g.scope }}: <a href="{{ g.url }}">{{ g.target }}</a></td>
+            <td>{{ g.via }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="field-hint">A role on an organisation or product family also applies to everything beneath it. Roles are managed by an organisation admin.</p>
+  {% else %}
+    <p class="field-hint">You have no roles yet. Ask an organisation admin to grant you one.</p>
+  {% endif %}
 {% endblock %}

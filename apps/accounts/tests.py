@@ -3,7 +3,7 @@ import zoneinfo
 from datetime import UTC, date, datetime
 from unittest.mock import patch
 
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser, Group
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -14,6 +14,8 @@ from PIL import Image
 
 from apps.accounts import avatars, prefs
 from apps.accounts.models import AuthSource, DateStyle, Theme, User
+from apps.orgs.models import Organisation, ProductFamily, Role, RoleAssignment
+from apps.products.models import Product
 
 
 class UserModelTests(TestCase):
@@ -244,3 +246,89 @@ class AvatarTests(TestCase):
         )
         self.assertEqual(avatars.initials(User(username="jane.doe")), "JD")
         self.assertEqual(avatars.initials(User(username="aavistin")), "A")
+
+
+class PasswordChangeTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="alice", password="old-Passw0rd-x")
+        self.client.force_login(self.user)
+
+    def test_local_user_can_change_password(self):
+        response = self.client.post(
+            reverse("accounts:password_change"),
+            {
+                "old_password": "old-Passw0rd-x",
+                "new_password1": "new-Passw0rd-y9",
+                "new_password2": "new-Passw0rd-y9",
+            },
+        )
+        self.assertRedirects(response, reverse("accounts:profile"))
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("new-Passw0rd-y9"))
+        # The session survives the change.
+        self.assertEqual(self.client.get(reverse("accounts:profile")).status_code, 200)
+
+    def test_wrong_old_password_is_rejected(self):
+        response = self.client.post(
+            reverse("accounts:password_change"),
+            {
+                "old_password": "nope",
+                "new_password1": "new-Passw0rd-y9",
+                "new_password2": "new-Passw0rd-y9",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("old-Passw0rd-x"))
+
+    def test_directory_users_are_sent_back_to_profile(self):
+        User.objects.filter(pk=self.user.pk).update(auth_source=AuthSource.LDAP)
+        response = self.client.get(reverse("accounts:password_change"))
+        self.assertRedirects(response, reverse("accounts:profile"))
+        page = self.client.get(reverse("accounts:profile"))
+        self.assertContains(page, "Your password is managed by LDAP")
+        self.assertNotContains(page, "Change password")
+
+    def test_requires_login(self):
+        self.client.logout()
+        self.assertEqual(self.client.get(reverse("accounts:password_change")).status_code, 302)
+
+
+class RolesOverviewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="alice", password="x")
+        self.client.force_login(self.user)
+        self.org = Organisation.objects.create(name="Acme", slug="acme")
+        self.family = ProductFamily.objects.create(
+            organisation=self.org, name="Sensors", slug="sensors"
+        )
+        self.product = Product.objects.create(
+            product_family=self.family, name="TempSense", slug="tempsense"
+        )
+
+    def test_no_roles(self):
+        self.assertContains(self.client.get(reverse("accounts:profile")), "You have no roles yet")
+
+    def test_lists_direct_and_group_grants_with_scope_links(self):
+        group = Group.objects.create(name="Approvers EU")
+        self.user.groups.add(group)
+        RoleAssignment.objects.create(role=Role.EDITOR, user=self.user, product=self.product)
+        RoleAssignment.objects.create(role=Role.VIEWER, user=self.user, organisation=self.org)
+        RoleAssignment.objects.create(role=Role.APPROVER, group=group, product_family=self.family)
+        other = User.objects.create_user(username="bob", password="x")
+        RoleAssignment.objects.create(role=Role.ORG_ADMIN, user=other, organisation=self.org)
+
+        page = self.client.get(reverse("accounts:profile"))
+        body = page.content.decode()
+
+        # Broadest scope first; a group grant says which group.
+        self.assertLess(body.index("Organisation: "), body.index("Product family: "))
+        self.assertLess(body.index("Product family: "), body.index("Product: "))
+        self.assertContains(page, "Group Approvers EU")
+        self.assertContains(page, reverse("orgs:detail", args=["acme"]))
+        self.assertContains(page, reverse("products:product_detail", args=[self.product.pk]))
+        self.assertNotContains(page, "Organisation admin")
+
+    def test_superuser_note(self):
+        User.objects.filter(pk=self.user.pk).update(is_superuser=True)
+        self.assertContains(self.client.get(reverse("accounts:profile")), "You are a superuser")
