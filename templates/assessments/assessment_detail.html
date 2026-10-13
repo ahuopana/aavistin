@@ -16,7 +16,16 @@
   </p>
   {% if assessment.stale %}
     <div class="message message-warning">
-      Answers or packages changed after approval, so this assessment needs a re-review. An approved assessment stays as it was; re-review starts a new assessment from the current answers, which an approver then approves.
+      {% if staleness and staleness.summary %}
+        <strong>Changed since approval{% if assessment.approved_at %} on {{ assessment.approved_at|date:"Y-m-d" }}{% endif %}:</strong> {{ staleness.summary }}.
+        {% for p in staleness.packages %}<br>Package {{ p.source }}: {{ p.before|default:"not active" }} &rarr; {{ p.after|default:"no longer active" }}.{% endfor %}
+        {% for e in staleness.evidence %}<br>Evidence changed for {{ e.source }} requirement <code>{{ e.requirement_id }}</code> (expired, superseded or relinked).{% endfor %}
+        {% for r in staleness.requirements %}<br>{{ r.source }}: {% if r.entered %}{{ r.entered|length }} requirement{{ r.entered|pluralize }} now in force{% endif %}{% if r.entered and r.left %}, {% endif %}{% if r.left %}{{ r.left|length }} no longer in force{% endif %}.{% endfor %}
+        {% if staleness.answers %}<br><a href="?changed=1#answers">See the changed answers &darr;</a>{% endif %}
+      {% else %}
+        Answers or packages changed after approval.
+      {% endif %}
+      <br>This approved assessment stays as it was; re-review starts a new assessment from the current answers, which an approver then approves.
       {% if can_edit %}
         <form method="post" action="{% url 'assessments:assessment_create' assessment.configuration.pk %}" class="inline-form">
           {% csrf_token %}
@@ -124,18 +133,25 @@
     <p>No findings.</p>
   {% endif %}
 
-  <h2>Answers</h2>
+  <div x-data="{ changedOnly: new URLSearchParams(window.location.search).get('changed') === '1' }">
+  <h2 id="answers">Answers</h2>
+  {% if staleness and staleness.answers %}
+    <p x-cloak><label><input type="checkbox" x-model="changedOnly"> Show only answers changed since approval ({{ staleness.answers|length }})</label></p>
+  {% endif %}
   {% if answer_rows %}
     <table>
-      <thead><tr><th>Question</th><th>Answer</th><th>Origin</th></tr></thead>
+      <thead><tr><th>Question</th><th>Answer{% if staleness %} at approval{% endif %}</th>{% if staleness %}<th>Now</th>{% endif %}<th>Origin</th></tr></thead>
       <tbody>
         {% for row in answer_rows %}
-          <tr>
+          <tr{% if staleness %} x-show="!changedOnly || {{ row.changed|yesno:'true,false' }}"{% if row.changed %} class="row-changed"{% endif %}{% endif %}>
             <td>
               <a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}#q-{{ row.id }}">{{ row.label }}</a>
               {% if row.needs_confirmation %}<span class="badge badge-warning">needs confirmation</span>{% endif %}
             </td>
             <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% elif row.type == "choice" %}{{ row.value|choice_label }}{% else %}{{ row.value }}{% endif %}</td>
+            {% if staleness %}
+              <td>{% if row.changed %}<strong>{% if row.now is True %}Yes{% elif row.now is False %}No{% elif row.now is None %}&mdash;{% elif row.type == "choice" %}{{ row.now|choice_label }}{% else %}{{ row.now }}{% endif %}</strong>{% endif %}</td>
+            {% endif %}
             <td><span class="badge badge-{{ row.origin|default:'unanswered' }}">{{ row.origin|default:"unanswered"|choice_label }}</span></td>
           </tr>
         {% endfor %}
@@ -144,4 +160,9 @@
   {% else %}
     <p>No questions apply to this configuration.</p>
   {% endif %}
+  {% if staleness.other_answers %}
+    <p class="field-hint">Questions that apply now but did not at approval, or no longer apply:
+      {% for a in staleness.other_answers %}<a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}#q-{{ a.id }}">{{ a.label }}</a>{% if not forloop.last %}; {% endif %}{% endfor %}</p>
+  {% endif %}
+  </div>
 {% endblock %}

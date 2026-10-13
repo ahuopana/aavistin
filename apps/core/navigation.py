@@ -15,6 +15,7 @@ from django.urls import reverse
 
 from apps.assessments.models import AssessmentStatus
 from apps.assessments.progress import questionnaire_progress
+from apps.assessments.services import staleness_report, staleness_summary
 from apps.orgs.models import Role
 from apps.orgs.services import has_role
 from apps.products.models import (
@@ -85,6 +86,14 @@ STATE_LABELS = {
 }
 
 
+def _assessment_detail(assessment, state) -> str:
+    """The Assessment step's detail line; for a stale one, what changed."""
+    if state != "stale":
+        return STATE_LABELS[state]
+    summary = staleness_summary(staleness_report(assessment))
+    return f"Stale: {summary} changed" if summary else STATE_LABELS[state]
+
+
 def configuration_workflow(configuration, user, *, progress=None, entries=None, pending=None):
     """Steps and the next action for ``configuration``, from ``user``'s roles.
 
@@ -143,7 +152,7 @@ def configuration_workflow(configuration, user, *, progress=None, entries=None, 
             "key": "assessment",
             "label": "Assessment",
             "done": assessment_state == "approved",
-            "detail": STATE_LABELS[assessment_state],
+            "detail": _assessment_detail(assessment, assessment_state),
             "state": assessment_state,
             "url": assessment_url,
         },

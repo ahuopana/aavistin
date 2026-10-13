@@ -1264,3 +1264,50 @@ class ChoiceLabelRenderingTests(EuCraConfigurationFixture):
         response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
         self.assertContains(response, "Hardware with software")
         self.assertNotContains(response, ">hardware_with_software<")
+
+
+class StalenessReportTests(EuCraConfigurationFixture):
+    """What changed since an approved assessment, itemised (ADR 0032)."""
+
+    def setUp(self):
+        super().setUp()
+        from apps.assessments.services import approve_assessment
+
+        self.approver = User.objects.create_user(username="ana", password="x")
+        RoleAssignment.objects.create(
+            role=Role.APPROVER, user=self.approver, product_family=self.family
+        )
+        RoleAssignment.objects.create(
+            role=Role.VIEWER, user=self.approver, product_family=self.family
+        )
+        self._manufacturer()
+        self.assessment = Assessment.objects.create(configuration=self.configuration)
+        approve_assessment(self.assessment, actor=self.approver)
+
+    def test_report_lists_changed_answers_and_matches_staleness(self):
+        from .services import recompute_staleness, staleness_report, staleness_summary
+
+        self.assertFalse(staleness_report(self.assessment)["any"])
+        Answer.objects.filter(question_id="is_commercial_activity").update(value=False)
+        report = staleness_report(self.assessment)
+        self.assertEqual(
+            [(a["id"], a["before"], a["after"]) for a in report["answers"]],
+            [("is_commercial_activity", True, False)],
+        )
+        self.assertEqual(staleness_summary(report), "1 answer")
+        self.assertTrue(recompute_staleness(self.assessment))
+
+    def test_stale_page_summarises_and_marks_changed_answers(self):
+        from .services import recompute_staleness
+
+        Answer.objects.filter(question_id="is_commercial_activity").update(value=False)
+        recompute_staleness(self.assessment)
+        self.client.force_login(self.approver)
+        response = self.client.get(
+            reverse("assessments:assessment_detail", args=[self.assessment.pk])
+        )
+        self.assertContains(response, "Changed since approval")
+        self.assertContains(response, "1 answer.")
+        self.assertContains(response, 'href="?changed=1#answers"')
+        self.assertContains(response, 'class="row-changed"')
+        self.assertContains(response, "Stale: 1 answer changed")
