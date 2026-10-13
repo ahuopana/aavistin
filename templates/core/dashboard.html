@@ -15,7 +15,7 @@
               <a href="{% url 'products:product_detail' row.product.pk %}">{{ row.product.name }}</a>
               <span class="dashboard-product-family">{{ row.product.product_family }}</span>
 
-              {% include "core/_stat_bar.html" with label="Compliance" ok=row.compliance.0 total=row.compliance.1 fill="compliance" %}
+              {% url 'products:product_compliance' row.product.pk as compliance_url %}{% include "core/_stat_bar.html" with label="Compliance" ok=row.compliance.0 total=row.compliance.1 fill="compliance" href=compliance_url hint=compliance_hint %}
 
               {% include "core/_stat_bar.html" with label="Risk" ok=row.risk.0 total=row.risk.1 fill="risk" %}
             </li>

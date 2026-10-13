@@ -12,6 +12,7 @@ from django.utils.text import slugify
 from apps.assessments.evaluation import evaluate_configuration
 from apps.assessments.progress import questionnaire_progress
 from apps.orgs.models import ProductFamily, Role, RoleAssignment
+from apps.packages.models import RequirementPackage
 from apps.risk.mitigation import mitigation_controls, treatment_counts
 from apps.risk.models import EntryType, RiskEntry
 from apps.risk.rating import evaluate_residual_rating
@@ -29,37 +30,91 @@ from .models import (
 ACCEPTABLE_RESIDUAL_RATINGS = ("accept", "justify")
 
 
-def compliance_ratio(product) -> tuple[int, int]:
-    """(fulfilled, total) in-scope requirements across the product's
-    configurations' current evaluation (live, not frozen to an approved
-    snapshot). A requirement counts as fulfilled unless its package has
-    an unresolved action-required finding in that evaluation -- findings
-    aren't tracked per requirement, only per package, so this is a
-    package-level proxy, not a true per-requirement pass/fail.
-    """
-    total: set[tuple[str, str, str]] = set()
-    bad: set[tuple[str, str, str]] = set()
+COMPLIANCE_HINT = (
+    "Requirements in scope whose package has no action-required finding, "
+    "across the product's configurations"
+)
 
+
+def compliance_breakdown(product) -> list[dict]:
+    """Per configuration, the in-scope packages of its current evaluation
+    (live, not frozen to an approved snapshot) with their requirements and
+    the action-required findings that block them. ``compliance_ratio`` is
+    computed from this, so the ratio and its breakdown always agree.
+
+    Each item: ``{configuration, assessment (latest, or None), packages:
+    [{source, version, title, requirements: [{id, label, ref}], blocking:
+    [finding]}]}``.
+    """
     configurations = Configuration.objects.filter(
         hardware_revision__hardware_variant__product=product
-    )
+    ).order_by("pk")
+    breakdown = []
     for configuration in configurations:
         evaluation = evaluate_configuration(configuration)
-        blocking_packages = {
-            (f["source"], f["version"])
-            for f in evaluation["findings"]
-            if f["level"] == "action_required"
+        packages = {
+            p.pk: p
+            for p in RequirementPackage.objects.filter(
+                pk__in=[r.get("package_id") for r in evaluation["results"]]
+            )
         }
+        items = []
         for result in evaluation["results"]:
             if not result["in_scope"]:
                 continue
-            package_key = (result["source"], result["version"])
-            for requirement_id in result["requirements"]:
-                key = (*package_key, requirement_id)
-                total.add(key)
-                if package_key in blocking_packages:
-                    bad.add(key)
+            content = getattr(packages.get(result.get("package_id")), "content", {})
+            by_id = {r["id"]: r for r in content.get("requirements", [])}
+            items.append(
+                {
+                    "source": result["source"],
+                    "version": result["version"],
+                    "title": content.get("title") or result["source"],
+                    "requirements": [
+                        {
+                            "id": requirement_id,
+                            "label": by_id.get(requirement_id, {}).get("label") or requirement_id,
+                            "ref": by_id.get(requirement_id, {}).get("ref", ""),
+                        }
+                        for requirement_id in result["requirements"]
+                    ],
+                    "blocking": [
+                        {**f, "anchor": f"finding-{f['source']}-{f['id']}"}
+                        for f in evaluation["findings"]
+                        if f["level"] == "action_required"
+                        and (f["source"], f["version"]) == (result["source"], result["version"])
+                    ],
+                }
+            )
+        breakdown.append(
+            {
+                "configuration": configuration,
+                "assessment": configuration.assessments.first(),
+                "packages": items,
+            }
+        )
+    return breakdown
 
+
+def compliance_ratio(product, breakdown=None) -> tuple[int, int]:
+    """(fulfilled, total) in-scope requirements across the product's
+    configurations' current evaluation (see ``compliance_breakdown``). A
+    requirement counts as fulfilled unless its package has an unresolved
+    action-required finding in that evaluation -- findings aren't tracked
+    per requirement, only per package, so this is a package-level proxy,
+    not a true per-requirement pass/fail. A requirement in force for several
+    configurations counts once, and as unfulfilled if any of them blocks it.
+    """
+    total: set[tuple[str, str, str]] = set()
+    bad: set[tuple[str, str, str]] = set()
+    if breakdown is None:
+        breakdown = compliance_breakdown(product)
+    for item in breakdown:
+        for package in item["packages"]:
+            for requirement in package["requirements"]:
+                key = (package["source"], package["version"], requirement["id"])
+                total.add(key)
+                if package["blocking"]:
+                    bad.add(key)
     return len(total - bad), len(total)
 
 

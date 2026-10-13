@@ -135,6 +135,8 @@ class ComplianceOverviewTests(DashboardFixture):
         # so the failing product (0/2) must come first.
         self.assertEqual(overview["rows"][0]["product"], self.product)
         self.assertEqual(overview["rows"][1]["product"], clean_product)
+        self.assertEqual(overview["rows"][0]["action_required"], 1)
+        self.assertEqual(overview["rows"][1]["action_required"], 0)
 
 
 class DashboardProductsTests(DashboardFixture):
@@ -288,11 +290,16 @@ class ComplianceViewTests(DashboardFixture):
         self.assertEqual(response.status_code, 302)
 
     def test_viewer_sees_compliance_template_and_product(self):
+        self._ready_answers(has_wireless=True)
         self.client.force_login(self.viewer)
         response = self.client.get(reverse("core:compliance"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "core/compliance.html")
         self.assertContains(response, self.product.name)
+        self.assertContains(response, "Action required</th>")
+        self.assertContains(
+            response, reverse("products:product_compliance", args=[self.product.pk])
+        )
 
     def test_outsider_sees_empty_state_cta(self):
         self.client.force_login(self.outsider)

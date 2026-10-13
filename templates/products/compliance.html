@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Compliance of {{ product.name }} · Aavistin{% endblock %}
+
+{% block content %}
+  {% include "core/_breadcrumb.html" %}
+  <h1>Compliance of {{ product.name }}</h1>
+  <div class="page-status">
+    {% include "core/_stat_bar.html" with label="Compliance" ok=compliance.0 total=compliance.1 fill="compliance" hint=compliance_hint %}
+  </div>
+  <p>The Compliance ratio counts the requirements in force for the product's configurations, according to their current answers.
+    A requirement counts as fulfilled unless its package has an <strong>action-required</strong> finding for that configuration.
+    Findings belong to a package as a whole, not to single requirements, so one finding keeps all of that package's requirements from counting.
+    A requirement in force for several configurations is counted once.
+    Fix what a finding asks for, update the answers it is based on, and the requirements count again.</p>
+
+  {% for item in breakdown %}
+    <h2>{{ item.configuration.name }}</h2>
+    <p>
+      <a href="{% url 'assessments:configuration_detail' item.configuration.pk %}">Questionnaire</a>
+      {% if item.assessment %} · <a href="{% url 'assessments:assessment_detail' item.assessment.pk %}">Assessment #{{ item.assessment.pk }}</a>{% endif %}
+    </p>
+    {% if item.packages %}
+      <table class="compliance-breakdown">
+        <thead><tr><th>Package</th><th>Requirements in force</th><th>Blocking findings</th></tr></thead>
+        <tbody>
+          {% for package in item.packages %}
+            <tr>
+              <td>{{ package.title }} <span class="field-hint">{{ package.source }}@{{ package.version }}</span></td>
+              <td>
+                {% if package.requirements %}
+                  <details>
+                    <summary>{{ package.requirements|length }} requirement{{ package.requirements|pluralize }}{% if package.blocking %}, not counted as fulfilled{% else %}, fulfilled{% endif %}</summary>
+                    <ul>
+                      {% for r in package.requirements %}<li>{{ r.label }}{% if r.ref %} <span class="field-hint">{{ r.ref }}</span>{% endif %}</li>{% endfor %}
+                    </ul>
+                  </details>
+                {% else %}
+                  None
+                {% endif %}
+              </td>
+              <td>
+                {% if package.blocking %}
+                  <ul>
+                    {% for f in package.blocking %}
+                      <li>
+                        {% if item.assessment %}<a href="{% url 'assessments:assessment_detail' item.assessment.pk %}#{{ f.anchor }}">{{ f.message }}</a>{% else %}{{ f.message }}{% endif %}
+                        {% if f.ref %}<span class="field-hint">{{ f.ref }}</span>{% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  None
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not item.assessment %}<p class="field-hint">Start an assessment from the questionnaire to see each finding with its guidance and the answers it is based on.</p>{% endif %}
+    {% else %}
+      <p>No package is in scope for this configuration yet.</p>
+    {% endif %}
+  {% empty %}
+    <p>This product has no configurations yet.</p>
+  {% endfor %}
+{% endblock %}

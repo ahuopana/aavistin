@@ -13,7 +13,7 @@
     {% if consequences %}<li>{{ consequences }} consequence{{ consequences|pluralize }} {{ consequences|pluralize:"is,are" }} deleted with it.</li>{% endif %}
     {% if causes %}<li>{{ causes }} cause{{ causes|pluralize }} {{ causes|pluralize:"is,are" }} deleted with it.</li>{% endif %}
     {% for t in targeting_threats %}<li>Threat <a href="{% url 'risk:entry_detail' configuration.pk t.pk %}">{{ t.label }}</a> stays, but no longer targets an asset.</li>{% endfor %}
-    {% for c in linking_consequences %}<li>The {{ c.get_impact_category_display|lower }} consequence of <a href="{% url 'risk:entry_detail' configuration.pk c.threat.pk %}">{{ c.threat.label }}</a> stays, but no longer links this hazard.</li>{% endfor %}
+    {% for c in linking_consequences %}<li>The {{ c.impact_category_label|lower }} consequence of <a href="{% url 'risk:entry_detail' configuration.pk c.threat.pk %}">{{ c.threat.label }}</a> stays, but no longer links this hazard.</li>{% endfor %}
     {% for c in controls %}<li>Control “{{ c.name }}” stays and is only unlinked.</li>{% endfor %}
     {% if entry.source_catalog_id %}<li>The entry came from a catalog suggestion, so it may be suggested again. To keep it out for good, dismiss the suggestion instead (not in the app yet).</li>{% endif %}
   </ul>

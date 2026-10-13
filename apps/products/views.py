@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 
 from apps.core.navigation import breadcrumbs, configuration_workflow
 from apps.orgs.models import ProductFamily, Role
-from apps.orgs.services import has_role
+from apps.orgs.services import has_role, roles_for_user
 
 from .models import (
     Configuration,
@@ -31,6 +31,7 @@ from .services import (
     clone_software_option,
     clone_software_release,
     close_product,
+    compliance_breakdown,
     compliance_ratio,
     delete_entity,
     product_of,
@@ -94,6 +95,30 @@ def _question_links(configurations) -> dict:
         for option in configuration.software_options.all():
             links["option"].setdefault(option.pk, f"{base}?level=option#questions")
     return links
+
+
+@login_required
+def product_compliance(request, pk):
+    """Where the product's Compliance ratio comes from: per configuration and
+    in-scope package, the requirements counted and the action-required
+    findings that keep them from counting as fulfilled."""
+    product = get_object_or_404(
+        Product.objects.select_related("product_family__organisation"), pk=pk
+    )
+    if not (request.user.is_superuser or roles_for_user(request.user, product=product)):
+        django_messages.error(request, "You need a role on this product to see it.")
+        return redirect("orgs:portfolio")
+    breakdown = compliance_breakdown(product)
+    return render(
+        request,
+        "products/compliance.html",
+        {
+            "product": product,
+            "crumbs": breadcrumbs(product=product, trail=[("Compliance", None)]),
+            "breakdown": breakdown,
+            "compliance": compliance_ratio(product, breakdown),
+        },
+    )
 
 
 @login_required
