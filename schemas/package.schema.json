@@ -273,6 +273,10 @@
         "level": { "type": "string", "enum": ["info", "caution", "action_required"] },
         "when": { "$ref": "#/$defs/expression" },
         "message": { "type": "string" },
+        "guidance": {
+          "type": "string",
+          "description": "What the user should do about the finding, in plain words (ADR 0035)."
+        },
         "ref": { "type": "string" }
       }
     },

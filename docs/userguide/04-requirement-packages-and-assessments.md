@@ -77,6 +77,49 @@ For each active package, evaluating a configuration works out:
 - **Findings** — caution or action-required messages the package's
   rules raise for this specific combination of answers.
 
+## Acting on findings
+
+The assessment page lists findings most severe first. Each one names the
+package and legal reference that raised it, and **Based on** lists the
+answers that triggered it, each linked to its question. Where the package
+author has written it, **What to do** says how to resolve the finding.
+
+- **Action required**: something the regulation requires is missing or
+  needs a specific procedure (e.g. a notified body, an SBOM, a
+  vulnerability reporting process). Fix it in the product or in your
+  processes, then update the answers it is based on. The finding goes
+  away once the answers no longer trigger it. If an answer was simply
+  wrong, correct it. Until then, the finding counts against the
+  **Compliance** ratio. An assessment can still be approved with open
+  findings; the snapshot records them.
+- **Caution**: not a gap yet, but a point to check or decide on, such as
+  a disabled radio that an update could enable. Decide whether it applies
+  to you and record the decision, for example as a risk register entry.
+  Cautions don't affect the Compliance ratio.
+- **Info**: background only; nothing to do.
+
+A finding marked **package not in scope** comes from a regulation that
+doesn't apply to the configuration with the current answers. It doesn't
+count against compliance, but becomes relevant if the scope changes.
+
+## The Compliance ratio
+
+The **Compliance** bar on the dashboard, the portfolio, the product page
+and the Compliance Overview counts the requirements in force for the
+product's configurations, based on their current answers. A requirement
+counts as fulfilled unless its package has an action-required finding for
+that configuration. Findings belong to a package as a whole, not to
+individual requirements, so one finding stops all of that package's
+requirements from counting. A requirement that is in force for several
+configurations is counted once.
+
+Click a product's ratio, or hover over the **?** for a short explanation,
+to open its **compliance breakdown**. It lists, per configuration and
+package, the requirements counted and the findings that block them; each
+finding links to its entry on the assessment page. The Compliance
+Overview also shows the number of open action-required findings per
+product.
+
 ## Approval and staleness
 
 Once an assessment's questionnaire is complete, it can be **approved** —

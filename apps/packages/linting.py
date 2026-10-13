@@ -92,6 +92,11 @@ def _referenced_vars(expression, *, context=None):
             yield from _referenced_vars(sub, context=context)
 
 
+def referenced_questions(expression) -> list[str]:
+    """Ids of the questions ``expression`` reads, in order of first use."""
+    return list(dict.fromkeys(name for name, _ in _referenced_vars(expression)))
+
+
 def _date_issues(content: dict) -> list[dict]:
     issues: list[dict] = []
     dates = content.get("dates_of_application") or {}

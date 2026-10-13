@@ -1,11 +1,11 @@
-{# One labeled ratio bar. Context: label, ok, total, fill ("compliance", "risk" or "questions"). #}
+{# One labeled ratio bar. Context: label, ok, total, fill ("compliance", "risk" or "questions"); optional href (makes the value a link) and hint (what the ratio measures). #}
 <div class="stat-bar-row">
-  {% if label %}<span class="stat-bar-label">{{ label }}</span>{% endif %}
+  {% if label %}<span class="stat-bar-label"{% if hint %} title="{{ hint }}"{% endif %}>{{ label }}{% if hint %} <span class="stat-bar-hint" aria-hidden="true">?</span>{% endif %}</span>{% endif %}
   {% if total %}
-    <div class="stat-bar" role="img" aria-label="{{ label|default:fill|capfirst }} {{ ok }} of {{ total }}">
+    <div class="stat-bar" role="img" aria-label="{{ label|default:fill|capfirst }} {{ ok }} of {{ total }}{% if hint %}: {{ hint }}{% endif %}"{% if hint %} title="{{ hint }}"{% endif %}>
       <div class="stat-bar-fill stat-bar-fill-{{ fill }}" style="width: {% widthratio ok total 100 %}%"></div>
     </div>
-    <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
+    <span class="stat-bar-value">{% if href %}<a href="{{ href }}" title="Show what this is made of">{{ ok }}/{{ total }}</a>{% else %}{{ ok }}/{{ total }}{% endif %}</span>
   {% else %}
     <span class="stat-bar-value">no data yet</span>
   {% endif %}

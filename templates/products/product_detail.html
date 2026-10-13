@@ -72,7 +72,7 @@
 
     <div class="page-status">
       {% include "core/_stat_bar.html" with label="Questions" ok=questions.0 total=questions.1 fill="questions" %}
-      {% include "core/_stat_bar.html" with label="Compliance" ok=compliance.0 total=compliance.1 fill="compliance" %}
+      {% url 'products:product_compliance' product.pk as compliance_url %}{% include "core/_stat_bar.html" with label="Compliance" ok=compliance.0 total=compliance.1 fill="compliance" href=compliance_url hint=compliance_hint %}
       {% include "core/_stat_bar.html" with label="Risk" ok=risk.0 total=risk.1 fill="risk" %}
     </div>
 
