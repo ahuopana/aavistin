@@ -90,7 +90,14 @@
       <details>
         <summary>Requirements in force ({{ result.requirement_labels|length }})</summary>
         <ul>
-          {% for r in result.requirement_labels %}<li>{{ r.label }} <span class="field-hint">{{ r.ref }}</span></li>{% endfor %}
+          {% for r in result.requirement_labels %}
+            <li>{{ r.label }} <span class="field-hint">{{ r.ref }}</span>
+              <span class="field-hint">Evidence:
+                {% for e in r.evidence %}<a href="{% url 'evidence:detail' e.pk %}">{{ e.title }}</a>{% if e.is_expired %} <span class="badge badge-warning">expired</span>{% endif %}{% if e.is_superseded %} <span class="badge badge-warning">superseded</span>{% endif %}{% if not forloop.last %}, {% endif %}{% empty %}none yet{% endfor %}
+                {% if can_edit %} · <a href="{% url 'evidence:product_list' assessment.configuration.product.pk %}?requirement={{ r.ref_key|urlencode:'' }}&amp;next={{ request.path|urlencode:'' }}">{% if r.evidence %}add or reuse{% else %}attach evidence{% endif %}</a>{% endif %}
+              </span>
+            </li>
+          {% endfor %}
         </ul>
       </details>
     {% endif %}

@@ -371,7 +371,7 @@ def assessment_detail(request, pk):
             "assessment": assessment,
             "staleness": staleness,
             "evaluation": evaluation,
-            "results": _labelled_results(evaluation.get("results", [])),
+            "results": _labelled_results(evaluation.get("results", []), product),
             "answer_rows": answer_rows,
             "crumbs": breadcrumbs(
                 configuration=configuration, trail=[(f"Assessment #{assessment.pk}", None)]
@@ -388,13 +388,22 @@ def assessment_detail(request, pk):
     )
 
 
-def _labelled_results(results) -> list[dict]:
+def _labelled_results(results, product=None) -> list[dict]:
     """Evaluation results with package titles and readable labels for
     classifications, requirements and routes (the evaluation stores ids)."""
     contents = {
         p.pk: p.content
         for p in RequirementPackage.objects.filter(pk__in=[r.get("package_id") for r in results])
     }
+    evidence_by_requirement: dict[tuple, list] = {}
+    if product is not None:
+        from apps.evidence.models import EvidenceLink, EvidenceTargetType
+
+        for link in EvidenceLink.objects.filter(
+            evidence__product=product, target_type=EvidenceTargetType.REQUIREMENT
+        ).select_related("evidence"):
+            key = (link.requirement_source, link.requirement_version, link.requirement_id)
+            evidence_by_requirement.setdefault(key, []).append(link.evidence)
     labelled = []
     for result in results:
         content = contents.get(result.get("package_id"), {})
@@ -415,7 +424,16 @@ def _labelled_results(results) -> list[dict]:
                 **result,
                 "title": content.get("title") or result["source"],
                 "classification_labels": labels("classifications", result["classifications"]),
-                "requirement_labels": labels("requirements", result.get("requirements", [])),
+                "requirement_labels": [
+                    {
+                        **item,
+                        "ref_key": f"{result['source']}|{result['version']}|{item['id']}",
+                        "evidence": evidence_by_requirement.get(
+                            (result["source"], result["version"], item["id"]), []
+                        ),
+                    }
+                    for item in labels("requirements", result.get("requirements", []))
+                ],
                 "upcoming_labels": [
                     {**item, "date": r["applies_from"]}
                     for item, r in zip(

@@ -6,6 +6,14 @@
   {% include "core/_breadcrumb.html" %}
   <h1>Evidence — {{ product.name }}</h1>
 
+  {% if target %}
+    <div class="message message-info" role="status">
+      <strong>Attaching evidence to {{ target.label }}.</strong>
+      Reuse a record from the list, or add a new one below; it is linked for you.
+      {% if next %}<a href="{{ next }}">Cancel</a>{% endif %}
+    </div>
+  {% endif %}
+
   <table>
     <thead>
       <tr>
@@ -13,7 +21,9 @@
         <th>Kind</th>
         <th>Last audit</th>
         <th>Valid until</th>
+        <th>Linked to</th>
         <th>Status</th>
+        {% if target and can_edit %}<th></th>{% endif %}
       </tr>
     </thead>
     <tbody>
@@ -23,13 +33,26 @@
           <td>{{ evidence.get_kind_display }}</td>
           <td>{{ evidence.last_audit_date|default:"—" }}</td>
           <td>{{ evidence.valid_until|default:"—" }}</td>
+          <td>{{ evidence.link_count }}</td>
           <td>
-            {% if evidence.is_expired %}<span class="message message-warning">expired</span>{% endif %}
-            {% if evidence.is_superseded %}<span class="message message-warning">superseded</span>{% endif %}
+            {% if evidence.is_expired %}<span class="badge badge-warning">expired</span>{% endif %}
+            {% if evidence.is_superseded %}<span class="badge badge-warning">superseded</span>{% endif %}
+            {% if not evidence.link_count %}<span class="badge badge-unanswered">not linked</span>{% endif %}
           </td>
+          {% if target and can_edit %}
+            <td>
+              <form method="post" action="{% url 'evidence:attach' product.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="evidence_id" value="{{ evidence.pk }}">
+                {% if target.kind == "control" %}<input type="hidden" name="control" value="{{ target.control.pk }}">{% else %}<input type="hidden" name="requirement" value="{{ target.ref }}">{% endif %}
+                <input type="hidden" name="next" value="{{ next }}">
+                <button type="submit" class="button-primary">Use this</button>
+              </form>
+            </td>
+          {% endif %}
         </tr>
       {% empty %}
-        <tr><td colspan="5">No evidence yet for this product.</td></tr>
+        <tr><td colspan="7">No evidence yet for this product.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -39,6 +62,10 @@
     <p>Reuse an existing record above where it applies, rather than adding a duplicate.</p>
     <form method="post" action="{% url 'evidence:create' product.pk %}" enctype="multipart/form-data" class="form-vertical" autocomplete="off" x-data="{ kind: 'file' }">
       {% csrf_token %}
+      {% if target %}
+        {% if target.kind == "control" %}<input type="hidden" name="control" value="{{ target.control.pk }}">{% else %}<input type="hidden" name="requirement" value="{{ target.ref }}">{% endif %}
+        <input type="hidden" name="next" value="{{ next }}">
+      {% endif %}
       <div class="field"><label>Title<input type="text" name="title" required></label></div>
       <div class="field"><label>Description<textarea name="description"></textarea></label></div>
       <div class="field">
@@ -52,7 +79,7 @@
       <div class="field" x-show="kind === 'file'"><label>File<input type="file" name="file"></label></div>
       <div class="field" x-show="kind === 'link'"><label>URL<input type="url" name="external_url"></label></div>
       <div class="field" x-show="kind === 'text'"><label>Reference note<textarea name="reference_text"></textarea></label></div>
-      <button type="submit">Add evidence</button>
+      <button type="submit" class="button-primary">Add evidence{% if target %} and link it{% endif %}</button>
     </form>
   {% endif %}
 {% endblock %}

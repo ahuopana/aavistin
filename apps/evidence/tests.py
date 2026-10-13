@@ -1,3 +1,7 @@
+import json
+from pathlib import Path
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -22,6 +26,7 @@ from .services import (
     EvidenceInUseError,
     delete_evidence,
     link_evidence,
+    requirement_choices,
     store_evidence_file,
     suggest_evidence,
     unlink_evidence,
@@ -450,3 +455,237 @@ class ViewTests(EvidenceFixture):
         response = self.client.get(reverse("evidence:detail", args=[evidence.pk]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, evidence.title)
+
+
+class EvidenceUiTests(EvidenceFixture):
+    def setUp(self):
+        super().setUp()
+        from apps.orgs.models import Role, RoleAssignment
+
+        RoleAssignment.objects.create(role=Role.EDITOR, user=self.user, product_family=self.family)
+        RoleAssignment.objects.create(role=Role.VIEWER, user=self.user, product_family=self.family)
+        self.client.force_login(self.user)
+
+    def test_list_in_attach_mode_offers_reuse_and_new(self):
+        evidence = self.make_text_evidence()
+        response = self.client.get(
+            reverse("evidence:product_list", args=[self.product.pk]),
+            {"control": self.control.pk, "next": "/risk/"},
+        )
+        self.assertContains(response, "Attaching evidence to Control “Secure boot”")
+        self.assertContains(response, "Use this")
+        self.assertContains(response, evidence.title)
+        self.assertContains(response, "not linked")
+
+    def test_attach_links_existing_evidence_and_returns_to_next(self):
+        evidence = self.make_text_evidence()
+        response = self.client.post(
+            reverse("evidence:attach", args=[self.product.pk]),
+            {"evidence_id": evidence.pk, "control": self.control.pk, "next": "/risk/x/"},
+        )
+        self.assertRedirects(response, "/risk/x/", fetch_redirect_response=False)
+        self.assertTrue(evidence.links.filter(control=self.control).exists())
+
+    def test_attach_ignores_offsite_next(self):
+        evidence = self.make_text_evidence()
+        response = self.client.post(
+            reverse("evidence:attach", args=[self.product.pk]),
+            {"evidence_id": evidence.pk, "control": self.control.pk, "next": "https://evil.test/"},
+        )
+        self.assertEqual(response.url, reverse("evidence:product_list", args=[self.product.pk]))
+
+    def test_attach_rejects_other_products_evidence(self):
+        foreign = self.make_text_evidence(product=self.other_product)
+        response = self.client.post(
+            reverse("evidence:attach", args=[self.product.pk]),
+            {"evidence_id": foreign.pk, "control": self.control.pk},
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_create_with_target_links_new_evidence(self):
+        response = self.client.post(
+            reverse("evidence:create", args=[self.product.pk]),
+            {
+                "title": "Boot test report",
+                "kind": "text",
+                "reference_text": "QMS-7",
+                "control": self.control.pk,
+                "next": "/risk/y/",
+            },
+        )
+        self.assertRedirects(response, "/risk/y/", fetch_redirect_response=False)
+        evidence = Evidence.objects.get(title="Boot test report")
+        self.assertTrue(evidence.links.filter(control=self.control).exists())
+
+    def test_create_requirement_target(self):
+        self.client.post(
+            reverse("evidence:create", args=[self.product.pk]),
+            {
+                "title": "SBOM",
+                "kind": "text",
+                "reference_text": "see CI",
+                "requirement": "eu-cra|1.0.0|annex_i_2a",
+            },
+        )
+        link = EvidenceLink.objects.get(evidence__title="SBOM")
+        self.assertEqual(
+            (link.requirement_source, link.requirement_version, link.requirement_id),
+            ("eu-cra", "1.0.0", "annex_i_2a"),
+        )
+
+    def test_viewer_cannot_attach(self):
+        from apps.accounts.models import User
+
+        viewer = User.objects.create_user(username="vi", password="x")
+        from apps.orgs.models import Role, RoleAssignment
+
+        RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
+        self.client.force_login(viewer)
+        evidence = self.make_text_evidence()
+        self.client.post(
+            reverse("evidence:attach", args=[self.product.pk]),
+            {"evidence_id": evidence.pk, "control": self.control.pk},
+        )
+        self.assertFalse(evidence.links.exists())
+
+    def test_edit_updates_fields_and_records_audit(self):
+        evidence = self.make_text_evidence()
+        self.client.post(
+            reverse("evidence:edit", args=[evidence.pk]),
+            {
+                "title": "Renamed",
+                "description": "d",
+                "valid_until": "2030-01-31",
+                "reference_text": "new ref",
+                "audited_today": "1",
+            },
+        )
+        evidence.refresh_from_db()
+        self.assertEqual(evidence.title, "Renamed")
+        self.assertEqual(evidence.valid_until.isoformat(), "2030-01-31")
+        self.assertEqual(evidence.reference_text, "new ref")
+        self.assertEqual(evidence.last_audited_by, self.user)
+        self.assertIsNotNone(evidence.last_audit_date)
+
+    def test_edit_rejects_emptying_the_content(self):
+        evidence = self.make_text_evidence()
+        self.client.post(
+            reverse("evidence:edit", args=[evidence.pk]),
+            {"title": "T", "reference_text": ""},
+        )
+        evidence.refresh_from_db()
+        self.assertEqual(evidence.reference_text, "See QMS wiki page 42")
+
+    def test_new_version_supersedes_and_relinks(self):
+        old = self.make_text_evidence(title="SBOM 2025")
+        link_evidence(old, control=self.control)
+        link_evidence(old, requirement=("eu-cra", "1.0.0", "r1"))
+        self.client.post(
+            reverse("evidence:create", args=[self.product.pk]),
+            {
+                "title": "SBOM 2026",
+                "kind": "text",
+                "reference_text": "newer",
+                "supersedes": old.pk,
+            },
+        )
+        new = Evidence.objects.get(title="SBOM 2026")
+        self.assertEqual(new.supersedes, old)
+        self.assertTrue(old.is_superseded)
+        self.assertFalse(new.links.exists())
+        self.client.post(reverse("evidence:copy_links", args=[new.pk]))
+        self.assertEqual(new.links.count(), 2)
+        self.client.post(reverse("evidence:copy_links", args=[new.pk]))
+        self.assertEqual(new.links.count(), 2)
+
+    def test_detail_shows_newer_version_and_requirement_picker(self):
+        old = self.make_text_evidence(title="Old")
+        Evidence.objects.create(
+            product=self.product,
+            title="New",
+            kind=EvidenceKind.TEXT,
+            reference_text="x",
+            supersedes=old,
+        )
+        response = self.client.get(reverse("evidence:detail", args=[old.pk]))
+        self.assertContains(response, "Superseded by")
+        self.assertContains(response, "No requirements are in force")
+
+    def test_link_requirement_from_picker_value(self):
+        evidence = self.make_text_evidence()
+        self.client.post(
+            reverse("evidence:link_requirement", args=[evidence.pk]),
+            {"requirement_ref": "eu-cra|1.0.0|r1"},
+        )
+        self.assertTrue(evidence.links.filter(requirement_id="r1").exists())
+
+    def test_parse_requirement_ref(self):
+        from .services import parse_requirement_ref
+
+        self.assertEqual(parse_requirement_ref("a|1|b"), ("a", "1", "b"))
+        self.assertIsNone(parse_requirement_ref("a|1"))
+        self.assertIsNone(parse_requirement_ref(""))
+
+
+class RequirementChoicesTests(TestCase):
+    """Requirement picker and assessment-page evidence use the real demo package."""
+
+    def setUp(self):
+        from apps.packages.importer import approve_package, import_package
+        from apps.products.models import TargetMarket
+
+        org = Organisation.objects.create(name="Acme", slug="acme")
+        family = ProductFamily.objects.create(organisation=org, name="S", slug="s")
+        self.product = Product.objects.create(product_family=family, name="P", slug="p")
+        variant = HardwareVariant.objects.create(product=self.product, name="V", slug="v")
+        variant.target_markets.add(TargetMarket.objects.get(code="EU"))
+        revision = HardwareRevision.objects.create(hardware_variant=variant, label="A")
+        release = SoftwareRelease.objects.create(product=self.product, version="1.0")
+        self.configuration = Configuration.objects.create(
+            name="C", hardware_revision=revision, software_release=release
+        )
+        path = Path(settings.BASE_DIR) / "packages" / "demo-widget-safety" / "1.1.0.json"
+        with path.open() as f:
+            approve_package(import_package(json.load(f), is_official=True))
+        from apps.assessments.models import Answer
+
+        Answer.objects.create(
+            question_id="has_power_source", value=True, hardware_revision=revision
+        )
+        Answer.objects.create(
+            question_id="rated_power_watts", value=20, hardware_revision=revision
+        )
+        Answer.objects.create(question_id="is_toy_widget", value=False, product=self.product)
+        Answer.objects.create(question_id="has_wireless", value=False, hardware_revision=revision)
+
+    def test_choices_list_requirements_in_force_with_labels(self):
+        from .services import requirement_choices
+
+        choices = requirement_choices(self.product)
+        self.assertTrue(choices)
+        self.assertTrue(all(c["source"] == "demo-widget-safety" for c in choices))
+        self.assertTrue(all(c["label"] for c in choices))
+
+    def test_assessment_page_shows_requirement_evidence_and_attach_link(self):
+        from apps.accounts.models import User
+        from apps.assessments.models import Assessment
+        from apps.orgs.models import Role, RoleAssignment
+
+        editor = User.objects.create_user(username="ed2", password="x")
+        RoleAssignment.objects.create(
+            role=Role.EDITOR, user=editor, product_family=self.product.product_family
+        )
+        RoleAssignment.objects.create(
+            role=Role.VIEWER, user=editor, product_family=self.product.product_family
+        )
+        self.client.force_login(editor)
+        choice = requirement_choices(self.product)[0]
+        evidence = Evidence.objects.create(
+            product=self.product, title="Test report", kind=EvidenceKind.TEXT, reference_text="x"
+        )
+        link_evidence(evidence, requirement=(choice["source"], choice["version"], choice["id"]))
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
+        self.assertContains(response, "Test report")
+        self.assertContains(response, "attach evidence")
+        self.assertContains(response, "?requirement=demo-widget-safety%7C1.1.0%7C")

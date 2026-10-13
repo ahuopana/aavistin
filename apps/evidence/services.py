@@ -161,3 +161,91 @@ def delete_evidence(evidence: Evidence) -> None:
     if evidence_file is not None and not evidence_file.evidence.exists():
         evidence_file.file.delete(save=False)
         evidence_file.delete()
+
+
+def parse_requirement_ref(raw: str) -> tuple[str, str, str] | None:
+    """``"source|version|requirement_id"`` -> tuple, as the UI passes a
+    requirement in a single form value or query parameter."""
+    parts = raw.split("|", 2) if raw else []
+    return tuple(parts) if len(parts) == 3 and all(parts) else None
+
+
+def requirement_choices(product) -> list[dict]:
+    """Requirements in force for any configuration of ``product``, from the
+    current evaluation: ``{"ref", "source", "version", "id", "label",
+    "reference"}`` (``ref`` is the form value for `parse_requirement_ref`).
+    Requirements are read from package content, never hard-coded
+    (CLAUDE.md), and evidence can still be linked to others by hand.
+    """
+    from apps.assessments.evaluation import evaluate_configuration
+    from apps.packages.models import RequirementPackage
+    from apps.products.models import Configuration
+
+    choices: dict[tuple[str, str, str], dict] = {}
+    contents: dict[int, dict] = {}
+    for configuration in Configuration.objects.filter(software_release__product=product):
+        for result in evaluate_configuration(configuration)["results"]:
+            if not result["in_scope"]:
+                continue
+            package_id = result["package_id"]
+            if package_id not in contents:
+                package = RequirementPackage.objects.get(pk=package_id)
+                contents[package_id] = {
+                    item["id"]: item for item in package.content.get("requirements", [])
+                }
+            for requirement_id in result["requirements"]:
+                key = (result["source"], result["version"], requirement_id)
+                item = contents[package_id].get(requirement_id, {})
+                choices.setdefault(
+                    key,
+                    {
+                        "ref": "|".join(key),
+                        "source": key[0],
+                        "version": key[1],
+                        "id": requirement_id,
+                        "label": item.get("label") or requirement_id,
+                        "reference": item.get("ref", ""),
+                    },
+                )
+    return sorted(choices.values(), key=lambda c: (c["source"], c["reference"], c["id"]))
+
+
+def evidence_for_requirement(product, source: str, version: str, requirement_id: str):
+    """Live evidence links of ``product`` for one requirement."""
+    return EvidenceLink.objects.filter(
+        evidence__product=product,
+        target_type=EvidenceTargetType.REQUIREMENT,
+        requirement_source=source,
+        requirement_version=version,
+        requirement_id=requirement_id,
+    ).select_related("evidence")
+
+
+def copy_links(old: Evidence, new: Evidence, *, actor=None) -> int:
+    """Relink what ``old`` backed to its replacement ``new`` (the review
+    step of superseding, docs/architecture.md "Evidence"). The old links
+    stay until someone unlinks them. Returns how many links were added."""
+    added = 0
+    for link in old.links.all():
+        if new.links.filter(
+            target_type=link.target_type,
+            control_id=link.control_id,
+            requirement_source=link.requirement_source,
+            requirement_version=link.requirement_version,
+            requirement_id=link.requirement_id,
+        ).exists():
+            continue
+        if link.control_id:
+            link_evidence(new, control=link.control, actor=actor)
+        else:
+            link_evidence(
+                new,
+                requirement=(
+                    link.requirement_source,
+                    link.requirement_version,
+                    link.requirement_id,
+                ),
+                actor=actor,
+            )
+        added += 1
+    return added

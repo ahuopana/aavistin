@@ -32,6 +32,7 @@ from .models import (
     AssetRating,
     CauseType,
     Control,
+    ControlStatus,
     EntryType,
     HazardCause,
     ImpactCategory,
@@ -1499,3 +1500,49 @@ class MitigationPlanTests(RiskFixture):
         snapshot = build_snapshot(self.configuration)
         control.threats.add(self.threat)
         self.assertNotEqual(build_snapshot(self.configuration), snapshot)
+
+
+class ControlEvidenceDisplayTests(RiskFixture):
+    """Evidence at the point of use: attach link and status hints."""
+
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        asset = self.make_asset()
+        self.threat = self.make_threat(asset)
+        self.control = Control.objects.create(
+            product=self.product, name="Signed updates", status=ControlStatus.IMPLEMENTED
+        )
+        self.control.threats.add(self.threat)
+        self.page = f"/risk/configurations/{self.configuration.pk}/entries/{self.threat.pk}/"
+
+    def test_implemented_control_without_evidence_is_flagged_with_attach_link(self):
+        response = self.client.get(self.page)
+        self.assertContains(response, "implemented without evidence")
+        self.assertContains(response, f"?control={self.control.pk}&amp;next=")
+        self.assertContains(response, "attach evidence")
+
+    def test_planned_control_is_not_flagged(self):
+        self.control.status = ControlStatus.PLANNED
+        self.control.save()
+        self.assertNotContains(self.client.get(self.page), "without evidence")
+
+    def test_linked_evidence_status_is_shown(self):
+        from apps.evidence.models import Evidence, EvidenceKind
+        from apps.evidence.services import link_evidence
+
+        old = Evidence.objects.create(
+            product=self.product, title="Old SBOM", kind=EvidenceKind.TEXT, reference_text="x"
+        )
+        Evidence.objects.create(
+            product=self.product,
+            title="New SBOM",
+            kind=EvidenceKind.TEXT,
+            reference_text="y",
+            supersedes=old,
+        )
+        link_evidence(old, control=self.control)
+        response = self.client.get(self.page)
+        self.assertContains(response, "Old SBOM")
+        self.assertContains(response, "superseded")
+        self.assertNotContains(response, "without evidence")
