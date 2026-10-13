@@ -20,7 +20,14 @@ from .evaluation import evaluate_configuration
 from .models import Answer, Assessment, AssessmentStatus
 from .progress import is_open, questionnaire_progress
 from .resolution import resolve_answers
-from .services import AssessmentError, SoDViolation, approve_assessment, sod_preview
+from .services import (
+    AssessmentError,
+    SoDViolation,
+    approve_assessment,
+    sod_preview,
+    staleness_report,
+    staleness_summary,
+)
 
 LEVEL_TO_OWNER_FIELD = {
     "product": "product",
@@ -337,11 +344,30 @@ def assessment_detail(request, pk):
             "risk_entries": workflow["entry_count"],
             "sod": sod_preview(assessment, request.user, current),
         }
+    staleness = None
+    if assessment.status == AssessmentStatus.APPROVED and assessment.stale:
+        report = staleness_report(assessment)
+        changed = {a["id"]: a for a in report["answers"]}
+        for row in answer_rows:
+            if row["id"] in changed:
+                row["changed"] = True
+                row["now"] = changed[row["id"]]["after"]
+        staleness = {
+            **report,
+            "summary": staleness_summary(report),
+            # Answers to questions that no longer apply, or newly apply.
+            "other_answers": [
+                {**a, "label": labels.get(a["id"], a["id"])}
+                for a in report["answers"]
+                if a["id"] not in {r["id"] for r in answer_rows}
+            ],
+        }
     return render(
         request,
         "assessments/assessment_detail.html",
         {
             "assessment": assessment,
+            "staleness": staleness,
             "evaluation": evaluation,
             "results": _labelled_results(evaluation.get("results", [])),
             "answer_rows": answer_rows,

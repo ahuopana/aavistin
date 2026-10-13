@@ -473,6 +473,8 @@ td > .stat-bar-row {
 /* Forms */
 
 input[type="text"],
+input[type="search"],
+input[type="password"],
 input[type="date"],
 input[type="url"],
 input[type="number"],
@@ -1413,4 +1415,6 @@ a.risk-stat:hover {
 .mitigation-controls {
   margin: var(--space-1) 0 var(--space-2);
   padding-left: var(--space-4);
+.row-changed td {
+  background: color-mix(in srgb, var(--color-warning) 10%, transparent);
 }
