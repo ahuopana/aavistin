@@ -54,6 +54,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.accounts.middleware.ProfileMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
@@ -72,6 +73,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.navigation",
+                "apps.accounts.context_processors.profile",
             ],
         },
     },
@@ -191,7 +193,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 # `collectstatic` target; WhiteNoise serves it in production
-# (docs/adr/0032-whitenoise-and-optional-uploads.md).
+# (docs/adr/0033-whitenoise-and-optional-uploads.md).
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 STORAGES = {

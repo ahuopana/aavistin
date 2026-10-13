@@ -1,4 +1,4 @@
-# 32. WhiteNoise for static files; uploads are opt-in
+# 33. WhiteNoise for static files; uploads are opt-in
 
 Status: Accepted
 
