@@ -53,6 +53,10 @@ WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder /app /app
 
+# Collect static files for WhiteNoise (DEBUG is off by default, which selects
+# the hashed-manifest storage). The throwaway key is only for this build step.
+RUN DJANGO_SECRET_KEY=build-only python manage.py collectstatic --noinput
+
 EXPOSE 8000
 
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
