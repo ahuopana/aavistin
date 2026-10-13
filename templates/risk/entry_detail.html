@@ -191,18 +191,27 @@
               · residual {% if row.residual.level %}<span class="risk-level risk-level-{{ row.residual.level }}">{{ row.residual.level }}</span> <span class="field-hint">S{{ row.treatment.residual_severity }} × L{{ row.treatment.residual_likelihood }} · {{ row.residual.acceptance }}</span>{% else %}<span class="field-hint">not assessed</span>{% endif %}
             </p>
             {% if row.treatment.justification %}<p class="field-hint">{{ row.treatment.justification }}</p>{% endif %}
+            {% if row.treatment.treatment_type == "mitigate" and mitigation_control_list %}
+              <ul class="mitigation-controls">
+                {% for c in mitigation_control_list %}
+                  <li>{{ c.name }} <span class="badge {% if c.status == 'planned' %}badge-warning{% else %}badge-approved{% endif %}">{{ c.get_status_display }}</span>
+                    <span class="field-hint">{% with n=c.evidence_links.count %}{% if n %}{{ n }} evidence{% else %}no evidence yet{% endif %}{% endwith %}</span></li>
+                {% endfor %}
+              </ul>
+            {% endif %}
             {% if row.mitigation == "planned" %}<p class="field-hint">The residual rating counts once every control below is implemented or verified.</p>
             {% elif row.mitigation == "no_controls" %}<p class="field-hint">Its controls were unlinked, so the residual rating doesn't count. Link a control, or change the treatment.</p>{% endif %}
           {% elif not can_edit %}<p class="field-hint">None yet.</p>{% endif %}
           {% if can_edit %}
             <details {% if not row.treatment and row.acceptance and row.acceptance != "accept" %}open{% endif %}>
               <summary>{% if row.treatment %}Change treatment{% else %}+ Add treatment{% endif %}</summary>
-              <form method="post" action="{% url 'risk:treatment_save' configuration.pk entry.pk %}" class="form-vertical">
+              <form method="post" action="{% url 'risk:treatment_save' configuration.pk entry.pk %}" class="form-vertical"
+                    x-data="{ type: '{{ row.treatment.treatment_type|default:'mitigate' }}' }">
                 {% csrf_token %}
                 <input type="hidden" name="method" value="{{ row.method.pk }}">
                 <div class="field">
                   <label for="id_treatment_type_{{ row.method.pk }}">Treatment</label>
-                  <select id="id_treatment_type_{{ row.method.pk }}" name="treatment_type" required>
+                  <select id="id_treatment_type_{{ row.method.pk }}" name="treatment_type" required x-model="type">
                     {% for value, label in treatment_types %}<option value="{{ value }}" {% if row.treatment.treatment_type == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
                   </select>
                 </div>
@@ -223,9 +232,47 @@
                 <div class="field">
                   <label for="id_justification_{{ row.method.pk }}">Justification</label>
                   <textarea id="id_justification_{{ row.method.pk }}" name="justification" rows="2">{{ row.treatment.justification }}</textarea>
-                  <p class="field-hint">Required unless you mitigate down to an acceptable residual risk.</p>
+                  <p class="field-hint" x-show="type !== 'mitigate'">Required: explain this decision.</p>
+                  <p class="field-hint" x-show="type === 'mitigate'" x-cloak>Only needed if the residual risk is still not acceptable without one.</p>
                 </div>
-                <p class="field-hint">Mitigate needs at least one linked control{% if entry.entry_type == "hazard" %} on a cause{% endif %} — it is the plan for how. The residual rating counts once the controls are implemented.{% if not has_mitigation_controls %} <strong>None linked yet.</strong>{% endif %}</p>
+                <fieldset class="field mitigation-picker" x-show="type === 'mitigate'" x-cloak>
+                  <legend>How is it mitigated? <span class="field-hint">Pick at least one control: it is the plan. The residual rating counts once the controls are implemented.</span></legend>
+                  <input type="hidden" name="controls_form" value="1">
+                  {% if entry.entry_type == "threat" %}
+                    {% for c in product_controls %}
+                      <label class="radio-option"><input type="checkbox" name="controls" value="{{ c.pk }}" {% if c.pk in threat_control_ids %}checked{% endif %}> {{ c.name }} <span class="field-hint">{{ c.get_status_display }}</span></label>
+                    {% empty %}
+                      <p class="field-hint">This product has no controls yet; name a new one below.</p>
+                    {% endfor %}
+                    {% if method_rows|length > 1 %}<p class="field-hint">Controls belong to the threat, so the same picks apply under every method.</p>{% endif %}
+                  {% else %}
+                    {% for crow in cause_rows %}
+                      <p class="tree-sublabel">{{ crow.cause.get_cause_type_display }}{% if crow.cause.description %}: {{ crow.cause.description|truncatechars:60 }}{% endif %}</p>
+                      {% for c in product_controls %}
+                        <label class="radio-option"><input type="checkbox" name="cause_controls_{{ crow.cause.pk }}" value="{{ c.pk }}" {% if c in crow.controls %}checked{% endif %}> {{ c.name }} <span class="field-hint">{{ c.get_status_display }}</span></label>
+                      {% endfor %}
+                    {% empty %}
+                      <p class="field-hint">A hazard's controls address its causes. <a href="#causes">Add a cause</a> first.</p>
+                    {% endfor %}
+                  {% endif %}
+                  {% if entry.entry_type == "threat" or cause_rows %}
+                    <div class="inline-form">
+                      <label>New control <input type="text" name="new_control_name" placeholder="e.g. Secure boot" maxlength="200"></label>
+                      {% if entry.entry_type == "hazard" %}
+                        <label>for cause
+                          <select name="new_control_cause">
+                            {% for crow in cause_rows %}<option value="{{ crow.cause.pk }}">{{ crow.cause.get_cause_type_display }}</option>{% endfor %}
+                          </select>
+                        </label>
+                      {% endif %}
+                      <label>Status
+                        <select name="new_control_status">
+                          {% for value, label in control_statuses %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                        </select>
+                      </label>
+                    </div>
+                  {% endif %}
+                </fieldset>
                 <button type="submit" class="button-primary">Save treatment</button>
               </form>
             </details>
@@ -352,7 +399,8 @@
   {% endif %}
 
   {% if entry.entry_type == "threat" %}
-    <h2 id="controls">Controls</h2>
+    <h2 id="controls">All controls for this threat</h2>
+    <p class="field-hint">Pick controls in a mitigation above, or link them here. They belong to the threat and count for every method's mitigation. Change a control's status here as it is implemented and verified.</p>
     {% if controls %}
       <table>
         <thead><tr><th>Control</th><th>Status</th>{% if can_edit and entry.entry_type == "threat" %}<th></th>{% endif %}</tr></thead>

@@ -135,6 +135,13 @@ configuration view, recording exactly which method and catalog versions
 were used — and goes **stale** the same way if the underlying data
 changes afterwards.
 
+When you choose **Mitigate** as a treatment, the form asks **How is it
+mitigated?**: tick the controls that reduce the risk, or name a new one
+(for a hazard, under the cause it addresses). At least one is needed,
+because the controls are the plan; the residual rating counts once they
+are implemented. The treatment then lists its controls with their status
+and evidence.
+
 An Approver approves from the **Approval** section at the bottom of the
 risk register, which also summarises what is still open (ratings that
 must be treated, unrated entries, consistency issues, pending

@@ -312,6 +312,10 @@ def entry_detail(request, pk, entry_pk):
             "threats": entry.threats.exclude(suggestion_status=SuggestionStatus.DISMISSED),
             "controls": linked_controls,
             "available_controls": [c for c in product_controls if c not in linked_controls],
+            # The treatment form's control picker (ADR 0033).
+            "product_controls": product_controls,
+            "threat_control_ids": {c.pk for c in linked_controls},
+            "mitigation_control_list": controls_for_mitigation,
             "control_statuses": ControlStatus.choices,
             "deltas": entry.deltas.all(),
             "issues": (
@@ -320,7 +324,6 @@ def entry_detail(request, pk, entry_pk):
                 else []
             ),
             "can_edit": has_role(request.user, Role.EDITOR, product=entry.product),
-            "has_mitigation_controls": bool(controls_for_mitigation),
         },
     )
 
@@ -826,49 +829,102 @@ def treatment_save(request, pk, entry_pk):
     treatment.justification = request.POST.get("justification", "").strip()
     treatment._history_user = request.user
     try:
-        treatment.residual_severity = _in_scale(
-            method,
-            "severity",
-            request.POST.get("residual_severity", ""),
-            field="residual_severity",
-        )
-        treatment.residual_likelihood = _in_scale(
-            method,
-            "likelihood",
-            request.POST.get("residual_likelihood", ""),
-            field="residual_likelihood",
-        )
-        if (treatment.residual_severity is None) != (treatment.residual_likelihood is None):
-            raise ValidationError(
-                "Give both residual severity and likelihood, or neither (not assessed yet)."
-            )
-        treatment.full_clean()
-        residual = evaluate_residual_rating(treatment)
-        # Anything but mitigation is a decision someone must explain, and so is
-        # a residual risk the method only accepts with a justification.
-        needs_reason = treatment.treatment_type != TreatmentType.MITIGATE or residual[
-            "acceptance"
-        ] in ("justify", "must_treat")
-        if needs_reason and not treatment.justification:
-            raise ValidationError(
-                {"justification": "Explain this treatment decision in the justification."}
-            )
-        # A mitigation needs a plan: at least one control saying how.
-        if mitigation_state(treatment) == mitigation.NO_CONTROLS:
-            raise ValidationError(
-                "Link at least one control first: it is the plan for how the risk is "
-                + (
-                    "mitigated."
-                    if entry.entry_type == EntryType.THREAT
-                    else "mitigated, linked to the hazard cause it addresses."
-                )
-            )
+        with transaction.atomic():
+            _save_treatment(request, entry, method, treatment)
     except ValidationError as exc:
         _flash_errors(request, exc)
         return _back(configuration, entry, "rating")
-    treatment.save()
     django_messages.success(request, f"Treatment under {method.source} saved.")
     return _back(configuration, entry, "rating")
+
+
+def _apply_mitigation_controls(request, entry):
+    """Link the controls ticked in the treatment form, and create a new one if
+    named, before the mitigation is checked (ADR 0033). A threat's picks
+    replace its control links; a hazard's are set per cause. Raises
+    ValidationError for a new control that doesn't validate."""
+    product_controls = {c.pk: c for c in Control.objects.filter(product=entry.product)}
+
+    def picked(field):
+        return [
+            product_controls[int(v)]
+            for v in request.POST.getlist(field)
+            if v.isdigit() and int(v) in product_controls
+        ]
+
+    if entry.entry_type == EntryType.THREAT:
+        targets = {None: (entry.controls, picked("controls"))}
+    else:
+        targets = {
+            cause.pk: (cause.controls, picked(f"cause_controls_{cause.pk}"))
+            for cause in entry.causes.all()
+        }
+    name = request.POST.get("new_control_name", "").strip()
+    if name:
+        cause_id = request.POST.get("new_control_cause", "")
+        key = (
+            None
+            if entry.entry_type == EntryType.THREAT
+            else (int(cause_id) if cause_id.isdigit() else None)
+        )
+        if key not in targets:
+            raise ValidationError("Choose the cause the new control addresses.")
+        control = Control(
+            product=entry.product,
+            name=name,
+            status=request.POST.get("new_control_status", ControlStatus.PLANNED),
+        )
+        control._history_user = request.user
+        control.full_clean()
+        control.save()
+        targets[key][1].append(control)
+    for manager, controls in targets.values():
+        manager.set(controls)
+
+
+def _save_treatment(request, entry, method, treatment):
+    """Validate and save ``treatment``; raises ValidationError, so the caller's
+    transaction also undoes any control links made for it."""
+    if treatment.treatment_type == TreatmentType.MITIGATE and request.POST.get("controls_form"):
+        _apply_mitigation_controls(request, entry)
+    treatment.residual_severity = _in_scale(
+        method,
+        "severity",
+        request.POST.get("residual_severity", ""),
+        field="residual_severity",
+    )
+    treatment.residual_likelihood = _in_scale(
+        method,
+        "likelihood",
+        request.POST.get("residual_likelihood", ""),
+        field="residual_likelihood",
+    )
+    if (treatment.residual_severity is None) != (treatment.residual_likelihood is None):
+        raise ValidationError(
+            "Give both residual severity and likelihood, or neither (not assessed yet)."
+        )
+    treatment.full_clean()
+    residual = evaluate_residual_rating(treatment)
+    # Anything but mitigation is a decision someone must explain, and so is
+    # a residual risk the method only accepts with a justification.
+    needs_reason = treatment.treatment_type != TreatmentType.MITIGATE or residual[
+        "acceptance"
+    ] in ("justify", "must_treat")
+    if needs_reason and not treatment.justification:
+        raise ValidationError(
+            {"justification": "Explain this treatment decision in the justification."}
+        )
+    # A mitigation needs a plan: at least one control saying how.
+    if mitigation_state(treatment) == mitigation.NO_CONTROLS:
+        raise ValidationError(
+            "Pick at least one control: it is the plan for how the risk is "
+            + (
+                "mitigated."
+                if entry.entry_type == EntryType.THREAT
+                else "mitigated, under the hazard cause it addresses."
+            )
+        )
+    treatment.save()
 
 
 @login_required

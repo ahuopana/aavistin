@@ -1431,7 +1431,7 @@ class MitigationPlanTests(RiskFixture):
 
     def test_mitigation_needs_a_linked_control(self):
         response = self._mitigate()
-        self.assertContains(response, "Link at least one control first")
+        self.assertContains(response, "Pick at least one control")
         self.assertFalse(Treatment.objects.exists())
 
     def test_planned_then_in_place(self):
@@ -1472,11 +1472,95 @@ class MitigationPlanTests(RiskFixture):
             "residual_likelihood": "1",
         }
         response = self.client.post(url, data, follow=True)
-        self.assertContains(response, "linked to the hazard cause it addresses")
+        self.assertContains(response, "under the hazard cause it addresses")
         cause = HazardCause.objects.create(hazard=hazard, cause_type="hardware_failure")
         Control.objects.create(product=self.product, name="Thermal fuse").hazard_causes.add(cause)
         self.client.post(url, data)
         self.assertTrue(Treatment.objects.filter(entry=hazard).exists())
+
+    def _mitigate_with(self, **picks):
+        return self.client.post(
+            f"{self.url}treatment/",
+            {
+                "method": self.cia_method.pk,
+                "treatment_type": "mitigate",
+                "residual_severity": "2",
+                "residual_likelihood": "1",
+                "controls_form": "1",
+                **picks,
+            },
+            follow=True,
+        )
+
+    def test_picking_an_existing_control_saves_the_mitigation(self):
+        control = Control.objects.create(product=self.product, name="Signed updates")
+        response = self._mitigate_with(controls=[str(control.pk)])
+        self.assertContains(response, "Treatment under")
+        self.assertTrue(Treatment.objects.filter(entry=self.threat).exists())
+        self.assertEqual(list(self.threat.controls.all()), [control])
+
+    def test_naming_a_new_control_creates_and_links_it(self):
+        self._mitigate_with(new_control_name="Secure boot", new_control_status="implemented")
+        control = Control.objects.get(name="Secure boot")
+        self.assertEqual(control.status, "implemented")
+        self.assertEqual(list(self.threat.controls.all()), [control])
+        response = self.client.get(self.url)
+        self.assertContains(response, "controls in place")
+        self.assertContains(response, "no evidence yet")
+
+    def test_unticking_replaces_the_threats_links(self):
+        kept = Control.objects.create(product=self.product, name="Signed updates")
+        dropped = Control.objects.create(product=self.product, name="Firewall")
+        self.threat.controls.add(kept, dropped)
+        self._mitigate_with(controls=[str(kept.pk)])
+        self.assertEqual(list(self.threat.controls.all()), [kept])
+
+    def test_failed_save_leaves_no_new_control_or_link(self):
+        existing = Control.objects.create(product=self.product, name="Signed updates")
+        response = self.client.post(
+            f"{self.url}treatment/",
+            {
+                "method": self.cia_method.pk,
+                "treatment_type": "mitigate",
+                "residual_severity": "2",
+                "residual_likelihood": "",
+                "controls_form": "1",
+                "controls": [str(existing.pk)],
+                "new_control_name": "Secure boot",
+            },
+            follow=True,
+        )
+        self.assertContains(response, "Give both residual severity and likelihood")
+        self.assertFalse(Control.objects.filter(name="Secure boot").exists())
+        self.assertFalse(self.threat.controls.exists())
+        self.assertFalse(Treatment.objects.exists())
+
+    def test_hazard_picks_controls_per_cause(self):
+        hazard = self.make_hazard()
+        Rating.objects.create(entry=hazard, method=self.safety_method, severity=4, likelihood=3)
+        cause = HazardCause.objects.create(hazard=hazard, cause_type="hardware_failure")
+        url = f"/risk/configurations/{self.configuration.pk}/entries/{hazard.pk}/treatment/"
+        self.client.post(
+            url,
+            {
+                "method": self.safety_method.pk,
+                "treatment_type": "mitigate",
+                "residual_severity": "1",
+                "residual_likelihood": "1",
+                "controls_form": "1",
+                "new_control_name": "Thermal fuse",
+                "new_control_cause": str(cause.pk),
+            },
+        )
+        self.assertTrue(Treatment.objects.filter(entry=hazard).exists())
+        self.assertEqual([c.name for c in cause.controls.all()], ["Thermal fuse"])
+
+    def test_form_offers_the_picker(self):
+        Control.objects.create(product=self.product, name="Signed updates")
+        response = self.client.get(self.url)
+        self.assertContains(response, "How is it mitigated?")
+        self.assertContains(response, 'name="controls"')
+        self.assertContains(response, 'name="new_control_name"')
 
     def test_relinking_control_makes_approved_snapshot_stale(self):
         control = Control.objects.create(product=self.product, name="Signed updates")
