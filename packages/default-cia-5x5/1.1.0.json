@@ -1,0 +1,164 @@
+{
+  "source": "default-cia-5x5",
+  "kind": "method",
+  "version": "1.1.0",
+  "title": "Default CIA-based method, 5x5 matrix",
+  "properties": [
+    "confidentiality",
+    "integrity",
+    "availability"
+  ],
+  "severity": {
+    "scale": [
+      1,
+      5
+    ],
+    "labels": [
+      "negligible",
+      "minor",
+      "moderate",
+      "major",
+      "critical"
+    ]
+  },
+  "likelihood": {
+    "scale": [
+      1,
+      5
+    ],
+    "labels": [
+      "rare",
+      "unlikely",
+      "possible",
+      "likely",
+      "almost_certain"
+    ]
+  },
+  "matrix": [
+    {
+      "when": {
+        ">=": [
+          {
+            "*": [
+              {
+                "var": "s"
+              },
+              {
+                "var": "l"
+              }
+            ]
+          },
+          15
+        ]
+      },
+      "level": "high"
+    },
+    {
+      "when": {
+        ">=": [
+          {
+            "*": [
+              {
+                "var": "s"
+              },
+              {
+                "var": "l"
+              }
+            ]
+          },
+          6
+        ]
+      },
+      "level": "medium"
+    },
+    {
+      "level": "low"
+    }
+  ],
+  "acceptance": {
+    "high": "must_treat",
+    "medium": "justify",
+    "low": "accept"
+  },
+  "impact_categories": [
+    {
+      "id": "safety",
+      "label": "Safety (people)",
+      "links_to_hazard": true,
+      "description": "Harm to people, e.g. burns or electric shock."
+    },
+    {
+      "id": "property_damage",
+      "label": "Property damage",
+      "links_to_hazard": true,
+      "description": "Damage to premises or equipment, e.g. fire."
+    },
+    {
+      "id": "operational",
+      "label": "Operational",
+      "description": "The device or connected systems are unavailable or misbehave."
+    },
+    {
+      "id": "financial",
+      "label": "Financial",
+      "description": "Fraud, recall, repair or other direct costs."
+    },
+    {
+      "id": "privacy",
+      "label": "Privacy",
+      "description": "Personal data is exposed or misused."
+    },
+    {
+      "id": "legal_contractual",
+      "label": "Legal and contractual",
+      "description": "A law, regulation or contract is breached, e.g. data stored or processed outside the allowed regions: fines, penalties, termination, loss of market access."
+    }
+  ],
+  "severity_mappings": [
+    {
+      "to_method": "demo-safety-5x5",
+      "mapping": {
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "4": 4,
+        "5": 5
+      }
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "low",
+      "inputs": {
+        "s": 2,
+        "l": 2
+      },
+      "expected": {
+        "level": "low",
+        "acceptance": "accept"
+      }
+    },
+    {
+      "id": "medium",
+      "inputs": {
+        "s": 3,
+        "l": 3
+      },
+      "expected": {
+        "level": "medium",
+        "acceptance": "justify"
+      }
+    },
+    {
+      "id": "high",
+      "inputs": {
+        "s": 5,
+        "l": 4
+      },
+      "expected": {
+        "level": "high",
+        "acceptance": "must_treat"
+      }
+    }
+  ]
+}

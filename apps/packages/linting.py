@@ -426,6 +426,19 @@ def lint_method(content: dict, *, is_official: bool, existing_packages) -> list[
                         )
                     )
 
+    seen_categories: set[str] = set()
+    for i, category in enumerate(content.get("impact_categories", [])):
+        if category.get("id") in seen_categories:
+            issues.append(
+                _issue(
+                    "error",
+                    "duplicate_impact_category",
+                    f"impact category '{category.get('id')}' is declared twice",
+                    f"impact_categories[{i}]",
+                )
+            )
+        seen_categories.add(category.get("id"))
+
     issues.extend(_date_issues(content))
     issues.extend(
         _namespace_shadow_issues(

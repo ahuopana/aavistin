@@ -1567,3 +1567,70 @@ class MitigationPlanTests(RiskFixture):
         snapshot = build_snapshot(self.configuration)
         control.threats.add(self.threat)
         self.assertNotEqual(build_snapshot(self.configuration), snapshot)
+
+
+class ImpactCategoryTests(RiskFixture):
+    """Impact categories come from the rating methods (ADR 0034)."""
+
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        self.threat = self.make_threat(self.make_asset(), violates="integrity")
+        self.url = f"/risk/configurations/{self.configuration.pk}/entries/{self.threat.pk}/"
+
+    def _upgrade_cia_method(self):
+        method = import_package(
+            load_package("default-cia-5x5", "1.1.0"), kind=PackageKind.METHOD, is_official=True
+        )
+        self.assertEqual(method.status, PackageStatus.FIXTURES_PASSED, method.lint_report)
+        approve_package(method)
+        return method
+
+    def _add(self, category, **extra):
+        return self.client.post(
+            f"{self.url}consequences/",
+            {"impact_category": category, "severity": "3", **extra},
+            follow=True,
+        )
+
+    def test_method_without_categories_offers_the_defaults(self):
+        from .impact import DEFAULT_CATEGORIES
+
+        response = self.client.get(self.url)
+        self.assertEqual(
+            [c["id"] for c in response.context["impact_categories"]],
+            [c["id"] for c in DEFAULT_CATEGORIES],
+        )
+
+    def test_declared_category_is_offered_and_labelled(self):
+        self._upgrade_cia_method()
+        response = self.client.get(self.url)
+        self.assertIn(
+            "legal_contractual", [c["id"] for c in response.context["impact_categories"]]
+        )
+        self._add("legal_contractual", override_justification="Contract penalty")
+        consequence = self.threat.consequences.get()
+        self.assertEqual(consequence.impact_category_label, "Legal and contractual")
+
+    def test_category_outside_the_methods_is_rejected(self):
+        response = self._add("legal_contractual")
+        self.assertContains(response, "Choose an impact category")
+        self.assertFalse(self.threat.consequences.exists())
+
+    def test_only_hazard_linkable_categories_link_a_hazard(self):
+        self._upgrade_cia_method()
+        hazard = self.make_hazard()
+        response = self._add("legal_contractual", hazard=str(hazard.pk))
+        self.assertContains(response, "Only harm to people or property")
+        self._add("safety", hazard=str(hazard.pk), override_justification="x")
+        self.assertEqual(self.threat.consequences.get().hazard, hazard)
+
+    def test_linter_rejects_duplicate_category_ids(self):
+        from apps.packages.linting import lint_method
+
+        content = load_package("default-cia-5x5", "1.1.0")
+        content["impact_categories"].append({"id": "privacy", "label": "Again"})
+        issues = lint_method(
+            content, is_official=False, existing_packages=RequirementPackage.objects.none()
+        )
+        self.assertIn("duplicate_impact_category", [i["code"] for i in issues])

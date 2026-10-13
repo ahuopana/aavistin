@@ -29,6 +29,7 @@ from apps.products.models import Configuration, HardwareVariant, SoftwareOption,
 from . import mitigation
 from .approval import RiskAssessmentError, approve_risk_assessment
 from .consistency import check_threat_hazard_consistency
+from .impact import hazard_linkable_ids, merged_categories
 from .mitigation import mitigation_controls, mitigation_state
 from .models import (
     AssetRating,
@@ -38,7 +39,6 @@ from .models import (
     ControlStatus,
     EntryType,
     HazardCause,
-    ImpactCategory,
     Rating,
     RiskAssessment,
     RiskAssessmentStatus,
@@ -286,8 +286,9 @@ def entry_detail(request, pk, entry_pk):
             "inherited_severity": inherited_severity(entry)
             if entry.entry_type == EntryType.THREAT
             else None,
-            "impact_categories": ImpactCategory.choices,
-            "hazard_categories": [ImpactCategory.SAFETY, ImpactCategory.PROPERTY_DAMAGE],
+            # From the threat's rating methods (ADR 0034).
+            "impact_categories": merged_categories(applicable),
+            "hazard_categories": sorted(hazard_linkable_ids()),
             "hazards": RiskEntry.objects.filter(product=entry.product, entry_type=EntryType.HAZARD)
             .exclude(suggestion_status=SuggestionStatus.DISMISSED)
             .order_by("label"),
@@ -784,7 +785,12 @@ def consequence_add(request, pk, entry_pk):
         if hazard_id.isdigit()
         else None,
     )
+    allowed = {c["id"] for c in merged_categories(applicable_methods(entry, _methods()))}
     try:
+        if consequence.impact_category not in allowed:
+            raise ValidationError(
+                {"impact_category": "Choose an impact category of this threat's risk methods."}
+            )
         if not raw.isdigit():
             raise ValidationError({"severity": "Choose a severity."})
         consequence.severity = int(raw)

@@ -59,6 +59,11 @@ Open an entry from the register:
   the property the threat violates; choosing another value needs a
   justification. The threat's severity is its worst consequence. Then
   set its *likelihood* under each method that covers that property.
+  The impact categories offered come from those methods: the default
+  method offers safety, property damage, operational, financial, privacy,
+  and legal and contractual (e.g. data stored outside the regions a
+  contract or law allows). Only safety and property damage link to a
+  hazard entry.
 - **Hazard** — set severity and likelihood under each safety method.
 
 The method's matrix then shows the level (e.g. *high*) and what it

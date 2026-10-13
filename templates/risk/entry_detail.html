@@ -90,7 +90,7 @@
       <tbody>
         {% for c in consequences %}
           <tr>
-            <td>{{ c.get_impact_category_display }}</td>
+            <td>{{ c.impact_category_label }}</td>
             <td>{{ c.severity }}{% if c.severity_is_override %} <span class="badge">override</span><div class="field-hint">{{ c.override_justification }}</div>{% endif %}</td>
             <td>{% if c.hazard %}<a href="{% url 'risk:entry_detail' configuration.pk c.hazard.pk %}">{{ c.hazard.label }}</a>{% else %}—{% endif %}</td>
             {% if can_edit %}
@@ -115,7 +115,7 @@
             <label for="id_impact_category">Impact category</label>
             <select id="id_impact_category" name="impact_category" x-model="category" required>
               <option value="">— category —</option>
-              {% for value, label in impact_categories %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+              {% for c in impact_categories %}<option value="{{ c.id }}"{% if c.description %} title="{{ c.description }}"{% endif %}>{{ c.label }}</option>{% endfor %}
             </select>
           </div>
           <div class="field">

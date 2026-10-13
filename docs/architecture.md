@@ -300,6 +300,9 @@ One register per product holds typed entries: assets, threats and hazards. Cause
 | Operational | Device or connected systems unavailable | — |
 | Financial | Fraud, recall costs | — |
 | Privacy | Personal data exposed | GDPR |
+| Legal and contractual | Data stored outside the regions a contract or law allows | — |
+
+The categories come from the method package (`impact_categories`; ADR 0034); the table is the set `default-cia-5x5` 1.1.0 declares. A method without them uses the first five. A category marked `links_to_hazard` (safety, property damage) links the consequence to a hazard entry.
 
 **Hazards and causes.** Hazards (LVD and other safety regulations) harm people or property and are scored with the safety method. A hazard lists its causes: hardware failure, software fault, foreseeable misuse, or cyberattack. Software bugs that cause harm are safety causes, not security threats; only intentional manipulation is a threat.
 
