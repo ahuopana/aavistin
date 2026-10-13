@@ -459,6 +459,24 @@ class WorkflowTests(NavigationFixture):
         self.assertTrue(workflow["next"]["done"])
         self.assertTrue(all(s["state_class"] == "done" for s in workflow["steps"]))
 
+    def test_stale_assessment_leads_to_a_new_assessment_not_approval(self):
+        from apps.core.navigation import approval_items
+
+        self._ready_answers()
+        self._asset()
+        Assessment.objects.create(
+            configuration=self.configuration, status=AssessmentStatus.APPROVED, stale=True
+        )
+        workflow = self._workflow(self.editor)
+        self.assertEqual(workflow["next"]["label"], "Start a new assessment to re-review")
+        self.assertEqual(
+            workflow["next"]["post_url"],
+            reverse("assessments:assessment_create", args=[self.configuration.pk]),
+        )
+        self.assertTrue(self._workflow(self.approver)["next"]["waiting"])
+        kinds = [i["kind"] for g in approval_items(self.approver) for i in g["items"]]
+        self.assertNotIn("Assessment", kinds)
+
     def test_workflow_bar_and_chips_render(self):
         self.client.force_login(self.editor)
         response = self.client.get(

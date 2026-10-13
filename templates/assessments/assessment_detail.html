@@ -15,7 +15,15 @@
     {% if assessment.sod_warning %}<span class="message message-warning">approved despite separation-of-duties warning</span>{% endif %}
   </p>
   {% if assessment.stale %}
-    <p class="message message-warning">Answers or packages changed after approval. Start a new assessment to re-review.</p>
+    <div class="message message-warning">
+      Answers or packages changed after approval, so this assessment needs a re-review. An approved assessment stays as it was; re-review starts a new assessment from the current answers, which an approver then approves.
+      {% if can_edit %}
+        <form method="post" action="{% url 'assessments:assessment_create' assessment.configuration.pk %}" class="inline-form">
+          {% csrf_token %}
+          <button type="submit" class="button-primary">Start a new assessment</button>
+        </form>
+      {% endif %}
+    </div>
   {% endif %}
 
   {% include "core/_workflow.html" with current_step="assessment" %}

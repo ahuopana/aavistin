@@ -237,6 +237,20 @@ def _next_step(
             "label": "Waiting for an editor to start the assessment",
             "waiting": True,
         }
+    if assessment_state == "stale":
+        # An approved assessment is never approved again: re-review starts a
+        # new draft, which an approver then approves.
+        if can_edit:
+            return {
+                "step": "assessment",
+                "label": "Start a new assessment to re-review",
+                "post_url": reverse("assessments:assessment_create", args=[configuration.pk]),
+            }
+        return {
+            "step": "assessment",
+            "label": "Waiting for an editor to start a new assessment",
+            "waiting": True,
+        }
     if pending:
         if can_edit:
             return {
@@ -258,7 +272,7 @@ def _next_step(
                 "url": reverse("risk:entry_create", args=[configuration.pk]),
             }
         return {"step": "risk", "label": "Waiting for the risk register", "waiting": True}
-    if assessment_state in ("draft", "stale"):
+    if assessment_state == "draft":
         url = reverse("assessments:assessment_detail", args=[assessment.pk]) + "#approve"
         if can_approve:
             return {"step": "approval", "label": "Review and approve the assessment", "url": url}
@@ -343,12 +357,14 @@ def approval_items(user) -> list[dict]:
                 )
             assessment = configuration.assessments.order_by("-created_at").first()
             state = _approval_state(assessment, AssessmentStatus.APPROVED)
-            if state in ("draft", "stale"):
+            # A stale approved assessment needs a new draft first (an editor's
+            # step), so only drafts are listed.
+            if state == "draft":
                 open_count = questionnaire_progress(configuration)["open"]
                 note = f" ({open_count} questions still open)" if open_count else ""
                 items.append(
                     {
-                        "kind": "Assessment" if state == "draft" else "Stale assessment",
+                        "kind": "Assessment",
                         "label": f"{configuration.name}, #{assessment.pk}{note}",
                         "url": reverse("assessments:assessment_detail", args=[assessment.pk])
                         + "#approve",

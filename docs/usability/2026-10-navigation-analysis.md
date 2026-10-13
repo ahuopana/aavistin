@@ -25,6 +25,7 @@ The suggestions in section 6 were implemented on the same branch (ADR 0032), and
 - Assessment pages checked roles at product-family scope only, so roles granted on a single product were ignored there. They now use product scope like the product and risk pages.
 - In the first re-run, an empty register's next step pointed back to the register itself; it now opens the add-entry form.
 - The Approval step originally ignored the configuration's own approval; it now includes it.
+- A stale assessment's next step offered to approve it again, which isn't possible. Re-review now starts a new assessment (a button on the stale warning and as the next step), and stale assessments are no longer on the approver's list until the new draft exists.
 
 **Still open**
 
