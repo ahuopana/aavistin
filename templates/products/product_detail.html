@@ -131,7 +131,7 @@
               <td>
                 {% if variant.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
               </td>
-              <td class="row-actions">
+              <td><div class="row-actions">
                 {% if can_edit %}<button type="button" @click="editingVariant = !editingVariant">Edit</button>{% endif %}
                 {% if can_edit %}
                   <form method="post" action="{% url 'products:hardware_variant_clone' variant.pk %}">
@@ -151,7 +151,7 @@
                     <button type="submit" class="button-danger">Delete</button>
                   </form>
                 {% endif %}
-              </td>
+              </div></td>
             </tr>
             {% if can_edit %}
               <tr x-show="editingVariant" x-cloak>
@@ -184,7 +184,7 @@
                 <td>
                   {% if revision.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
                 </td>
-                <td class="row-actions">
+                <td><div class="row-actions">
                   {% if can_edit %}<button type="button" @click="editingRevision = editingRevision === {{ revision.pk }} ? null : {{ revision.pk }}">Edit</button>{% endif %}
                   {% if can_edit %}
                     <form method="post" action="{% url 'products:hardware_revision_clone' revision.pk %}">
@@ -204,7 +204,7 @@
                       <button type="submit" class="button-danger">Delete</button>
                     </form>
                   {% endif %}
-                </td>
+                </div></td>
               </tr>
               {% if can_edit %}
                 <tr class="row-child" x-show="editingRevision === {{ revision.pk }}" x-cloak>
@@ -266,7 +266,7 @@
               <td>
                 {% if release.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
               </td>
-              <td class="row-actions">
+              <td><div class="row-actions">
                 {% if can_edit %}<button type="button" @click="editingRelease = !editingRelease">Edit</button>{% endif %}
                 {% if can_edit %}
                   <form method="post" action="{% url 'products:software_release_clone' release.pk %}">
@@ -286,7 +286,7 @@
                     <button type="submit" class="button-danger">Delete</button>
                   </form>
                 {% endif %}
-              </td>
+              </div></td>
             </tr>
             {% if can_edit %}
               <tr x-show="editingRelease" x-cloak>
@@ -321,7 +321,7 @@
                 <td>
                   {% if option.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
                 </td>
-                <td class="row-actions">
+                <td><div class="row-actions">
                   {% if can_edit %}<button type="button" @click="editingOption = editingOption === {{ option.pk }} ? null : {{ option.pk }}">Edit</button>{% endif %}
                   {% if can_edit %}
                     <form method="post" action="{% url 'products:software_option_clone' option.pk %}">
@@ -341,7 +341,7 @@
                       <button type="submit" class="button-danger">Delete</button>
                     </form>
                   {% endif %}
-                </td>
+                </div></td>
               </tr>
               {% if can_edit %}
                 <tr class="row-child" x-show="editingOption === {{ option.pk }}" x-cloak>
@@ -417,7 +417,7 @@
               <td>
                 {% if configuration.is_approved %}<span class="badge badge-approved">Approved</span>{% else %}<span class="badge badge-draft">Draft</span>{% endif %}
               </td>
-              <td class="row-actions">
+              <td><div class="row-actions">
                 {% if can_edit %}<button type="button" @click="editingConfiguration = !editingConfiguration">Edit</button>{% endif %}
                 {% if can_approve and not configuration.is_approved %}
                   <form method="post" action="{% url 'products:entity_approve' 'configuration' configuration.pk %}">
@@ -431,7 +431,7 @@
                     <button type="submit" class="button-danger">Delete</button>
                   </form>
                 {% endif %}
-              </td>
+              </div></td>
             </tr>
             {% if can_edit %}
               <tr x-show="editingConfiguration" x-cloak>
