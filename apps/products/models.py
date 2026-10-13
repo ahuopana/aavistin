@@ -182,7 +182,12 @@ class Configuration(Approvable):
 
     name = models.CharField(max_length=200)
     hardware_revision = models.ForeignKey(
-        HardwareRevision, on_delete=models.PROTECT, related_name="configurations"
+        HardwareRevision,
+        on_delete=models.PROTECT,
+        related_name="configurations",
+        null=True,
+        blank=True,
+        help_text="Leave empty for a software-only product (ADR 0033).",
     )
     software_release = models.ForeignKey(
         SoftwareRelease, on_delete=models.PROTECT, related_name="configurations"
@@ -198,19 +203,35 @@ class Configuration(Approvable):
     def __str__(self):
         return self.name
 
+    @property
+    def product(self) -> Product:
+        """The product, always reachable through the software release (the
+        hardware revision is optional, ADR 0033)."""
+        return self.software_release.product
+
+    @property
+    def hardware_variant(self) -> HardwareVariant | None:
+        return self.hardware_revision.hardware_variant if self.hardware_revision_id else None
+
     def effective_market_codes(self) -> set[str]:
         """Where this configuration is sold: the intersection when both the
         hardware variant and the release set markets, otherwise whichever
         does (docs/adr/0020-target-markets-on-software-releases.md)."""
-        hardware = set(
-            self.hardware_revision.hardware_variant.target_markets.values_list("code", flat=True)
-        )
+        hardware = set()
+        if self.hardware_revision_id:
+            hardware = set(
+                self.hardware_revision.hardware_variant.target_markets.values_list(
+                    "code", flat=True
+                )
+            )
         software = set(self.software_release.target_markets.values_list("code", flat=True))
         if hardware and software:
             return hardware & software
         return hardware or software
 
     def clean(self):
+        if not self.hardware_revision_id or not self.software_release_id:
+            return
         hw_product = self.hardware_revision.hardware_variant.product_id
         sw_product = self.software_release.product_id
         if hw_product != sw_product:

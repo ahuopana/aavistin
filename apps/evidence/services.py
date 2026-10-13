@@ -130,7 +130,7 @@ def _referenced_by_approved_work(evidence: Evidence) -> bool:
     after approval, or never approved at all) doesn't block deletion.
     """
     product_filter = {
-        "configuration__hardware_revision__hardware_variant__product": evidence.product,
+        "configuration__software_release__product": evidence.product,
     }
 
     if evidence.links.filter(target_type=EvidenceTargetType.CONTROL).exists():

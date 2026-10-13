@@ -40,9 +40,7 @@ def compliance_ratio(product) -> tuple[int, int]:
     total: set[tuple[str, str, str]] = set()
     bad: set[tuple[str, str, str]] = set()
 
-    configurations = Configuration.objects.filter(
-        hardware_revision__hardware_variant__product=product
-    )
+    configurations = Configuration.objects.filter(software_release__product=product)
     for configuration in configurations:
         evaluation = evaluate_configuration(configuration)
         blocking_packages = {
@@ -71,9 +69,7 @@ def questions_ratio(product) -> tuple[int, int]:
     own.
     """
     done = total = 0
-    configurations = Configuration.objects.filter(
-        hardware_revision__hardware_variant__product=product
-    )
+    configurations = Configuration.objects.filter(software_release__product=product)
     for configuration in configurations:
         progress = questionnaire_progress(configuration)
         done += progress["done"]
@@ -134,7 +130,7 @@ def product_of(instance) -> Product:
     if isinstance(instance, SoftwareOption):
         return instance.software_release.product
     if isinstance(instance, Configuration):
-        return instance.hardware_revision.hardware_variant.product
+        return instance.product
     raise TypeError(f"Not a product-level entity: {instance!r}")
 
 

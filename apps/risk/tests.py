@@ -696,6 +696,22 @@ class EmptyRegisterReadinessTests(RiskFixture):
         self.assertContains(response, "Open the product")
         self.assertContains(response, f'href="/products/{self.product.pk}/"')
 
+    def test_software_only_configuration_has_a_register(self):
+        self.release.target_markets.set(TargetMarket.objects.filter(code="EU"))
+        software_only = Configuration.objects.create(
+            name="App only", software_release=self.release
+        )
+        response = self.client.get(f"/risk/configurations/{software_only.pk}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Target markets set (EU)")
+
+    def test_software_only_without_markets_says_so(self):
+        software_only = Configuration.objects.create(
+            name="App only", software_release=self.release
+        )
+        response = self.client.get(f"/risk/configurations/{software_only.pk}/")
+        self.assertContains(response, "the configuration has no hardware")
+
     def test_missing_method_and_catalog_ask_an_administrator(self):
         RequirementPackage.objects.filter(
             kind__in=[PackageKind.METHOD, PackageKind.CATALOG]

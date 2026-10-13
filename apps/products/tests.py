@@ -565,6 +565,34 @@ class ProductViewTests(ProductAuthoringFixture):
         config = Configuration.objects.get(name="TempSense EU 2.0")
         self.assertEqual(list(config.software_options.all()), [self.option])
 
+    def test_software_only_configuration_is_valid(self):
+        config = Configuration(name="App only", software_release=self.release)
+        config.full_clean()
+        config.save()
+        self.assertEqual(config.product, self.product)
+        self.assertEqual(product_of(config), self.product)
+
+    def test_editor_can_create_and_edit_software_only_configuration(self):
+        self.client.force_login(self.editor)
+        self.client.post(
+            reverse("products:configuration_create", args=[self.product.pk]),
+            {"name": "App only", "hardware_revision": "", "software_release": self.release.pk},
+        )
+        config = Configuration.objects.get(name="App only")
+        self.assertIsNone(config.hardware_revision)
+        response = self.client.get(reverse("products:product_detail", args=[self.product.pk]))
+        self.assertContains(response, "App only")
+        self.client.post(
+            reverse("products:configuration_edit", args=[config.pk]),
+            {
+                "name": "App with hardware",
+                "hardware_revision": self.revision.pk,
+                "software_release": self.release.pk,
+            },
+        )
+        config.refresh_from_db()
+        self.assertEqual(config.hardware_revision, self.revision)
+
     def test_configuration_create_rejects_mismatched_hardware(self):
         other_variant = HardwareVariant.objects.create(
             product=Product.objects.create(product_family=self.family, name="Other", slug="other"),

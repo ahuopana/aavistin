@@ -23,7 +23,7 @@ class SoDViolation(AssessmentError):
 
 
 def _product_family(configuration):
-    return configuration.hardware_revision.hardware_variant.product.product_family
+    return configuration.product.product_family
 
 
 def _editors_of(resolved) -> set[int]:

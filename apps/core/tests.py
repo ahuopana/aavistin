@@ -550,7 +550,7 @@ class RiskApprovalViewTests(NavigationFixture):
         self._asset()
         self._approve(self.editor)
         self.assertFalse(self.configuration.risk_assessments.exists())
-        self.configuration.hardware_revision.hardware_variant.product.risk_entries.all().delete()
+        self.configuration.product.risk_entries.all().delete()
         self._approve(self.approver)
         self.assertFalse(self.configuration.risk_assessments.exists())
 

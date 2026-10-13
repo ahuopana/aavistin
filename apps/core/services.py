@@ -96,8 +96,8 @@ def _candidate_tasks(user):
     products = editable_products(user, role=Role.EDITOR)
 
     configurations = Configuration.objects.filter(
-        hardware_revision__hardware_variant__product__in=products
-    ).select_related("hardware_revision__hardware_variant__product")
+        software_release__product__in=products
+    ).select_related("software_release__product")
 
     tasks = []
     for configuration in configurations:

@@ -38,7 +38,9 @@ A **Product** belongs to a product family. Under it:
   release without markets uses the variant's.
 - **Configurations** tie a specific hardware revision to a specific
   software release, with optional software options — this is the unit
-  an assessment is actually performed against.
+  an assessment is actually performed against. For a software-only
+  product, leave the hardware revision empty; hardware questions are
+  then not asked and the release's markets apply.
 
 New products, hardware variants and software options only need a name:
 the short identifier in addresses (the "slug") is derived from it, and

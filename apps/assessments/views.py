@@ -47,10 +47,12 @@ LEVEL_LABELS = {
 def _owners(configuration) -> dict:
     """Answer owner field -> the entities of ``configuration`` an answer at
     that level may be attached to (several only for options)."""
-    product = configuration.hardware_revision.hardware_variant.product
+    product = configuration.product
     return {
         "product": [product],
-        "hardware_revision": [configuration.hardware_revision],
+        "hardware_revision": (
+            [configuration.hardware_revision] if configuration.hardware_revision_id else []
+        ),
         "software_release": [configuration.software_release],
         "software_option": list(configuration.software_options.order_by("id")),
     }
@@ -69,7 +71,7 @@ def _owner_label(level: str, owner) -> str:
 def _product(configuration):
     """Roles are checked at product scope, which also inherits family and
     organisation grants (apps.orgs.services.roles_for_user)."""
-    return configuration.hardware_revision.hardware_variant.product
+    return configuration.product
 
 
 def _coerce_value(raw: str, question_type: str = ""):
@@ -127,7 +129,7 @@ def configuration_detail(request, pk):
     product = _product(configuration)
     resolved, packages = resolve_answers(configuration)
 
-    product = configuration.hardware_revision.hardware_variant.product
+    product = configuration.product
     owners = _owners(configuration)
 
     any_grouped = any(r.question.get("group") for r in resolved.values())

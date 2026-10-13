@@ -14,5 +14,5 @@ Target markets were set only on hardware variants, and only packages for those m
 
 ## Consequences
 
-- Software-only products can declare markets on the release. A configuration still needs a hardware revision, so a software-only product currently needs a nominal hardware entry with no markets. Making the hardware revision optional on configurations touches the risk register, readiness and product pages (some 70 references) and is a separate change.
+- Software-only products can declare markets on the release. A configuration still needed a hardware revision at this point; ADR 0033 makes it optional.
 - Existing data keeps its behaviour: releases start with no markets, so the variant's markets apply.
