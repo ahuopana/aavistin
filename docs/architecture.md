@@ -300,7 +300,7 @@ One register per product holds typed entries: assets, threats and hazards. Cause
 | Operational | Device or connected systems unavailable | — |
 | Financial | Fraud, recall costs | — |
 | Privacy | Personal data exposed | GDPR |
-| Legal and contractual | Data stored outside the regions a contract or law allows | — |
+| Legal and contractual | Breach of contract or specification, or breaking law | — |
 
 The categories come from the method package (`impact_categories`; ADR 0034); the table is the set `default-cia-5x5` 1.1.0 declares. A method without them uses the first five. A category marked `links_to_hazard` (safety, property damage) links the consequence to a hazard entry.
 
