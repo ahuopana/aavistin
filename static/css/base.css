@@ -1388,3 +1388,10 @@ a.risk-stat:hover {
 .badge-level {
   --badge-color: var(--color-focus-ring);
 }
+
+.cell-answered-at .field-hint,
+.cell-answered-at .badge {
+  display: block;
+  width: fit-content;
+  margin-bottom: var(--space-1);
+}

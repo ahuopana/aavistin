@@ -61,7 +61,7 @@
   {% endif %}
   <table>
     <thead>
-      <tr><th>Question</th><th>Value</th><th>Origin</th>{% if can_edit %}<th>Set answer</th>{% endif %}</tr>
+      <tr><th>Question</th><th>Value</th><th>Answered at</th>{% if can_edit %}<th>Set answer</th>{% endif %}</tr>
     </thead>
     <tbody>
       {% for row in rows %}
@@ -71,9 +71,6 @@
         <tr id="q-{{ row.question.id }}" x-show="(!openOnly || {{ row.is_open|yesno:'true,false' }}) && (level === '' || level === '{{ row.level }}')">
           <td class="cell-question">
             {{ row.question.label|default:row.question.id }}
-            <span class="badge badge-level" title="Answered at this level; the answer applies to every configuration that uses it">{{ row.owner_label }}</span>
-            {% if row.question.used_by|length > 1 %}<span class="field-hint">also used by: {{ row.question.used_by|join:", " }}</span>{% endif %}
-            {% if row.needs_confirmation %}<span class="badge badge-warning">needs confirmation</span>{% endif %}
             {% if row.question.guidance %}
               <details class="question-guidance">
                 <summary>Good to understand before you answer</summary>
@@ -96,7 +93,14 @@
                 <span class="field-hint">Justification: {{ row.justification }}</span>
               {% endif %}
             {% endif %}</td>
-          <td><span class="badge badge-{{ row.origin|default:'unanswered' }}">{% if row.origin == "derived" %}derived{% else %}{{ row.origin|default:"unanswered" }}{% endif %}</span></td>
+          <td class="cell-answered-at">
+            <span class="badge {% if not row.origin %}badge-unanswered{% elif row.origin == row.owner_type %}badge-product{% else %}badge-level{% endif %}" title="Answered at this level; the answer applies to every configuration that uses it">{{ row.owner_label }}</span>
+            {% if not row.origin %}<span class="field-hint">unanswered</span>
+            {% elif row.origin == "derived" %}<span class="field-hint">derived from other answers</span>
+            {% elif row.origin != row.owner_type %}<span class="field-hint">inherited from {{ row.origin|choice_label|lower }}</span>{% endif %}
+            {% if row.needs_confirmation %}<span class="badge badge-warning">needs confirmation</span>{% endif %}
+            {% if row.question.used_by|length > 1 %}<span class="field-hint">also used by {{ row.question.used_by|join:", " }}</span>{% endif %}
+          </td>
           {% if can_edit %}
             <td>
               {% if row.owner_id %}

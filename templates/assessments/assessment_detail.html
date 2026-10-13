@@ -128,7 +128,7 @@
               {% if row.needs_confirmation %}<span class="badge badge-warning">needs confirmation</span>{% endif %}
             </td>
             <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% elif row.type == "choice" %}{{ row.value|choice_label }}{% else %}{{ row.value }}{% endif %}</td>
-            <td><span class="badge badge-{{ row.origin|default:'unanswered' }}">{{ row.origin|default:"unanswered" }}</span></td>
+            <td><span class="badge badge-{{ row.origin|default:'unanswered' }}">{{ row.origin|default:"unanswered"|choice_label }}</span></td>
           </tr>
         {% endfor %}
       </tbody>

@@ -124,7 +124,7 @@ def test_assessment_journey(page, live_server, world):
     configuration_row.get_by_role("link", name="Questions", exact=True).click()
     expect(page.get_by_role("heading", name="Questions")).to_be_visible()
     for question in (POWER_QUESTION, TOY_QUESTION, RATED_POWER_QUESTION):
-        expect(page.locator("tr", has_text=question).locator("td").nth(2)).to_have_text(
+        expect(page.locator("tr", has_text=question).locator("td").nth(2)).to_contain_text(
             "unanswered"
         )
 
@@ -139,7 +139,7 @@ def test_assessment_journey(page, live_server, world):
     ):
         cells = page.locator("tr", has_text=question).locator("td")
         expect(cells.nth(1)).to_have_text(re.compile(shown))
-        expect(cells.nth(2)).not_to_have_text("unanswered")
+        expect(cells.nth(2)).not_to_contain_text("unanswered")
 
     # --- A draft assessment evaluates the answers ------------------------------------
     configuration_url = page.url
