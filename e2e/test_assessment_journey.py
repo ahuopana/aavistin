@@ -185,5 +185,11 @@ def test_assessment_journey(page, live_server, world):
     expect(page.get_by_text("stale", exact=True)).to_be_visible()
     # The approved snapshot is frozen: it still shows the finding from 150 W.
     expect(page.get_by_role("cell", name=HIGH_POWER_FINDING)).to_be_visible()
+    # The way forward is a new assessment, offered on the page and as the next step.
+    expect(page.locator(".workflow-next")).to_contain_text("Start a new assessment to re-review")
+    with page.expect_navigation():
+        page.get_by_role("button", name="Start a new assessment", exact=True).click()
+    assert page.url != assessment_url
+    expect(page.get_by_role("heading", name=re.compile(r"Assessment #\d+ Draft"))).to_be_visible()
 
     assert page_errors == []

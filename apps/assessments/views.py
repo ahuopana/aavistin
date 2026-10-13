@@ -355,6 +355,7 @@ def assessment_detail(request, pk):
             if not evaluation.get("results")
             else [],
             "can_approve": can_approve,
+            "can_edit": has_role(request.user, Role.EDITOR, product=product),
         },
     )
 
