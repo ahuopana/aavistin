@@ -1,6 +1,6 @@
 """Avatar storage: uploads are re-encoded, so only our own PNG ever gets served.
 
-Uploads are opt-in (``settings.UPLOADS_ENABLED``, docs/adr/0032); without
+Uploads are opt-in (``settings.UPLOADS_ENABLED``, docs/adr/0036); without
 ``MEDIA_ROOT`` the profile shows initials only.
 """
 

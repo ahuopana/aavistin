@@ -193,7 +193,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 # `collectstatic` target; WhiteNoise serves it in production
-# (docs/adr/0033-whitenoise-and-optional-uploads.md).
+# (docs/adr/0036-whitenoise-and-optional-uploads.md).
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 STORAGES = {

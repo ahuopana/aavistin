@@ -72,7 +72,7 @@ class SeedDevUsersWithoutDebugTests(TestCase):
         self.assertTrue(User.objects.get(username="aavistin").check_password("s3cret-user"))
 
 
-# --- Profile and preferences (docs/adr/0034-user-profile-and-preferences.md) ---
+# --- Profile and preferences (docs/adr/0037-user-profile-and-preferences.md) ---
 
 
 def _png(size=(40, 60), fmt="PNG"):

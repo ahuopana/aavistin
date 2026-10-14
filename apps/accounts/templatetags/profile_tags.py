@@ -8,7 +8,7 @@ register = template.Library()
 
 @register.filter
 def userdate(value):
-    """A date in the viewer's locale or ISO style (docs/adr/0033)."""
+    """A date in the viewer's locale or ISO style (docs/adr/0037)."""
     return prefs.format_date(value)
 
 

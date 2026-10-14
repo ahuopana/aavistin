@@ -35,7 +35,7 @@ class DateStyle(models.TextChoices):
 
 
 # Locales only control how dates and times are written; the interface stays
-# English (docs/adr/0034-user-profile-and-preferences.md).
+# English (docs/adr/0037-user-profile-and-preferences.md).
 LOCALE_CHOICES = [
     ("en-us", "English (US)"),
     ("en-gb", "English (UK)"),
