@@ -13,7 +13,7 @@
   {% elif evidence.kind == "text" %}
     <p>{{ evidence.reference_text }}</p>
   {% elif evidence.kind == "file" and evidence.file %}
-    <p><a href="{{ evidence.file.file.url }}">Download</a></p>
+    <p><a href="{% url 'evidence:download' evidence.pk %}">Download</a></p>
   {% endif %}
 
   <p>Last audit: {{ evidence.last_audit_date|default:"—" }} by {{ evidence.last_audited_by|default:"—" }}</p>

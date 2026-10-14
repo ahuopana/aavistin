@@ -49,10 +49,12 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.accounts.middleware.ProfileMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
@@ -71,6 +73,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "apps.core.context_processors.navigation",
+                "apps.accounts.context_processors.profile",
             ],
         },
     },
@@ -189,10 +192,27 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+# `collectstatic` target; WhiteNoise serves it in production
+# (docs/adr/0036-whitenoise-and-optional-uploads.md).
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Uploaded evidence files (docs/architecture.md, "Evidence").
-MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": (
+            "django.contrib.staticfiles.storage.StaticFilesStorage"
+            if DEBUG
+            else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        ),
+    },
+}
+
+# Uploaded evidence files (docs/architecture.md, "Evidence"). Uploads are
+# opt-in: with MEDIA_ROOT unset, file evidence is disabled (links and
+# reference notes still work). Files are never served from MEDIA_URL; they
+# go through the authenticated evidence download view.
+MEDIA_ROOT = env.str("MEDIA_ROOT", default="")
+UPLOADS_ENABLED = bool(MEDIA_ROOT)
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

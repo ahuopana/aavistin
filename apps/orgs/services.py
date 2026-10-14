@@ -5,6 +5,7 @@ RoleAssignment / SoDPolicy, not persistence concerns.
 """
 
 from django.db.models import Q
+from django.urls import reverse
 
 from .models import Organisation, ProductFamily, RoleAssignment, SoDPolicy
 
@@ -86,3 +87,54 @@ def effective_sod_policy(*, organisation=None, product_family=None) -> str:
     if organisation is not None:
         return organisation.sod_policy
     return SoDPolicy.WARN
+
+
+def role_grants_for_user(user) -> list[dict]:
+    """Every grant that gives ``user`` a role, direct or through a group.
+
+    One row per RoleAssignment, with a human label for the scope and the page
+    to open it (organisations and products have pages; a family links to its
+    anchor on the portfolio). Ordered by scope breadth, then name.
+    """
+    if not user.is_authenticated:
+        return []
+    group_ids = list(user.groups.values_list("id", flat=True))
+    grantee = Q(user=user)
+    if group_ids:
+        grantee |= Q(group_id__in=group_ids)
+    assignments = (
+        RoleAssignment.objects.filter(grantee)
+        .select_related(
+            "group", "organisation", "product_family__organisation", "product__product_family"
+        )
+        .order_by("id")
+    )
+
+    rows = []
+    for a in assignments:
+        if a.organisation_id:
+            scope, label = "Organisation", a.organisation.name
+            url = reverse("orgs:detail", args=[a.organisation.slug])
+            rank = 0
+        elif a.product_family_id:
+            scope, label = "Product family", a.product_family.name
+            url = reverse("orgs:portfolio") + f"#family-{a.product_family_id}"
+            rank = 1
+        else:
+            scope, label = "Product", str(a.product)
+            url = reverse("products:product_detail", args=[a.product_id])
+            rank = 2
+        rows.append(
+            {
+                "role": a.get_role_display(),
+                "scope": scope,
+                "target": label,
+                "url": url,
+                "via": f"Group {a.group.name}" if a.group_id else "Directly",
+                "_sort": (rank, label.lower(), a.role),
+            }
+        )
+    rows.sort(key=lambda r: r["_sort"])
+    for r in rows:
+        del r["_sort"]
+    return rows

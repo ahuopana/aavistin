@@ -1,6 +1,8 @@
+from django.conf import settings
 from django.contrib import messages as django_messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -34,6 +36,7 @@ def product_evidence_list(request, product_pk):
             "crumbs": breadcrumbs(product=product, trail=[("Evidence", None)]),
             "evidence_list": suggest_evidence(product),
             "can_edit": has_role(request.user, Role.EDITOR, product=product),
+            "uploads_enabled": settings.UPLOADS_ENABLED,
         },
     )
 
@@ -57,7 +60,11 @@ def evidence_create(request, product_pk):
     )
     upload = request.FILES.get("file")
     if kind == EvidenceKind.FILE and upload:
-        evidence.file = store_evidence_file(upload, actor=request.user)
+        try:
+            evidence.file = store_evidence_file(upload, actor=request.user)
+        except EvidenceError as exc:
+            django_messages.error(request, str(exc))
+            return redirect("evidence:product_list", product_pk=product_pk)
 
     try:
         evidence.full_clean()
@@ -91,6 +98,20 @@ def evidence_detail(request, pk):
             "controls": Control.objects.filter(product=evidence.product).order_by("name"),
             "can_edit": has_role(request.user, Role.EDITOR, product=evidence.product),
         },
+    )
+
+
+@login_required
+def evidence_download(request, pk):
+    evidence = get_object_or_404(Evidence, pk=pk)
+    if evidence.file is None or not settings.UPLOADS_ENABLED:
+        raise Http404("No downloadable file.")
+    stored = evidence.file
+    return FileResponse(
+        stored.file.open("rb"),
+        as_attachment=True,
+        filename=stored.file.name.rsplit("/", 1)[-1],
+        content_type=stored.content_type or None,
     )
 
 

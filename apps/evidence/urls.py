@@ -8,6 +8,7 @@ urlpatterns = [
     path("products/<int:product_pk>/", views.product_evidence_list, name="product_list"),
     path("products/<int:product_pk>/new/", views.evidence_create, name="create"),
     path("<int:pk>/", views.evidence_detail, name="detail"),
+    path("<int:pk>/download/", views.evidence_download, name="download"),
     path("<int:pk>/link-control/", views.evidence_link_control, name="link_control"),
     path("<int:pk>/link-requirement/", views.evidence_link_requirement, name="link_requirement"),
     path("<int:pk>/delete/", views.evidence_delete, name="delete"),

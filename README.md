@@ -40,8 +40,10 @@ These are seeded by `python manage.py seed_dev_users`
 (`apps/accounts/management/commands/seed_dev_users.py`), which the `web`
 service runs automatically on startup. They are for local development
 only — the command is idempotent (safe to re-run, resets the passwords
-each time) and must never be run against a non-dev database. Nothing
-seeds these accounts outside of `docker-compose.yml`'s dev commands.
+each time). With `DEBUG` off it refuses to use the default passwords: set
+`SEED_ADMIN_PASSWORD` and `SEED_AAVISTIN_PASSWORD` (both required) to seed
+a hosted test instance with passwords of your own. Nothing seeds these
+accounts outside of `docker-compose.yml`'s dev commands.
 
 ## Default groups, organisation and roles
 
