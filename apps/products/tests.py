@@ -192,6 +192,32 @@ class ComplianceBreakdownTests(RatioFixture):
         )
         self.assertContains(response, "Requirements in scope whose package has no")
 
+    def test_excluded_product_shows_not_in_scope(self):
+        self._ready_answers(has_wireless=True)
+        Answer.objects.filter(question_id="is_toy_widget").update(value=True)
+        ratio = compliance_ratio(self.product)
+        self.assertEqual(ratio, (0, 0))
+        self.assertEqual(ratio.empty, "Not in scope")
+        response = self.client.get(reverse("products:product_detail", args=[self.product.pk]))
+        self.assertContains(response, "Not in scope</a>")
+        response = self.client.get(reverse("products:product_compliance", args=[self.product.pk]))
+        self.assertContains(response, "does not apply with the current answers")
+
+    def test_without_configurations_there_is_no_data_yet(self):
+        empty_product = Product.objects.create(
+            product_family=self.family, name="Empty", slug="empty"
+        )
+        self.assertEqual(compliance_ratio(empty_product).empty, "no data yet")
+
+    def test_in_scope_package_without_requirements_in_force(self):
+        content = self.package.content
+        for requirement in content["requirements"]:
+            requirement["applies_from"] = "2099-01-01"
+        self.package.content = content
+        self.package.save()
+        self._ready_answers(has_wireless=False)
+        self.assertEqual(compliance_ratio(self.product).empty, "None in force yet")
+
     def test_breakdown_needs_a_role_on_the_product(self):
         self.client.force_login(User.objects.create_user(username="nobody", password="x"))
         response = self.client.get(reverse("products:product_compliance", args=[self.product.pk]))

@@ -44,7 +44,7 @@ def compliance_breakdown(product) -> list[dict]:
 
     Each item: ``{configuration, assessment (latest, or None), packages:
     [{source, version, title, requirements: [{id, label, ref}], blocking:
-    [finding]}]}``.
+    [finding]}], out_of_scope: [package title]}``.
     """
     configurations = Configuration.objects.filter(
         hardware_revision__hardware_variant__product=product
@@ -59,10 +59,12 @@ def compliance_breakdown(product) -> list[dict]:
             )
         }
         items = []
+        out_of_scope = []
         for result in evaluation["results"]:
-            if not result["in_scope"]:
-                continue
             content = getattr(packages.get(result.get("package_id")), "content", {})
+            if not result["in_scope"]:
+                out_of_scope.append(content.get("title") or result["source"])
+                continue
             by_id = {r["id"]: r for r in content.get("requirements", [])}
             items.append(
                 {
@@ -90,12 +92,43 @@ def compliance_breakdown(product) -> list[dict]:
                 "configuration": configuration,
                 "assessment": configuration.assessments.first(),
                 "packages": items,
+                "out_of_scope": out_of_scope,
             }
         )
     return breakdown
 
 
-def compliance_ratio(product, breakdown=None) -> tuple[int, int]:
+class Ratio(tuple):
+    """``(ok, total)`` plus ``empty``: what to show instead of the ratio
+    when ``total`` is 0 (templates read ``ratio.0``, ``ratio.1`` and
+    ``ratio.empty``)."""
+
+    empty = "no data yet"
+
+    def __new__(cls, ok, total, empty=None):
+        ratio = super().__new__(cls, (ok, total))
+        if empty:
+            ratio.empty = empty
+        return ratio
+
+
+NOT_IN_SCOPE = "Not in scope"
+NOTHING_IN_FORCE = "None in force yet"
+
+
+def _empty_compliance_label(breakdown) -> str | None:
+    """Why a product has no requirements to count: ``NOT_IN_SCOPE`` when its
+    configurations were evaluated against active packages and none is in
+    scope; ``NOTHING_IN_FORCE`` when a package is in scope but none of its
+    requirements is in force yet; None (no data yet) otherwise."""
+    if any(item["packages"] for item in breakdown):
+        return NOTHING_IN_FORCE
+    if any(item["out_of_scope"] for item in breakdown):
+        return NOT_IN_SCOPE
+    return None
+
+
+def compliance_ratio(product, breakdown=None) -> Ratio:
     """(fulfilled, total) in-scope requirements across the product's
     configurations' current evaluation (see ``compliance_breakdown``). A
     requirement counts as fulfilled unless its package has an unresolved
@@ -115,7 +148,7 @@ def compliance_ratio(product, breakdown=None) -> tuple[int, int]:
                 total.add(key)
                 if package["blocking"]:
                     bad.add(key)
-    return len(total - bad), len(total)
+    return Ratio(len(total - bad), len(total), _empty_compliance_label(breakdown))
 
 
 def questions_ratio(product) -> tuple[int, int]:

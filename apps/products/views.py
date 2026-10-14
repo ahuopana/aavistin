@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
+from apps.assessments.progress import questionnaire_progress
 from apps.core.navigation import breadcrumbs, configuration_workflow
 from apps.orgs.models import ProductFamily, Role
 from apps.orgs.services import has_role, roles_for_user
@@ -109,6 +110,8 @@ def product_compliance(request, pk):
         django_messages.error(request, "You need a role on this product to see it.")
         return redirect("orgs:portfolio")
     breakdown = compliance_breakdown(product)
+    for item in breakdown:
+        item["open_questions"] = questionnaire_progress(item["configuration"])["open"]
     return render(
         request,
         "products/compliance.html",

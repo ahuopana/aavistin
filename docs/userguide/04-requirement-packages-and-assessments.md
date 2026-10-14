@@ -120,6 +120,20 @@ finding links to its entry on the assessment page. The Compliance
 Overview also shows the number of open action-required findings per
 product.
 
+When there is nothing to count, the bar says why:
+
+- **Not in scope**: the product's configurations were assessed against the
+  active packages and none of them applies with the current answers (for
+  example, a product excluded from the CRA and the RED). If questions are
+  still open, the scope may change once they are answered.
+- **None in force yet**: a package applies, but none of its requirements
+  is in force yet (for example, most EU CRA requirements apply from
+  11 December 2027).
+- **No data yet**: there is no configuration, or no package is approved
+  for the configurations' target markets.
+
+The breakdown shows the same reason for each configuration.
+
 ## Approval and staleness
 
 Once an assessment's questionnaire is complete, it can be **approved** —
