@@ -56,7 +56,7 @@ def approvals(request):
 @login_required
 def compare(request):
     """Compare two entities of one kind: products, hardware, releases,
-    options, configurations or assessments (ADR 0035)."""
+    options, configurations or assessments (ADR 0038)."""
     kind = request.GET.get("kind", "configuration")
     if kind not in KINDS:
         raise Http404("Unknown kind")

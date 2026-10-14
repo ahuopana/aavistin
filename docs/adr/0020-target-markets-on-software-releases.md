@@ -14,5 +14,5 @@ Target markets were set only on hardware variants, and only packages for those m
 
 ## Consequences
 
-- Software-only products can declare markets on the release. A configuration still needed a hardware revision at this point; ADR 0033 makes it optional.
+- Software-only products can declare markets on the release. A configuration still needed a hardware revision at this point; ADR 0036 makes it optional.
 - Existing data keeps its behaviour: releases start with no markets, so the variant's markets apply.

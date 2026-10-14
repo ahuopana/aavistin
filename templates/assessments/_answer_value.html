@@ -1,0 +1,1 @@
+{# An answer value. Context: value, type. #}{% load assessment_tags %}{% if value is True %}Yes{% elif value is False %}No{% elif value is None %}&mdash;{% elif type == "choice" %}{{ value|choice_label }}{% else %}{{ value }}{% endif %}

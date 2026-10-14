@@ -1,4 +1,4 @@
-# 35. Generic compare of two entities
+# 38. Generic compare of two entities
 
 Status: Accepted
 

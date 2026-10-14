@@ -17,6 +17,6 @@ Status: Accepted
 
 ## Consequences
 
-- Product-facing UI followed later; ADR 0034 records its attach-where-needed flow, edit and new versions.
+- Product-facing UI followed later; ADR 0037 records its attach-where-needed flow, edit and new versions.
 - `MEDIA_URL`/`MEDIA_ROOT` are new to this project (`config/settings.py`); `media/` was already gitignored, anticipating this. Served via Django's dev-only static helper in `config/urls.py` when `DEBUG=True`; production media serving (e.g. a reverse proxy or object storage) is out of scope here.
 - `apps.risk.approval.build_snapshot()` now includes a `"controls"` key even for configurations with no controls (an empty list); `apps.assessments.evaluate_configuration`'s per-result dicts now include a `"requirement_evidence"` key. Existing callers of either are unaffected — no existing test asserted exact snapshot/result equality.

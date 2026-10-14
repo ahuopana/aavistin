@@ -147,7 +147,7 @@ def resolve_answers(configuration) -> tuple[dict[str, ResolvedAnswer], list[Requ
         for question_id, question in pending.items():
             if question.get("level") == "hardware" and not configuration.hardware_revision_id:
                 # Nothing to answer it on: a software-only configuration
-                # has no hardware facts (ADR 0033).
+                # has no hardware facts (ADR 0036).
                 continue
             condition = question.get("condition")
             if condition is not None and not evaluate(condition, data):

@@ -12,7 +12,7 @@ from apps.accounts.models import User
 from apps.evidence.models import Evidence, EvidenceKind
 from apps.evidence.services import link_evidence
 from apps.orgs.models import Organisation, ProductFamily, Role, RoleAssignment, SoDPolicy
-from apps.packages.importer import approve_package, import_package
+from apps.packages.importer import approve_package, import_package, validate_schema
 from apps.products.models import (
     Configuration,
     HardwareRevision,
@@ -25,6 +25,7 @@ from apps.products.models import (
 
 from .carryforward import confirm_answers, copy_answers_forward
 from .evaluation import evaluate_configuration
+from .findings import finding_details
 from .models import Answer, Assessment, AssessmentStatus
 from .progress import questionnaire_progress
 from .resolution import resolve_answer, resolve_answers
@@ -698,6 +699,65 @@ class QuestionnaireProgressTests(ConfigurationFixture):
         self.assertEqual(progress["open"], 0)
 
 
+class FindingGuidanceTests(ConfigurationFixture):
+    def setUp(self):
+        super().setUp()
+        Answer.objects.create(
+            question_id="rated_power_watts", value=150, hardware_revision=self.revision
+        )
+        self.assessment = Assessment.objects.create(configuration=self.configuration)
+        self.client.force_login(self.editor)
+
+    def _get(self):
+        return self.client.get(reverse("assessments:assessment_detail", args=[self.assessment.pk]))
+
+    def test_finding_shows_level_help_and_the_answers_it_is_based_on(self):
+        response = self._get()
+        self.assertContains(response, "What to do with findings")
+        self.assertContains(response, 'id="finding-demo-widget-safety-high_power_caution"')
+        self.assertContains(response, "Based on 1 answer")
+        config_url = reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        self.assertContains(response, f'href="{config_url}#q-rated_power_watts"')
+        self.assertNotContains(response, "What to do:</strong>")
+
+    def test_rule_guidance_is_shown(self):
+        content = self.package.content
+        content["finding_rules"][0]["guidance"] = "Apply the high-power safety requirements."
+        self.package.content = content
+        self.package.save()
+        response = self._get()
+        self.assertContains(response, "Apply the high-power safety requirements.")
+
+    def test_guidance_validates_against_the_package_schema(self):
+        content = load_demo("1.0.0")
+        content["finding_rules"][0]["guidance"] = "Do this."
+        validate_schema(content)  # raises on an unknown property
+
+    def test_findings_are_listed_most_severe_first(self):
+        details = finding_details(
+            [
+                {"id": "a", "level": "info", "message": "", "source": "x", "version": "1"},
+                {
+                    "id": "b",
+                    "level": "action_required",
+                    "message": "",
+                    "source": "x",
+                    "version": "1",
+                },
+                {"id": "c", "level": "caution", "message": "", "source": "x", "version": "1"},
+            ]
+        )
+        self.assertEqual([d["id"] for d in details], ["b", "c", "a"])
+
+    def test_finding_of_an_out_of_scope_package_is_marked(self):
+        finding = {"id": "a", "level": "action_required", "message": "", "source": "x"}
+        details = finding_details(
+            [{**finding, "version": "1"}],
+            results=[{"source": "x", "version": "1", "in_scope": False}],
+        )
+        self.assertTrue(details[0]["out_of_scope"])
+
+
 class ViewTests(ConfigurationFixture):
     def _answer_payload(self, **overrides):
         payload = {
@@ -1054,7 +1114,7 @@ class ReleaseMarketTests(ConfigurationFixture):
 
 
 class SoftwareOnlyConfigurationTests(ConfigurationFixture):
-    """ADR 0033: a configuration may have no hardware revision."""
+    """ADR 0036: a configuration may have no hardware revision."""
 
     def setUp(self):
         super().setUp()

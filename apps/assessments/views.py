@@ -17,6 +17,7 @@ from apps.packages.models import PackageKind, RequirementPackage
 from apps.products.models import Configuration
 
 from .evaluation import evaluate_configuration
+from .findings import finding_details
 from .models import Answer, Assessment, AssessmentStatus
 from .progress import is_open, questionnaire_progress
 from .resolution import resolve_answers
@@ -372,6 +373,12 @@ def assessment_detail(request, pk):
             "staleness": staleness,
             "evaluation": evaluation,
             "results": _labelled_results(evaluation.get("results", []), product),
+            "findings": finding_details(
+                findings,
+                evaluation.get("resolved_answers", {}),
+                {question_id: resolved.question for question_id, resolved in current.items()},
+                evaluation.get("results", []),
+            ),
             "answer_rows": answer_rows,
             "crumbs": breadcrumbs(
                 configuration=configuration, trail=[(f"Assessment #{assessment.pk}", None)]

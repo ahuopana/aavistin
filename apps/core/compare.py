@@ -1,4 +1,4 @@
-"""Generic comparison of two entities of the same kind (ADR 0035).
+"""Generic comparison of two entities of the same kind (ADR 0038).
 
 Every comparable entity is reduced to a `Subject`: named sections of
 ``row label -> text`` pairs. `diff_subjects` then lines the two subjects up

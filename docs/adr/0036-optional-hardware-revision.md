@@ -1,4 +1,4 @@
-# 33. A configuration's hardware revision is optional
+# 36. A configuration's hardware revision is optional
 
 Status: Accepted
 
