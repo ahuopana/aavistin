@@ -37,6 +37,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libldap-2.5-0 \
     libsasl2-2 \
     libpq5 \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -56,6 +58,11 @@ COPY --from=builder /app /app
 # Collect static files for WhiteNoise (DEBUG is off by default, which selects
 # the hashed-manifest storage). The throwaway key is only for this build step.
 RUN DJANGO_SECRET_KEY=build-only python manage.py collectstatic --noinput
+
+# Reports print this; a container has no git checkout to ask. Pass the tag or
+# commit: docker build --build-arg AAVISTIN_VERSION=$(git describe --tags --always) .
+ARG AAVISTIN_VERSION=
+ENV AAVISTIN_VERSION=${AAVISTIN_VERSION}
 
 EXPOSE 8000
 

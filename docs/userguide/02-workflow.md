@@ -15,10 +15,11 @@ flowchart TD
     S4["<b>4. Assess compliance</b><br/>Editor starts, Approver approves"]
     S5["<b>5. Risk assessment</b><br/>Editor, then Approver"]
     S6["<b>6. Evidence</b><br/>Editor"]
-    S7["<b>7. Keep it current</b><br/>Everyone"]
-    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7
+    S7["<b>7. Report</b><br/>Anyone for a draft, Approver to issue"]
+    S8["<b>8. Keep it current</b><br/>Everyone"]
+    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8
     S4 -- "findings or gaps: fix the answers" --> S3
-    S7 -. "anything changes: stale, re-review" .-> S4
+    S8 -. "anything changes: stale, re-review" .-> S4
 ```
 
 ## 1. Setup
@@ -139,13 +140,21 @@ or control it supports, from the product's **Evidence** page. Expired or
 superseded evidence makes the approvals that rely on it stale. See
 [evidence](evidence).
 
-## 7. Keeping it current
+## 7. Report
+
+From a product's **Compliance** page, choose **Report** next to a
+configuration. Anyone with a role can download a draft; an Approver can
+issue an approved report once the assessment and risk register are
+approved and not stale. See [reports](reports).
+
+## 8. Keeping it current
 
 | What changed | What happens | What you do |
 | --- | --- | --- |
 | An answer | Approved assessments become stale | Review and approve a new assessment |
 | A requirement package version | Approved assessments become stale | Review the diff, approve again |
 | Evidence expired or replaced | Approvals relying on it become stale | Relink or renew the evidence |
+| An approved report's snapshot goes stale | The report is unchanged but the verify page warns | Approve again, then issue a new report |
 | New software release | Answers are copied from the previous release as "needs confirmation" | Confirm or correct each one |
 | A new target market | New questions appear unanswered | Answer them, then assess again |
 
@@ -163,6 +172,7 @@ superseded evidence makes the approvals that rely on it stale. See
 | Optional feature differences | Software option | Configuration page, questionnaire | Editor |
 | Assets, threats, hazards, controls | Product (scoped when needed) | Risk register | Editor |
 | Evidence | Requirement or control | Product's Evidence page | Editor |
+| Reports | Configuration | Product's Compliance page, Report link | Anyone (draft), Approver (approved) |
 | Approval | Assessment / risk view | Assessment page / risk register, both listed on the Approvals page | Approver |
 
 ## Finding your way

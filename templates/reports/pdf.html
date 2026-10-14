@@ -1,0 +1,196 @@
+{% load static report_tags assessment_tags %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ c.title }}</title>
+<style>
+  /* Colours follow the web UI's light theme (static/css/base.css). */
+  :root {
+    --brand: #0f2a33; --accent: #1b6f6d; --surface: #f3f7f7; --border: #d5dfe0;
+    --text: #0f1a1e; --muted: #46585c; --tint: #e3f2ef;
+    --danger: #b3362e; --warning: #b5540e; --success: #1b7d52;
+  }
+  @page {
+    size: A4;
+    margin: 28mm 18mm 22mm;
+    @top-left { content: element(running-logo); }
+    @top-right { content: string(title); font: 9pt "IBM Plex Sans", Helvetica, Arial, sans-serif; color: #46585c; vertical-align: middle; }
+    @bottom-left { content: "{% if draft %}DRAFT, not verifiable{% else %}{{ report_id }} · Approved{% endif %}"; font: 8pt "IBM Plex Sans", Helvetica, Arial, sans-serif; color: #46585c; }
+    @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 8pt "IBM Plex Sans", Helvetica, Arial, sans-serif; color: #46585c; }
+  }
+  body { font: 10pt/1.45 "IBM Plex Sans", Helvetica, Arial, sans-serif; color: var(--text); }
+  #running-logo { position: running(running-logo); }
+  #running-logo img { height: 9mm; }
+  .doc-title { string-set: title content(); }
+  h1 { font: 600 22pt "Outfit", "IBM Plex Sans", Helvetica, sans-serif; color: var(--brand); margin: 0 0 2mm; }
+  .doc-type { font-size: 12pt; color: var(--accent); font-weight: 600; margin: 0 0 1mm; }
+  .doc-about { color: var(--muted); margin: 0 0 6mm; }
+  h2 { font: 600 14pt "Outfit", "IBM Plex Sans", Helvetica, sans-serif; color: var(--brand); margin: 9mm 0 2mm; border-bottom: 0.5mm solid var(--accent); padding-bottom: 1mm; page-break-after: avoid; }
+  h3 { font-size: 10.5pt; color: var(--brand); margin: 5mm 0 1mm; page-break-after: avoid; }
+  table { border-collapse: collapse; width: 100%; margin: 2mm 0; }
+  th, td { border: 0.2mm solid var(--border); padding: 1.2mm 2mm; text-align: left; vertical-align: top; font-size: 9pt; }
+  th { background: var(--surface); color: var(--brand); }
+  tr { page-break-inside: avoid; }
+  dl { display: grid; grid-template-columns: 38mm 1fr; gap: 1.2mm 4mm; }
+  dt { font-weight: 600; color: var(--brand); }
+  dd { margin: 0; }
+  .mono { font-family: "IBM Plex Mono", monospace; font-size: 8pt; word-break: break-all; }
+  .banner { border: 0.5mm solid var(--danger); background: #fbeceb; color: var(--danger); padding: 2mm 3mm; font-weight: 600; margin: 3mm 0; border-radius: 1mm; }
+  .approved { border: 0.5mm solid var(--success); background: #e8f5ee; color: var(--success); padding: 2mm 3mm; font-weight: 600; margin: 3mm 0; border-radius: 1mm; }
+  .note { color: var(--muted); font-size: 9pt; }
+  .cover { page-break-after: always; }
+  .badge { display: inline-block; padding: 0 2.2mm; border-radius: 3mm; border: 0.25mm solid; font-size: 8pt; font-weight: 600; white-space: nowrap; }
+  .badge-action_required { color: var(--danger); background: #fbeceb; }
+  .badge-caution { color: var(--warning); background: #fcefe3; }
+  .badge-info { color: var(--muted); background: var(--surface); }
+  .badge-ok { color: var(--success); background: #e8f5ee; }
+  .badge-out { color: var(--muted); background: var(--surface); }
+  .summary { display: flex; flex-wrap: wrap; gap: 4mm; margin-top: 4mm; }
+  .summary table { width: 82mm; margin: 0; }
+  .summary caption { text-align: left; font-weight: 600; color: var(--brand); padding-bottom: 1mm; }
+  .summary td.num { text-align: right; width: 14mm; font-weight: 600; }
+  .summary td.sub { background: var(--surface); color: var(--muted); font-size: 8pt; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tone-action_required { color: var(--danger); }
+  .tone-caution { color: var(--warning); }
+  .tone-ok { color: var(--success); }
+  .tone-info { color: var(--muted); }
+  .watermark { position: fixed; top: 110mm; left: 0; right: 0; text-align: center; font-size: 80pt; color: rgba(179,54,46,0.08); transform: rotate(-30deg); }
+</style>
+</head>
+<body>
+<div id="running-logo"><img src="file://{{ logo }}" alt="Aavistin"></div>
+{% if draft %}<div class="watermark">DRAFT</div>{% endif %}
+
+<section class="cover">
+  <p class="doc-type">{{ c.document_type }}</p>
+  <h1 class="doc-title">{{ c.title }}</h1>
+  <p class="doc-about">{% if "assessment" in c.sections %}Which regulations apply to this configuration, what they require, and the findings that need action{% endif %}{% if "assessment" in c.sections and c.risks or "assessment" in c.sections and c.mitigations %}; {% endif %}{% if c.risks or c.mitigations %}the risks identified and how they are treated{% endif %}{% if "assessment" in c.sections or c.risks or c.mitigations %}.{% else %}A description of this configuration.{% endif %}</p>
+  {% if draft %}
+    <div class="banner">DRAFT. Generated from live data. Not an approved record and not verifiable.</div>
+  {% else %}
+    <div class="approved">Approved report {{ report_id }}. Verify it at <span class="mono">/verify/{{ report_id }}/</span></div>
+  {% endif %}
+  <dl>
+    <dt>Configuration</dt><dd>{{ c.configuration }}</dd>
+    <dt>Generated</dt><dd>{{ c.generated_at|report_time }}</dd>
+    <dt>Generated by</dt><dd>{{ c.generated_by }}</dd>
+    <dt>Aavistin version</dt><dd>{{ c.aavistin_version }}</dd>
+    {% if c.sources.assessment %}
+      <dt>Assessment snapshot</dt><dd>#{{ c.sources.assessment.id }}, approved {{ c.sources.assessment.approved_at|report_time }} by {{ c.sources.assessment.approved_by }}{% if c.sources.assessment.sod_warning %} (separation-of-duties warning: the approver also edited an answer){% endif %}</dd>
+    {% endif %}
+    {% if c.sources.risk %}
+      <dt>Risk snapshot</dt><dd>#{{ c.sources.risk.id }}, approved {{ c.sources.risk.approved_at|report_time }} by {{ c.sources.risk.approved_by }}</dd>
+    {% endif %}
+    {% if content_hash %}<dt>Content SHA-256</dt><dd class="mono">{{ content_hash }}</dd>{% endif %}
+    <dt>Sections</dt><dd>{{ c.section_labels|join:", " }}</dd>
+  </dl>
+  {% if c.summary %}
+    <h2>Summary</h2>
+    <div class="summary">
+      {% for g in c.summary %}
+        <table>
+          <caption>{{ g.title }}</caption>
+          {% for row in g.rows %}
+            {% if row.value == "" %}
+              <tr><td colspan="2" class="sub">{{ row.label }}</td></tr>
+            {% else %}
+              <tr><td>{{ row.label }}</td><td class="num{% if row.tone %} tone-{{ row.tone }}{% endif %}">{{ row.value }}</td></tr>
+            {% endif %}
+          {% endfor %}
+        </table>
+      {% endfor %}
+    </div>
+  {% endif %}
+</section>
+
+{% if c.product %}
+<h2>Product</h2>
+<dl>
+  <dt>Name</dt><dd>{{ c.product.name }}</dd>
+  <dt>Organisation</dt><dd>{{ c.product.organisation }} / {{ c.product.family }}</dd>
+  <dt>Status</dt><dd>{{ c.product.status }}</dd>
+  {% if c.product.description %}<dt>Description</dt><dd>{{ c.product.description }}</dd>{% endif %}
+</dl>
+{% endif %}
+
+{% if "hardware" in c.sections %}
+<h2>Hardware</h2>
+{% if c.hardware %}<dl>
+  <dt>Variant</dt><dd>{{ c.hardware.variant }}</dd>
+  <dt>Revision</dt><dd>{{ c.hardware.revision }}</dd>
+  {% if c.hardware.released_at %}<dt>Released</dt><dd>{{ c.hardware.released_at|report_date }}</dd>{% endif %}
+  <dt>Target markets</dt><dd>{{ c.hardware.target_markets|join:", "|default:"None" }}</dd>
+</dl>{% else %}<p class="note">Software-only product: no hardware.</p>{% endif %}
+{% endif %}
+
+{% if c.software %}
+<h2>Software</h2>
+<dl>
+  <dt>Release</dt><dd>{{ c.software.name }} {{ c.software.version }}</dd>
+  {% if c.software.released_at %}<dt>Released</dt><dd>{{ c.software.released_at|report_date }}</dd>{% endif %}
+  <dt>Target markets</dt><dd>{{ c.software.target_markets|join:", "|default:"Those of the hardware variant" }}</dd>
+</dl>
+{% endif %}
+
+{% if "options" in c.sections %}
+<h2>Software options</h2>
+{% for o in c.options %}<p><strong>{{ o.name }}</strong>{% if o.description %}: {{ o.description }}{% endif %}</p>{% empty %}<p class="note">No options selected.</p>{% endfor %}
+{% endif %}
+
+{% if c.assessment %}
+<h2>Assessment</h2>
+<p class="note">{% if c.assessment.frozen %}Frozen at approval.{% else %}Live evaluation, not approved.{% endif %} Evaluated as of {{ c.assessment.as_of|report_date }}.</p>
+{% for r in c.assessment.results %}
+  <h3>{{ r.title }} <span class="note">{{ r.source }}@{{ r.version }}</span>
+    {% if r.in_scope %}<span class="badge badge-ok">In scope</span>{% else %}<span class="badge badge-out">Out of scope</span>{% endif %}</h3>
+  {% if r.in_scope %}
+    {% if r.classifications %}<p><strong>Classification:</strong> {{ r.classifications|join:"; " }}</p>{% endif %}
+    {% if r.assessment_routes %}<p><strong>Conformity routes available:</strong> {{ r.assessment_routes|join:"; " }}</p>{% endif %}
+    {% if r.requirements %}<table><tr><th>Requirement in force</th><th>Reference</th></tr>
+    {% for q in r.requirements %}<tr><td>{{ q.label }}</td><td>{{ q.ref }}</td></tr>{% endfor %}</table>{% else %}<p class="note">No requirements in force.</p>{% endif %}
+  {% endif %}
+{% endfor %}
+{% if not c.assessment.include_out_of_scope and c.assessment.out_of_scope_count %}
+  <p class="note">{{ c.assessment.out_of_scope_count }} regulation{{ c.assessment.out_of_scope_count|pluralize }} out of scope for this configuration not listed.</p>
+{% endif %}
+<h3>Findings</h3>
+{% if c.assessment.findings %}<table><tr><th>Level</th><th>Finding</th><th>Regulation</th><th>Reference</th></tr>
+{% for f in c.assessment.findings %}<tr>
+  <td><span class="badge badge-{{ f.level_id }}">{{ f.level }}</span></td>
+  <td>{{ f.message }}</td>
+  <td>{{ f.package }}{% if f.out_of_scope %}<br><span class="note">package not in scope: not counted against compliance</span>{% endif %}</td>
+  <td>{{ f.ref }}</td></tr>{% endfor %}</table>
+{% else %}<p class="note">No findings.</p>{% endif %}
+<h3>Answers</h3>
+<table><tr><th>Question</th><th>Answer</th><th>Needs confirmation</th></tr>
+{% for a in c.assessment.answers %}<tr><td>{{ a.question }}</td><td>{{ a.value }}</td><td>{% if a.needs_confirmation %}Yes{% endif %}</td></tr>{% endfor %}</table>
+{% endif %}
+
+{% if c.risks %}
+<h2>Risks</h2>
+<p class="note">{% if c.risks.frozen %}Frozen at approval.{% else %}Live register, not approved.{% endif %}
+Methods: {% for m in c.risks.methods %}{{ m.title }} (version {{ m.version }}){% if not forloop.last %}, {% endif %}{% empty %}none{% endfor %}.
+Catalogs: {% for m in c.risks.catalogs %}{{ m.title }} (version {{ m.version }}){% if not forloop.last %}, {% endif %}{% empty %}none{% endfor %}.</p>
+<table><tr><th>Type</th><th>Entry</th><th>Ratings</th></tr>
+{% for e in c.risks.entries %}<tr><td>{{ e.type }}</td><td>{{ e.label }}</td><td>
+  {% for r in e.ratings %}{{ r.method }}: {% if r.property %}{{ r.property|choice_label }} {{ r.severity }}{% else %}{{ r.level|default:"unrated"|choice_label }}{% if r.acceptance %} ({{ r.acceptance|choice_label }}){% endif %}{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+</td></tr>{% endfor %}</table>
+{% endif %}
+
+{% if c.mitigations %}
+<h2>Mitigations</h2>
+<h3>Treatments</h3>
+<table><tr><th>Entry</th><th>Method</th><th>Treatment</th><th>Residual</th></tr>
+{% for t in c.mitigations.treatments %}<tr><td>{{ t.entry }}</td><td>{{ t.method }}</td><td>{{ t.treatment|choice_label }}</td><td>{{ t.residual.level|default:"unrated"|choice_label }}{% if t.residual.acceptance %} ({{ t.residual.acceptance|choice_label }}){% endif %}</td></tr>{% empty %}<tr><td colspan="4">None</td></tr>{% endfor %}</table>
+<h3>Controls</h3>
+<table><tr><th>Control</th><th>Status</th><th>Mitigates</th><th>Evidence</th></tr>
+{% for k in c.mitigations.controls %}<tr><td>{{ k.name }}</td><td>{{ k.status|choice_label }}</td><td>{{ k.threats|join:", " }}</td><td>{{ k.evidence_count }}{% if k.evidence_count and not k.evidence_current %} (some expired or superseded){% endif %}</td></tr>{% empty %}<tr><td colspan="4">None</td></tr>{% endfor %}</table>
+{% endif %}
+
+{% if "evidence" in c.sections %}
+<h2>Evidence</h2>
+<table><tr><th>Title</th><th>Kind</th><th>SHA-256</th><th>Valid until</th><th>Linked to</th></tr>
+{% for e in c.evidence %}<tr><td>{{ e.title }}{% if e.superseded %} (superseded){% endif %}</td><td>{{ e.kind }}</td><td class="mono">{{ e.sha256 }}</td><td>{{ e.valid_until|report_date }}{% if e.expired %} (expired){% endif %}</td><td>{{ e.controls|join:", " }} {{ e.requirements|join:", " }}</td></tr>{% empty %}<tr><td colspan="5">No evidence recorded.</td></tr>{% endfor %}</table>
+{% endif %}
+</body>
+</html>

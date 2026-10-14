@@ -13,7 +13,7 @@ the top navigation gives you:
 - **Organisations** — the organisations, product families and products
   you have a role on.
 - **Compliance** — a portfolio-wide view of every product you can see,
-  with its compliance and risk status.
+  with its compliance and risk status, and the list of approved reports.
 
 ## Roles
 
@@ -43,3 +43,5 @@ both, or neither on a given product.
   separate from but linked to assessments.
 - [Evidence](evidence) — the records that back up a requirement or a
   control.
+- [Reports](reports) — PDF reports of a configuration, drafts and
+  verifiable approved reports.

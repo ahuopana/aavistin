@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Report of {{ configuration.name }} · Aavistin{% endblock %}
+{% block content %}
+  {% include "core/_breadcrumb.html" %}
+  <h1>Report of {{ configuration.name }}</h1>
+  <p>Choose what the report includes. A <strong>draft</strong> is built from live data and downloaded without being stored.
+    An <strong>approved report</strong> needs approved, non-stale snapshots for the assessment and risk sections; it is stored, gets a report ID and can be verified.</p>
+  <form method="post">
+    {% csrf_token %}
+    <p><label>Title <input type="text" name="title" value="{{ title }}" maxlength="200" size="60"></label></p>
+    <fieldset>
+      <legend>Sections</legend>
+      {% for key, label in sections %}
+        <p><label><input type="checkbox" name="sections" value="{{ key }}"{% if key in selected %} checked{% endif %}> {{ label }}</label></p>
+      {% endfor %}
+    </fieldset>
+    <p><label><input type="checkbox" name="include_out_of_scope"{% if include_out_of_scope %} checked{% endif %}> List regulations that are out of scope for this configuration</label><br>
+      <span class="field-hint">Applies to the assessment section. Findings are always listed, since a finding can matter even when its regulation is out of scope; those are marked "package not in scope".</span></p>
+    <p>
+      <button type="submit" name="action" value="draft">Download draft</button>
+      {% if can_issue and not blockers %}
+        <button type="submit" name="action" value="issue">Issue approved report</button>
+      {% endif %}
+    </p>
+    {% if blockers %}
+      <p class="field-hint">An approved report can't be issued yet: {{ blockers|join:" " }}</p>
+    {% elif not can_issue %}
+      <p class="field-hint">Issuing an approved report needs the Approver role on this product.</p>
+    {% endif %}
+  </form>
+{% endblock %}
