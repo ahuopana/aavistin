@@ -10,7 +10,7 @@
     {% if can_edit %}<a class="button button-primary" href="{% url 'risk:entry_create' configuration.pk %}">+ Add entry</a>{% endif %}
   </div>
   <p>
-    {{ configuration.hardware_revision }} / {{ configuration.software_release }} —
+    {% if configuration.hardware_revision %}{{ configuration.hardware_revision }} / {% endif %}{{ configuration.software_release }} —
     product baseline plus the deltas that apply to this configuration.
   </p>
 

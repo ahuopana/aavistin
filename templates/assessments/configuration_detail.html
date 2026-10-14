@@ -6,7 +6,7 @@
 {% block content %}
   {% include "core/_breadcrumb.html" %}
   <h1>{{ configuration.name }} <small class="page-header-meta">Questionnaire</small></h1>
-  <p>{{ configuration.hardware_revision }} / {{ configuration.software_release }}{% with options=configuration.software_options.all %}{% if options %} + {% for o in options %}{{ o.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}{% endwith %}</p>
+  <p>{% if configuration.hardware_revision %}{{ configuration.hardware_revision }} / {% endif %}{{ configuration.software_release }}{% with options=configuration.software_options.all %}{% if options %} + {% for o in options %}{{ o.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}{% endwith %}</p>
 
   {% include "core/_workflow.html" with current_step="questions" %}
 

@@ -83,7 +83,7 @@ def build_snapshot(configuration) -> dict:
 
         entries_data.append(entry_data)
 
-    product = configuration.hardware_revision.hardware_variant.product
+    product = configuration.product
     controls_data = [
         {
             "id": control.id,

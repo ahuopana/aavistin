@@ -1422,6 +1422,25 @@ a.risk-stat:hover {
   background: color-mix(in srgb, var(--color-warning) 10%, transparent);
 }
 
+/* Compare page (ADR 0040) */
+.compare-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+.compare-table th[scope="row"] {
+  text-align: left;
+  font-weight: 500;
+}
+
+.compare-table .diff-changed,
+.compare-table .diff-only_a,
+.compare-table .diff-only_b {
+  background: color-mix(in srgb, var(--color-warning) 8%, transparent);
+}
+
 /* Profile and avatars */
 .avatar {
   --avatar-size: 32px;

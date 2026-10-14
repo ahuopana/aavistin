@@ -46,9 +46,7 @@ def compliance_breakdown(product) -> list[dict]:
     [{source, version, title, requirements: [{id, label, ref}], blocking:
     [finding]}], out_of_scope: [package title]}``.
     """
-    configurations = Configuration.objects.filter(
-        hardware_revision__hardware_variant__product=product
-    ).order_by("pk")
+    configurations = Configuration.objects.filter(software_release__product=product).order_by("pk")
     breakdown = []
     for configuration in configurations:
         evaluation = evaluate_configuration(configuration)
@@ -159,9 +157,7 @@ def questions_ratio(product) -> tuple[int, int]:
     own.
     """
     done = total = 0
-    configurations = Configuration.objects.filter(
-        hardware_revision__hardware_variant__product=product
-    )
+    configurations = Configuration.objects.filter(software_release__product=product)
     for configuration in configurations:
         progress = questionnaire_progress(configuration)
         done += progress["done"]
@@ -222,7 +218,7 @@ def product_of(instance) -> Product:
     if isinstance(instance, SoftwareOption):
         return instance.software_release.product
     if isinstance(instance, Configuration):
-        return instance.hardware_revision.hardware_variant.product
+        return instance.product
     raise TypeError(f"Not a product-level entity: {instance!r}")
 
 

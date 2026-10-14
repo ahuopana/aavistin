@@ -35,7 +35,7 @@ DONE, CURRENT, TODO = "done", "current", "todo"
 
 
 def product_of_configuration(configuration):
-    return configuration.hardware_revision.hardware_variant.product
+    return configuration.product
 
 
 def breadcrumbs(*, product=None, configuration=None, trail=()) -> list[dict]:
@@ -352,9 +352,9 @@ def approval_items(user) -> list[dict]:
                 items.append(
                     {"kind": kind, "label": str(instance), "url": f"{product_url}?tab={tab}"}
                 )
-        configurations = Configuration.objects.filter(
-            hardware_revision__hardware_variant__product=product
-        ).order_by("name")
+        configurations = Configuration.objects.filter(software_release__product=product).order_by(
+            "name"
+        )
         for configuration in configurations:
             if not configuration.is_approved:
                 items.append(

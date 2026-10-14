@@ -409,7 +409,8 @@
             <tr>
               <td>{{ c.name }}{% if c.description %}<div class="field-hint">{{ c.description }}</div>{% endif %}
                 <div class="field-hint">Evidence:
-                  {% for link in c.evidence_links.all %}<a href="{% url 'evidence:detail' link.evidence_id %}">{{ link.evidence.title }}</a>{% if not forloop.last %}, {% endif %}{% empty %}none yet · <a href="{% url 'evidence:product_list' entry.product_id %}">add or link evidence</a>{% endfor %}
+                  {% for link in c.evidence_links.all %}<a href="{% url 'evidence:detail' link.evidence_id %}">{{ link.evidence.title }}</a>{% if link.evidence.is_expired %} <span class="badge badge-warning">expired</span>{% endif %}{% if link.evidence.is_superseded %} <span class="badge badge-warning">superseded</span>{% endif %}{% if not forloop.last %}, {% endif %}{% empty %}none yet{% if c.status != "planned" %} <span class="badge badge-warning">{{ c.get_status_display|lower }} without evidence</span>{% endif %}{% endfor %}
+                  {% if can_edit %} · <a href="{% url 'evidence:product_list' entry.product_id %}?control={{ c.pk }}&amp;next={{ request.path|urlencode:'' }}%23controls">{% if c.evidence_links.all %}add or reuse evidence{% else %}attach evidence{% endif %}</a>{% endif %}
                 </div>
               </td>
               <td>

@@ -9,8 +9,9 @@ from .models import RiskEntry, SuggestionStatus
 
 
 def register_for_configuration(configuration) -> list[RiskEntry]:
-    product = configuration.hardware_revision.hardware_variant.product
-    hardware_variant_id = configuration.hardware_revision.hardware_variant_id
+    product = configuration.product
+    hardware_variant = configuration.hardware_variant
+    hardware_variant_id = hardware_variant.pk if hardware_variant else None
     software_release_id = configuration.software_release_id
     option_ids = set(configuration.software_options.values_list("id", flat=True))
 
