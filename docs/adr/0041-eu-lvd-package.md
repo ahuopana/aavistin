@@ -20,5 +20,6 @@ Status: Accepted (content is a first pass, not legally reviewed).
 ## Consequences
 
 - `eu-cra`, `eu-red` and `eu-lvd` all pass with `common` 1.3.0; the `common` and `eu-lvd` READMEs import it.
+- Addendum (ADR 0042): the documentation and marking questions moved to `common` 1.4.0 under neutral ids, and `eu-red` 1.1.0 breaks Art. 3(1)(a) down into the same safety objectives, so a radio product keeps the LVD-equivalent checks.
 - Machinery Regulation, EMC and RoHS interplay is not modelled; harmonised standards are not listed.
 - The legal-review list for this package: the `ref` citations, the Annex II category wording, the two interpretive exclusions, and the requirement summaries against the Official Journal text.

@@ -12,9 +12,9 @@ The EU Low Voltage Directive, Directive 2014/35/EU (CELEX `32014L0035`), as a re
 - **Requirements:** the Annex I safety objectives (8, one per point), the manufacturer obligations of Art. 6 with the declaration of conformity and CE marking (Art. 15–17), the obligations of authorised representatives (Art. 7), importers (Art. 8) and distributors (Art. 9), and identification of economic operators (Art. 11). All in force from 20 April 2016.
 - **Route:** internal production control (module A, Annex III). The directive has no third-party route.
 - **Findings:** below or above the voltage ranges, radio equipment (assess under RED), a disabled radio, partial standards coverage, documentation and marking gaps, an unchecked supplier, an importer acting as manufacturer, steward chosen as role, and units placed before 20 April 2016 (Art. 27).
-- **Fixtures:** 35 example products (a mains kettle, battery and DC equipment, a mains adapter, a basic component, switchgear above the range, a Wi-Fi router, dormant radios, each Annex II category, each role, documentation gaps).
+- **Fixtures:** 36 example products (a mains kettle, battery and DC equipment, a mains adapter, a basic component, switchgear above the range, a Wi-Fi router, dormant radios, each Annex II category, each role, documentation gaps).
 
-Shared facts (product form, role, commercial activity, medical devices, radio capability and enablement, placement dates) come from the shared question library `packages/common` 1.3.0, which adds the `hardware_without_software` product form to 1.2.0.
+Shared facts (product form, role, commercial activity, medical devices, radio capability and enablement, placement dates) and the safety and CE-marking process questions come from the shared question library `packages/common` 1.4.0. It adds the `hardware_without_software` product form (1.3.0) and the process questions, which `eu-red` 1.1.0 asks too (ADR 0042). The gap findings fire only while this package covers the product, so a product never gets them from both packages.
 
 ## Known limitations
 
@@ -27,8 +27,8 @@ Shared facts (product form, role, commercial activity, medical devices, radio ca
 Import and approve the shared question library first, then this package. Run inside the `web` container:
 
 ```bash
-docker compose exec web python manage.py import_package packages/common/1.3.0.json --kind question_set --official
-docker compose exec web python manage.py approve_package common 1.3.0
+docker compose exec web python manage.py import_package packages/common/1.4.0.json --kind question_set --official
+docker compose exec web python manage.py approve_package common 1.4.0
 docker compose exec web python manage.py import_package packages/eu-lvd/1.0.0.json --kind requirement --official
 docker compose exec web python manage.py approve_package eu-lvd "2014-35@2026-10"
 ```
