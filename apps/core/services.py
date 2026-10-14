@@ -13,6 +13,7 @@ from apps.assessments.models import AssessmentStatus
 from apps.orgs.models import Role
 from apps.products.models import Configuration
 from apps.products.services import (
+    Ratio,
     compliance_breakdown,
     compliance_ratio,
     editable_products,
@@ -78,9 +79,13 @@ def compliance_overview(user):
         )
     rows.sort(key=lambda r: (_ratio_fraction(r["compliance"]), _ratio_fraction(r["risk"])))
 
-    totals_compliance = (
+    totals_compliance = Ratio(
         sum(r["compliance"][0] for r in rows),
         sum(r["compliance"][1] for r in rows),
+        # Every product with no requirements to count for the same reason.
+        rows[0]["compliance"].empty
+        if rows and len({r["compliance"].empty for r in rows}) == 1
+        else None,
     )
     totals_risk = (sum(r["risk"][0] for r in rows), sum(r["risk"][1] for r in rows))
     totals_questions = (
@@ -102,8 +107,8 @@ def _candidate_tasks(user):
     products = editable_products(user, role=Role.EDITOR)
 
     configurations = Configuration.objects.filter(
-        hardware_revision__hardware_variant__product__in=products
-    ).select_related("hardware_revision__hardware_variant__product")
+        software_release__product__in=products
+    ).select_related("software_release__product")
 
     tasks = []
     for configuration in configurations:

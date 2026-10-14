@@ -23,13 +23,18 @@ def _check(label, ok, detail="", url="", url_label="", *, keep_detail=False):
 
 
 def _target_markets_check(configuration) -> dict:
-    variant = configuration.hardware_revision.hardware_variant
+    variant = configuration.hardware_variant
     release = configuration.software_release
     codes = sorted(configuration.effective_market_codes())
-    product_url = reverse("products:product_detail", args=[variant.product_id])
+    product_url = reverse("products:product_detail", args=[configuration.product.pk])
     if codes:
         return _check(f"Target markets set ({', '.join(codes)})", True)
-    if variant.target_markets.exists() and release.target_markets.exists():
+    if variant is None:
+        detail = (
+            f"Release “{release}” has no target markets and the configuration has no hardware. "
+            "Target markets decide which requirement packages apply and what gets suggested."
+        )
+    elif variant.target_markets.exists() and release.target_markets.exists():
         detail = (
             f"Hardware variant “{variant.name}” and release “{release}” share no market. "
             "A configuration is sold only where both its parts are."

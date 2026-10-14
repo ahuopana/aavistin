@@ -9,7 +9,7 @@
     <section class="dashboard-widget">
       <h2>Portfolio</h2>
       {% include "core/_stat_bar.html" with label="Questions" ok=totals.questions.0 total=totals.questions.1 fill="questions" %}
-      {% include "core/_stat_bar.html" with label="Compliance" ok=totals.compliance.0 total=totals.compliance.1 fill="compliance" hint=compliance_hint %}
+      {% include "core/_stat_bar.html" with label="Compliance" ok=totals.compliance.0 total=totals.compliance.1 fill="compliance" empty=totals.compliance.empty hint=compliance_hint %}
       {% include "core/_stat_bar.html" with label="Risk" ok=totals.risk.0 total=totals.risk.1 fill="risk" %}
     </section>
   </div>
@@ -34,7 +34,7 @@
             <td>{{ row.family.name }}</td>
             <td><a href="{% url 'products:product_detail' row.product.pk %}">{{ row.product.name }}</a></td>
             <td>{% include "core/_stat_bar.html" with label="" ok=row.questions.0 total=row.questions.1 fill="questions" %}</td>
-            <td>{% url 'products:product_compliance' row.product.pk as compliance_url %}{% include "core/_stat_bar.html" with label="" ok=row.compliance.0 total=row.compliance.1 fill="compliance" href=compliance_url hint=compliance_hint %}</td>
+            <td>{% url 'products:product_compliance' row.product.pk as compliance_url %}{% include "core/_stat_bar.html" with label="" ok=row.compliance.0 total=row.compliance.1 fill="compliance" empty=row.compliance.empty href=compliance_url hint=compliance_hint %}</td>
             <td>{% if row.action_required %}<a href="{{ compliance_url }}"><span class="badge badge-deleted">{{ row.action_required }}</span></a>{% else %}&mdash;{% endif %}</td>
             <td>{% include "core/_stat_bar.html" with label="" ok=row.risk.0 total=row.risk.1 fill="risk" %}</td>
           </tr>

@@ -13,15 +13,26 @@
   {% elif evidence.kind == "text" %}
     <p>{{ evidence.reference_text }}</p>
   {% elif evidence.kind == "file" and evidence.file %}
-    <p><a href="{{ evidence.file.file.url }}">Download</a></p>
+    <p><a href="{% url 'evidence:download' evidence.pk %}">Download</a></p>
   {% endif %}
 
   <p>Last audit: {{ evidence.last_audit_date|default:"—" }} by {{ evidence.last_audited_by|default:"—" }}</p>
   <p>Valid until: {{ evidence.valid_until|default:"—" }}</p>
   {% if evidence.is_expired %}<p class="message message-warning">Expired.</p>{% endif %}
-  {% if evidence.is_superseded %}<p class="message message-warning">Superseded by a newer version.</p>{% endif %}
+  {% if evidence.is_superseded %}
+    <p class="message message-warning">Superseded by
+      {% for newer in newer_versions %}<a href="{% url 'evidence:detail' newer.pk %}">{{ newer.title }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.
+      Relink what this backs to the newer version.</p>
+  {% endif %}
   {% if evidence.supersedes %}
     <p>Supersedes <a href="{% url 'evidence:detail' evidence.supersedes_id %}">{{ evidence.supersedes.title }}</a></p>
+  {% endif %}
+
+  {% if evidence.supersedes and can_edit %}
+    <form method="post" action="{% url 'evidence:copy_links' evidence.pk %}">
+      {% csrf_token %}
+      <button type="submit">Link to everything the earlier version backs</button>
+    </form>
   {% endif %}
 
   <h2>Linked to</h2>
@@ -64,10 +75,49 @@
     <h3>Link to a requirement</h3>
     <form method="post" action="{% url 'evidence:link_requirement' evidence.pk %}" class="inline-form">
       {% csrf_token %}
-      <input type="text" name="requirement_source" placeholder="package source (e.g. eu-cra)" required>
-      <input type="text" name="requirement_version" placeholder="package version" required>
-      <input type="text" name="requirement_id" placeholder="requirement id" required>
-      <button type="submit">Link</button>
+      {% if requirements %}
+        <select name="requirement_ref" aria-label="Requirement">
+          {% for r in requirements %}
+            <option value="{{ r.ref }}">{{ r.source }} · {{ r.reference|default:r.id }} — {{ r.label|truncatechars:90 }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit">Link</button>
+      {% else %}
+        <p class="field-hint">No requirements are in force for this product's configurations yet.</p>
+      {% endif %}
+    </form>
+
+    <h3>Edit</h3>
+    <form method="post" action="{% url 'evidence:edit' evidence.pk %}" class="form-vertical">
+      {% csrf_token %}
+      <div class="field"><label>Title<input type="text" name="title" value="{{ evidence.title }}" required></label></div>
+      <div class="field"><label>Description<textarea name="description">{{ evidence.description }}</textarea></label></div>
+      {% if evidence.kind == "link" %}<div class="field"><label>URL<input type="url" name="external_url" value="{{ evidence.external_url }}"></label></div>{% endif %}
+      {% if evidence.kind == "text" %}<div class="field"><label>Reference note<textarea name="reference_text">{{ evidence.reference_text }}</textarea></label></div>{% endif %}
+      <div class="field"><label>Last audit date<input type="date" name="last_audit_date" value="{{ evidence.last_audit_date|date:'Y-m-d' }}"></label></div>
+      <div class="field"><label>Valid until<input type="date" name="valid_until" value="{{ evidence.valid_until|date:'Y-m-d' }}"></label></div>
+      <label><input type="checkbox" name="audited_today" value="1"> Audited today by me</label>
+      <button type="submit" class="button-primary">Save</button>
+    </form>
+
+    <h3>New version</h3>
+    <p class="field-hint">A replacement document supersedes this one. Linked controls and requirements are not moved silently; review them on the new version.</p>
+    <form method="post" action="{% url 'evidence:create' evidence.product_id %}" enctype="multipart/form-data" class="form-vertical" x-data="{ kind: '{% if evidence.kind == "file" and not uploads_enabled %}link{% else %}{{ evidence.kind }}{% endif %}' }">
+      {% csrf_token %}
+      <input type="hidden" name="supersedes" value="{{ evidence.pk }}">
+      <div class="field"><label>Title<input type="text" name="title" value="{{ evidence.title }}" required></label></div>
+      <div class="field">
+        <label for="id_new_version_kind">Kind</label>
+        <select id="id_new_version_kind" name="kind" @change="kind = $event.target.value">
+          {% if uploads_enabled %}<option value="file" {% if evidence.kind == "file" %}selected{% endif %}>Uploaded file</option>{% endif %}
+          <option value="link" {% if evidence.kind == "link" or evidence.kind == "file" and not uploads_enabled %}selected{% endif %}>External link</option>
+          <option value="text" {% if evidence.kind == "text" %}selected{% endif %}>Reference note</option>
+        </select>
+      </div>
+      {% if uploads_enabled %}<div class="field" x-show="kind === 'file'"><label>File<input type="file" name="file"></label></div>{% endif %}
+      <div class="field" x-show="kind === 'link'"><label>URL<input type="url" name="external_url"></label></div>
+      <div class="field" x-show="kind === 'text'"><label>Reference note<textarea name="reference_text"></textarea></label></div>
+      <button type="submit">Add new version</button>
     </form>
 
     <h3>Delete evidence</h3>

@@ -32,6 +32,7 @@ from .models import (
     AssetRating,
     CauseType,
     Control,
+    ControlStatus,
     EntryType,
     HazardCause,
     ImpactCategory,
@@ -695,6 +696,22 @@ class EmptyRegisterReadinessTests(RiskFixture):
         response = self.client.get(self.url)
         self.assertContains(response, "Open the product")
         self.assertContains(response, f'href="/products/{self.product.pk}/"')
+
+    def test_software_only_configuration_has_a_register(self):
+        self.release.target_markets.set(TargetMarket.objects.filter(code="EU"))
+        software_only = Configuration.objects.create(
+            name="App only", software_release=self.release
+        )
+        response = self.client.get(f"/risk/configurations/{software_only.pk}/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Target markets set (EU)")
+
+    def test_software_only_without_markets_says_so(self):
+        software_only = Configuration.objects.create(
+            name="App only", software_release=self.release
+        )
+        response = self.client.get(f"/risk/configurations/{software_only.pk}/")
+        self.assertContains(response, "the configuration has no hardware")
 
     def test_missing_method_and_catalog_ask_an_administrator(self):
         RequirementPackage.objects.filter(
@@ -1634,3 +1651,49 @@ class ImpactCategoryTests(RiskFixture):
             content, is_official=False, existing_packages=RequirementPackage.objects.none()
         )
         self.assertIn("duplicate_impact_category", [i["code"] for i in issues])
+
+
+class ControlEvidenceDisplayTests(RiskFixture):
+    """Evidence at the point of use: attach link and status hints."""
+
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        asset = self.make_asset()
+        self.threat = self.make_threat(asset)
+        self.control = Control.objects.create(
+            product=self.product, name="Signed updates", status=ControlStatus.IMPLEMENTED
+        )
+        self.control.threats.add(self.threat)
+        self.page = f"/risk/configurations/{self.configuration.pk}/entries/{self.threat.pk}/"
+
+    def test_implemented_control_without_evidence_is_flagged_with_attach_link(self):
+        response = self.client.get(self.page)
+        self.assertContains(response, "implemented without evidence")
+        self.assertContains(response, f"?control={self.control.pk}&amp;next=")
+        self.assertContains(response, "attach evidence")
+
+    def test_planned_control_is_not_flagged(self):
+        self.control.status = ControlStatus.PLANNED
+        self.control.save()
+        self.assertNotContains(self.client.get(self.page), "without evidence")
+
+    def test_linked_evidence_status_is_shown(self):
+        from apps.evidence.models import Evidence, EvidenceKind
+        from apps.evidence.services import link_evidence
+
+        old = Evidence.objects.create(
+            product=self.product, title="Old SBOM", kind=EvidenceKind.TEXT, reference_text="x"
+        )
+        Evidence.objects.create(
+            product=self.product,
+            title="New SBOM",
+            kind=EvidenceKind.TEXT,
+            reference_text="y",
+            supersedes=old,
+        )
+        link_evidence(old, control=self.control)
+        response = self.client.get(self.page)
+        self.assertContains(response, "Old SBOM")
+        self.assertContains(response, "superseded")
+        self.assertNotContains(response, "without evidence")

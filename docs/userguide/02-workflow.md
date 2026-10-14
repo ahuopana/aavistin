@@ -44,8 +44,8 @@ order, because each level refers to the one before:
    set them before answering anything. Then add a **hardware revision**.
 3. **Software release** and, if the software has optional feature
    packs, **software options**.
-4. **Configuration** — one hardware revision, one software release and
-   any options. This is the unit that is assessed.
+4. **Configuration** — one hardware revision (optional for software-only
+   products), one software release and any options. This is the unit that is assessed.
 
 See [organisations and products](organisations-and-products).
 

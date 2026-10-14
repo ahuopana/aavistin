@@ -192,6 +192,32 @@ class ComplianceBreakdownTests(RatioFixture):
         )
         self.assertContains(response, "Requirements in scope whose package has no")
 
+    def test_excluded_product_shows_not_in_scope(self):
+        self._ready_answers(has_wireless=True)
+        Answer.objects.filter(question_id="is_toy_widget").update(value=True)
+        ratio = compliance_ratio(self.product)
+        self.assertEqual(ratio, (0, 0))
+        self.assertEqual(ratio.empty, "Not in scope")
+        response = self.client.get(reverse("products:product_detail", args=[self.product.pk]))
+        self.assertContains(response, "Not in scope</a>")
+        response = self.client.get(reverse("products:product_compliance", args=[self.product.pk]))
+        self.assertContains(response, "does not apply with the current answers")
+
+    def test_without_configurations_there_is_no_data_yet(self):
+        empty_product = Product.objects.create(
+            product_family=self.family, name="Empty", slug="empty"
+        )
+        self.assertEqual(compliance_ratio(empty_product).empty, "no data yet")
+
+    def test_in_scope_package_without_requirements_in_force(self):
+        content = self.package.content
+        for requirement in content["requirements"]:
+            requirement["applies_from"] = "2099-01-01"
+        self.package.content = content
+        self.package.save()
+        self._ready_answers(has_wireless=False)
+        self.assertEqual(compliance_ratio(self.product).empty, "None in force yet")
+
     def test_breakdown_needs_a_role_on_the_product(self):
         self.client.force_login(User.objects.create_user(username="nobody", password="x"))
         response = self.client.get(reverse("products:product_compliance", args=[self.product.pk]))
@@ -610,6 +636,34 @@ class ProductViewTests(ProductAuthoringFixture):
         self.assertEqual(response.status_code, 302)
         config = Configuration.objects.get(name="TempSense EU 2.0")
         self.assertEqual(list(config.software_options.all()), [self.option])
+
+    def test_software_only_configuration_is_valid(self):
+        config = Configuration(name="App only", software_release=self.release)
+        config.full_clean()
+        config.save()
+        self.assertEqual(config.product, self.product)
+        self.assertEqual(product_of(config), self.product)
+
+    def test_editor_can_create_and_edit_software_only_configuration(self):
+        self.client.force_login(self.editor)
+        self.client.post(
+            reverse("products:configuration_create", args=[self.product.pk]),
+            {"name": "App only", "hardware_revision": "", "software_release": self.release.pk},
+        )
+        config = Configuration.objects.get(name="App only")
+        self.assertIsNone(config.hardware_revision)
+        response = self.client.get(reverse("products:product_detail", args=[self.product.pk]))
+        self.assertContains(response, "App only")
+        self.client.post(
+            reverse("products:configuration_edit", args=[config.pk]),
+            {
+                "name": "App with hardware",
+                "hardware_revision": self.revision.pk,
+                "software_release": self.release.pk,
+            },
+        )
+        config.refresh_from_db()
+        self.assertEqual(config.hardware_revision, self.revision)
 
     def test_configuration_create_rejects_mismatched_hardware(self):
         other_variant = HardwareVariant.objects.create(

@@ -121,13 +121,14 @@ def resolve_answer(configuration, question_id: str) -> Answer | None:
     if answer is not None:
         return answer
 
-    answer = Answer.objects.filter(
-        hardware_revision=configuration.hardware_revision, question_id=question_id
-    ).first()
-    if answer is not None:
-        return answer
+    if configuration.hardware_revision_id:
+        answer = Answer.objects.filter(
+            hardware_revision=configuration.hardware_revision, question_id=question_id
+        ).first()
+        if answer is not None:
+            return answer
 
-    product = configuration.hardware_revision.hardware_variant.product
+    product = configuration.product
     return Answer.objects.filter(product=product, question_id=question_id).first()
 
 
@@ -144,6 +145,10 @@ def resolve_answers(configuration) -> tuple[dict[str, ResolvedAnswer], list[Requ
         data = {qid: ra.value for qid, ra in resolved.items()}
         resolved_this_pass = []
         for question_id, question in pending.items():
+            if question.get("level") == "hardware" and not configuration.hardware_revision_id:
+                # Nothing to answer it on: a software-only configuration
+                # has no hardware facts (ADR 0038).
+                continue
             condition = question.get("condition")
             if condition is not None and not evaluate(condition, data):
                 continue

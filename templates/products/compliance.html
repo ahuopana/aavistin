@@ -6,7 +6,7 @@
   {% include "core/_breadcrumb.html" %}
   <h1>Compliance of {{ product.name }}</h1>
   <div class="page-status">
-    {% include "core/_stat_bar.html" with label="Compliance" ok=compliance.0 total=compliance.1 fill="compliance" hint=compliance_hint %}
+    {% include "core/_stat_bar.html" with label="Compliance" ok=compliance.0 total=compliance.1 fill="compliance" empty=compliance.empty hint=compliance_hint %}
   </div>
   <p>The Compliance ratio counts the requirements in force for the product's configurations, according to their current answers.
     A requirement counts as fulfilled unless its package has an <strong>action-required</strong> finding for that configuration.
@@ -36,7 +36,7 @@
                     </ul>
                   </details>
                 {% else %}
-                  None
+                  None in force yet
                 {% endif %}
               </td>
               <td>
@@ -58,8 +58,13 @@
         </tbody>
       </table>
       {% if not item.assessment %}<p class="field-hint">Start an assessment from the questionnaire to see each finding with its guidance and the answers it is based on.</p>{% endif %}
+    {% elif item.out_of_scope %}
+      <p><strong>Not in scope:</strong> {{ item.out_of_scope|join:", " }} {{ item.out_of_scope|length|pluralize:"does,do" }} not apply with the current answers{% if item.assessment %}; the assessment's Results show each package's verdict{% endif %}.</p>
     {% else %}
-      <p>No package is in scope for this configuration yet.</p>
+      <p>No requirement package is active for this configuration: none is approved for its hardware variant's target markets.</p>
+    {% endif %}
+    {% if item.open_questions %}
+      <p class="field-hint">{{ item.open_questions }} question{{ item.open_questions|pluralize }} still open; answering {{ item.open_questions|pluralize:"it,them" }} may change what is in scope. <a href="{% url 'assessments:configuration_detail' item.configuration.pk %}?show=open#questions">Answer &rarr;</a></p>
     {% endif %}
   {% empty %}
     <p>This product has no configurations yet.</p>

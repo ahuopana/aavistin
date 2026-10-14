@@ -21,7 +21,7 @@
                   <td><a href="{% url 'products:product_detail' product.pk %}">{{ product.name }}</a></td>
                   <td><span class="badge badge-{{ product.status }}">{{ product.get_status_display }}</span></td>
                   <td>{% include "core/_stat_bar.html" with label="" ok=product.questions.0 total=product.questions.1 fill="questions" %}</td>
-                  <td>{% url 'products:product_compliance' product.pk as compliance_url %}{% include "core/_stat_bar.html" with label="" ok=product.compliance.0 total=product.compliance.1 fill="compliance" href=compliance_url hint=compliance_hint %}</td>
+                  <td>{% url 'products:product_compliance' product.pk as compliance_url %}{% include "core/_stat_bar.html" with label="" ok=product.compliance.0 total=product.compliance.1 fill="compliance" empty=product.compliance.empty href=compliance_url hint=compliance_hint %}</td>
                   <td>{% include "core/_stat_bar.html" with label="" ok=product.risk.0 total=product.risk.1 fill="risk" %}</td>
                   <td>{{ product.description|default:"—"|truncatechars:100 }}</td>
                 </tr>

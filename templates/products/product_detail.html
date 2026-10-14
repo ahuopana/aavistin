@@ -72,7 +72,7 @@
 
     <div class="page-status">
       {% include "core/_stat_bar.html" with label="Questions" ok=questions.0 total=questions.1 fill="questions" %}
-      {% url 'products:product_compliance' product.pk as compliance_url %}{% include "core/_stat_bar.html" with label="Compliance" ok=compliance.0 total=compliance.1 fill="compliance" href=compliance_url hint=compliance_hint %}
+      {% url 'products:product_compliance' product.pk as compliance_url %}{% include "core/_stat_bar.html" with label="Compliance" ok=compliance.0 total=compliance.1 fill="compliance" empty=compliance.empty href=compliance_url hint=compliance_hint %}
       {% include "core/_stat_bar.html" with label="Risk" ok=risk.0 total=risk.1 fill="risk" %}
     </div>
 
@@ -401,11 +401,12 @@
                 <div class="row-actions">
                   <a href="{% url 'assessments:configuration_detail' configuration.pk %}">Questions</a>
                   <a href="{% url 'risk:register' configuration.pk %}">Risk register</a>
+                  <a href="{% url 'core:compare' %}?kind=configuration&amp;a={{ configuration.pk }}">Compare…</a>
                   {% if configuration.workflow.assessment %}<a href="{% url 'assessments:assessment_detail' configuration.workflow.assessment.pk %}">Assessment #{{ configuration.workflow.assessment.pk }}</a>{% endif %}
                 </div>
               </td>
               <td>
-                {{ configuration.hardware_revision }} / {{ configuration.software_release }}
+                {% if configuration.hardware_revision %}{{ configuration.hardware_revision }} / {% endif %}{{ configuration.software_release }}
                 {% with options=configuration.software_options.all %}
                   {% if options %} + {% for o in options %}{{ o.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
                 {% endwith %}
@@ -442,7 +443,8 @@
                     <div class="field"><label>Name<input type="text" name="name" value="{{ configuration.name }}" required></label></div>
                     <div class="field">
                       <label for="id_config_{{ configuration.pk }}_hardware_revision">Hardware revision</label>
-                      <select id="id_config_{{ configuration.pk }}_hardware_revision" name="hardware_revision" required>
+                      <select id="id_config_{{ configuration.pk }}_hardware_revision" name="hardware_revision">
+                        <option value="">— none (software only) —</option>
                         {% for rev in hardware_revisions %}
                           <option value="{{ rev.id }}" {% if rev == configuration.hardware_revision %}selected{% endif %}>{{ rev }}</option>
                         {% endfor %}
@@ -484,8 +486,8 @@
             <div class="field"><label>Name<input type="text" name="name" placeholder="Configuration name" required></label></div>
             <div class="field">
               <label for="id_new_config_hardware_revision">Hardware revision</label>
-              <select id="id_new_config_hardware_revision" name="hardware_revision" required>
-                <option value="">— HW revision —</option>
+              <select id="id_new_config_hardware_revision" name="hardware_revision">
+                <option value="">— none (software only) —</option>
                 {% for rev in hardware_revisions %}
                   <option value="{{ rev.id }}">{{ rev }}</option>
                 {% endfor %}

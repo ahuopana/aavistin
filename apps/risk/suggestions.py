@@ -43,7 +43,7 @@ def _find_catalog_entry(catalog, entry_id: str) -> dict:
 
 def pending_suggestions(configuration) -> list[dict]:
     """Catalog-triggered entries not yet accepted or dismissed for this product."""
-    product = configuration.hardware_revision.hardware_variant.product
+    product = configuration.product
     context = suggestion_context(configuration)
 
     already_decided = set(

@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 from django.conf import settings
@@ -381,7 +382,8 @@ class EuCraResultsPageTests(EuCraConfigurationFixture):
         # Results show the package's labels, not requirement ids.
         self.assertContains(response, "Economic operator role: Manufacturer")
         self.assertContains(response, "Notify actively exploited vulnerabilities")
-        self.assertNotContains(response, "art_14_report_exploited_vulnerabilities")
+        visible_text = re.sub(r"<[^>]*>", " ", response.content.decode())
+        self.assertNotIn("art_14_report_exploited_vulnerabilities", visible_text)
         self.assertContains(response, "Not in force yet (")
         self.assertContains(
             response,
@@ -1109,6 +1111,52 @@ class ReleaseMarketTests(ConfigurationFixture):
         self.release.target_markets.set(TargetMarket.objects.filter(code="EU"))
         self.assertEqual(self.configuration.effective_market_codes(), {"EU"})
         self.assertIn("demo-widget-safety", self.active_sources())
+
+
+class SoftwareOnlyConfigurationTests(ConfigurationFixture):
+    """ADR 0038: a configuration may have no hardware revision."""
+
+    def setUp(self):
+        super().setUp()
+        self.release.target_markets.set(TargetMarket.objects.filter(code="EU"))
+        self.software_only = Configuration.objects.create(
+            name="Companion app 1.0", software_release=self.release
+        )
+
+    def test_product_and_markets_come_from_the_release(self):
+        self.assertEqual(self.software_only.product, self.product)
+        self.assertIsNone(self.software_only.hardware_variant)
+        self.assertEqual(self.software_only.effective_market_codes(), {"EU"})
+
+    def test_hardware_questions_are_not_asked(self):
+        from .resolution import resolve_answers
+
+        with_hw, _ = resolve_answers(self.configuration)
+        without_hw, _ = resolve_answers(self.software_only)
+        hardware_ids = {
+            qid for qid, ra in with_hw.items() if ra.question.get("level") == "hardware"
+        }
+        self.assertTrue(hardware_ids)
+        self.assertFalse(hardware_ids & set(without_hw))
+        self.assertIn("is_toy_widget", without_hw)
+
+    def test_questionnaire_page_renders(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.software_only.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "rev A")
+
+    def test_product_answers_still_resolve_and_assessment_can_start(self):
+        Answer.objects.create(question_id="is_toy_widget", value=False, product=self.product)
+        resolved, _ = resolve_answers(self.software_only)
+        self.assertEqual(resolved["is_toy_widget"].value, False)
+        self.assertEqual(resolved["is_toy_widget"].origin, "product")
+        assessment = Assessment.objects.create(configuration=self.software_only)
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
+        self.assertEqual(response.status_code, 200)
 
 
 class CarryForwardFlagTests(ConfigurationFixture):

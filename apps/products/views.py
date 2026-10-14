@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
+from apps.assessments.progress import questionnaire_progress
 from apps.core.navigation import breadcrumbs, configuration_workflow
 from apps.orgs.models import ProductFamily, Role
 from apps.orgs.services import has_role, roles_for_user
@@ -86,9 +87,10 @@ def _question_links(configurations) -> dict:
     for configuration in configurations:
         base = reverse("assessments:configuration_detail", args=[configuration.pk])
         links["product"] = links["product"] or f"{base}?level=product#questions"
-        links["revision"].setdefault(
-            configuration.hardware_revision_id, f"{base}?level=hardware#questions"
-        )
+        if configuration.hardware_revision_id:
+            links["revision"].setdefault(
+                configuration.hardware_revision_id, f"{base}?level=hardware#questions"
+            )
         links["release"].setdefault(
             configuration.software_release_id, f"{base}?level=software#questions"
         )
@@ -109,6 +111,8 @@ def product_compliance(request, pk):
         django_messages.error(request, "You need a role on this product to see it.")
         return redirect("orgs:portfolio")
     breakdown = compliance_breakdown(product)
+    for item in breakdown:
+        item["open_questions"] = questionnaire_progress(item["configuration"])["open"]
     return render(
         request,
         "products/compliance.html",
@@ -127,7 +131,7 @@ def product_detail(request, pk):
         Product.objects.select_related("product_family__organisation"), pk=pk
     )
     configurations = Configuration.objects.filter(
-        hardware_revision__hardware_variant__product=product
+        software_release__product=product
     ).prefetch_related("software_options")
     hardware_revisions = HardwareRevision.objects.filter(hardware_variant__product=product)
     software_releases = product.sw_releases.all()

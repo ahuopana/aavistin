@@ -106,7 +106,7 @@ def _entry_row(entry: RiskEntry, methods) -> dict:
 @login_required
 def register(request, pk):
     configuration = get_object_or_404(Configuration, pk=pk)
-    product = configuration.hardware_revision.hardware_variant.product
+    product = configuration.product
     methods = _methods()
 
     entries = register_for_configuration(configuration)
@@ -189,7 +189,7 @@ def entry_detail(request, pk, entry_pk):
             "scope_software_option",
         ),
         pk=entry_pk,
-        product=configuration.hardware_revision.hardware_variant.product,
+        product=configuration.product,
     )
     methods = _methods()
     ratings = {r.method_id: r for r in entry.ratings.all()}
@@ -577,7 +577,7 @@ def _entry_form(request, configuration, entry: RiskEntry, *, is_new: bool):
 @login_required
 def entry_create(request, pk):
     configuration = get_object_or_404(Configuration, pk=pk)
-    product = configuration.hardware_revision.hardware_variant.product
+    product = configuration.product
     if not has_role(request.user, Role.EDITOR, product=product):
         django_messages.error(request, "You need the editor role to add register entries.")
         return redirect("risk:register", pk=pk)
@@ -600,7 +600,7 @@ def entry_create(request, pk):
 @login_required
 def entry_edit(request, pk, entry_pk):
     configuration = get_object_or_404(Configuration, pk=pk)
-    product = configuration.hardware_revision.hardware_variant.product
+    product = configuration.product
     entry = get_object_or_404(RiskEntry, pk=entry_pk, product=product)
     if not has_role(request.user, Role.EDITOR, product=product):
         django_messages.error(request, "You need the editor role to edit register entries.")
@@ -617,7 +617,7 @@ def entry_edit(request, pk, entry_pk):
 def _editable_entry(request, pk, entry_pk):
     """(configuration, entry) when the user may edit, else (None, redirect)."""
     configuration = get_object_or_404(Configuration, pk=pk)
-    product = configuration.hardware_revision.hardware_variant.product
+    product = configuration.product
     entry = get_object_or_404(RiskEntry, pk=entry_pk, product=product)
     if not has_role(request.user, Role.EDITOR, product=product):
         django_messages.error(request, "You need the editor role to change register entries.")
@@ -1117,7 +1117,7 @@ def _suggestion_rows(configuration) -> list[dict]:
 @login_required
 def suggestions(request, pk):
     configuration = get_object_or_404(Configuration, pk=pk)
-    product = configuration.hardware_revision.hardware_variant.product
+    product = configuration.product
     return render(
         request,
         "risk/suggestions.html",
@@ -1158,7 +1158,7 @@ def _pending_suggestion(request, configuration):
 
 def _suggestion_editor(request, pk):
     configuration = get_object_or_404(Configuration, pk=pk)
-    product = configuration.hardware_revision.hardware_variant.product
+    product = configuration.product
     if not has_role(request.user, Role.EDITOR, product=product):
         django_messages.error(request, "You need the editor role to review suggestions.")
         return None, None
@@ -1254,7 +1254,7 @@ def approve(request, pk):
     frozen snapshot (apps.risk.approval). Re-approving after changes starts a
     new one; earlier snapshots stay as history."""
     configuration = get_object_or_404(Configuration, pk=pk)
-    product = configuration.hardware_revision.hardware_variant.product
+    product = configuration.product
     if not has_role(request.user, Role.APPROVER, product=product):
         django_messages.error(request, "You need the approver role to approve the risk register.")
         return redirect(reverse("risk:register", args=[pk]) + "#approval")
