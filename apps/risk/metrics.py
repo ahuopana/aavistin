@@ -459,9 +459,9 @@ def _product_entries(product) -> list[RiskEntry]:
     """Every register entry that applies to at least one of the product's
     configurations, each once; the baseline when there are no configurations."""
     configurations = list(
-        Configuration.objects.filter(
-            software_release__product=product
-        ).select_related("hardware_revision__hardware_variant", "software_release")
+        Configuration.objects.filter(software_release__product=product).select_related(
+            "hardware_revision__hardware_variant", "software_release"
+        )
     )
     if not configurations:
         return list(
