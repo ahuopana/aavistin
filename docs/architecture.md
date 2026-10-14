@@ -17,6 +17,7 @@ The system is a server-rendered Django application on PostgreSQL, with HTMX for 
 | Charts | Apache ECharts (or Chart.js) | JSON from Django views |
 | API | django-ninja or DRF + `drf-spectacular` | Token auth, OpenAPI schema |
 | Background jobs | `django-tasks` + `django-tasks-db` (Postgres-backed) | No Redis; see docs/adr/0007-background-job-backend.md |
+| PDF reports | WeasyPrint | Needs pango; see docs/adr/0041-pdf-reports.md |
 | Tooling | `uv`, `ruff`, `pytest-django` | Env-var config via `django-environ` |
 | Deployment | Containers, gunicorn behind a reverse proxy | nginx or existing proxy |
 
@@ -347,6 +348,18 @@ A document (an SBOM, a test report, a policy, a certificate) is rarely proof of 
 **Versioning and staleness.** An `Evidence` record can supersede an earlier one (a new SBOM replaces last year's), the same way a `RequirementPackage` supersedes a previous version — the old record isn't silently swapped out under existing links; someone reviews and relinks. Evidence also carries its own expiry (`valid_until`). Both are read by the same staleness recomputation job that already exists for assessments and risk approvals (see "Background jobs"): a third trigger, alongside a new answer or a new package version, is *the evidence linked at approval time has since expired or been superseded and never relinked*.
 
 **Deletion.** An `Evidence` record referenced by any approved (frozen) assessment or risk snapshot can't be deleted — matching how an approved product-level entity can't be deleted (ADR 0010) — but can still be edited. Deleting an unreferenced record also checks whether any other `Evidence` record (in this product or another) still points at the same `EvidenceFile`; the stored blob is only removed once nothing references it.
+
+## Reports
+
+A report is a PDF of one configuration, built from the sections the user selects: product, hardware, software, options, assessment, risks, mitigations and evidence. Decisions are in docs/adr/0041-pdf-reports.md.
+
+- **Drafts** are generated on the fly from live data and streamed as a download. They are never stored, have no ID and cannot be verified. Anyone with a role on the product may download one.
+- **Approved reports** need an Approver and approved, non-stale snapshots for every selected assessment, risk or mitigation section. They are stored as a `Report`: a random report ID, the content as JSON (everything printed, including live product, hardware, software and evidence data captured at issue time), the content hash, the PDF bytes and their SHA-256, the generator and the source snapshot ids. They are immutable.
+- **Verification** is public (`/verify/<report-id>/`) and covers approved reports only; a draft and an unknown ID look the same. A visitor can upload a PDF to compare its hash, and the page warns when a source snapshot has since gone stale.
+- **Layout.** The header carries the logo and an editable report title; the footer carries the page number, report ID and status; the cover lists both snapshot ids and the content hash.
+- **Rendering** uses WeasyPrint from HTML templates, rendering only from the stored content. Standards text is never included.
+- **Signature** means the named generator plus the approvers recorded in the snapshots; there is no cryptographic PDF signature.
+- **Location:** the Report link on each configuration of the product's Compliance page, and the Reports list under the Compliance overview.
 
 ## User Guide
 
