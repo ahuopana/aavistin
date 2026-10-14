@@ -187,7 +187,7 @@ class Configuration(Approvable):
         related_name="configurations",
         null=True,
         blank=True,
-        help_text="Leave empty for a software-only product (ADR 0036).",
+        help_text="Leave empty for a software-only product (ADR 0038).",
     )
     software_release = models.ForeignKey(
         SoftwareRelease, on_delete=models.PROTECT, related_name="configurations"
@@ -206,7 +206,7 @@ class Configuration(Approvable):
     @property
     def product(self) -> Product:
         """The product, always reachable through the software release (the
-        hardware revision is optional, ADR 0036)."""
+        hardware revision is optional, ADR 0038)."""
         return self.software_release.product
 
     @property

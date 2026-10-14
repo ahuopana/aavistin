@@ -60,7 +60,7 @@
   {% if can_edit %}
     <h2>Add evidence</h2>
     <p>Reuse an existing record above where it applies, rather than adding a duplicate.</p>
-    <form method="post" action="{% url 'evidence:create' product.pk %}" enctype="multipart/form-data" class="form-vertical" autocomplete="off" x-data="{ kind: 'file' }">
+    <form method="post" action="{% url 'evidence:create' product.pk %}" enctype="multipart/form-data" class="form-vertical" autocomplete="off" x-data="{ kind: '{% if uploads_enabled %}file{% else %}link{% endif %}' }">
       {% csrf_token %}
       {% if target %}
         {% if target.kind == "control" %}<input type="hidden" name="control" value="{{ target.control.pk }}">{% else %}<input type="hidden" name="requirement" value="{{ target.ref }}">{% endif %}
@@ -71,7 +71,7 @@
       <div class="field">
         <label for="id_evidence_kind">Kind</label>
         <select id="id_evidence_kind" name="kind" autocomplete="off" @change="kind = $event.target.value">
-          <option value="file">Uploaded file</option>
+          {% if uploads_enabled %}<option value="file">Uploaded file</option>{% endif %}
           <option value="link">External link</option>
           <option value="text">Reference note</option>
         </select>

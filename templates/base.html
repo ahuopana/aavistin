@@ -1,6 +1,6 @@
-{% load static %}
+{% load static profile_tags %}
 <!DOCTYPE html>
-<html lang="en" data-theme="auto">
+<html lang="en" data-theme="{% if profile %}{{ profile.theme }}{% else %}auto{% endif %}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -36,7 +36,7 @@
           <span aria-hidden="true">&#9788;</span>
         </button>
         {% if user.is_authenticated %}
-          <span class="app-user">{{ user }}</span>
+          <a class="app-user" href="{% url 'accounts:profile' %}" title="Profile">{% avatar user 28 %} {{ user }}</a>
           <form method="post" action="{% url 'logout' %}">
             {% csrf_token %}
             <button type="submit">Sign out</button>
@@ -67,12 +67,21 @@
       const current = root.getAttribute("data-theme");
       const next = current === "dark" ? "light" : "dark";
       root.setAttribute("data-theme", next);
+      {% if user.is_authenticated %}
+      fetch("{% url 'accounts:theme' %}", {
+        method: "POST",
+        headers: {"X-CSRFToken": "{{ csrf_token }}", "Content-Type": "application/x-www-form-urlencoded"},
+        body: "theme=" + next,
+      }).catch(function () { /* offline: applies to this page only */ });
+      {% else %}
       try {
         localStorage.setItem("theme", next);
       } catch (e) {
         /* storage unavailable, theme resets on reload */
       }
+      {% endif %}
     }
+    {% if not user.is_authenticated %}
     (function () {
       try {
         const saved = localStorage.getItem("theme");
@@ -83,6 +92,7 @@
         /* storage unavailable, fall back to prefers-color-scheme */
       }
     })();
+    {% endif %}
   </script>
   {% block extra_scripts %}{% endblock %}
 </body>

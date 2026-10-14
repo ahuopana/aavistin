@@ -13,7 +13,7 @@
   {% elif evidence.kind == "text" %}
     <p>{{ evidence.reference_text }}</p>
   {% elif evidence.kind == "file" and evidence.file %}
-    <p><a href="{{ evidence.file.file.url }}">Download</a></p>
+    <p><a href="{% url 'evidence:download' evidence.pk %}">Download</a></p>
   {% endif %}
 
   <p>Last audit: {{ evidence.last_audit_date|default:"—" }} by {{ evidence.last_audited_by|default:"—" }}</p>
@@ -102,19 +102,19 @@
 
     <h3>New version</h3>
     <p class="field-hint">A replacement document supersedes this one. Linked controls and requirements are not moved silently; review them on the new version.</p>
-    <form method="post" action="{% url 'evidence:create' evidence.product_id %}" enctype="multipart/form-data" class="form-vertical" x-data="{ kind: '{{ evidence.kind }}' }">
+    <form method="post" action="{% url 'evidence:create' evidence.product_id %}" enctype="multipart/form-data" class="form-vertical" x-data="{ kind: '{% if evidence.kind == "file" and not uploads_enabled %}link{% else %}{{ evidence.kind }}{% endif %}' }">
       {% csrf_token %}
       <input type="hidden" name="supersedes" value="{{ evidence.pk }}">
       <div class="field"><label>Title<input type="text" name="title" value="{{ evidence.title }}" required></label></div>
       <div class="field">
         <label for="id_new_version_kind">Kind</label>
         <select id="id_new_version_kind" name="kind" @change="kind = $event.target.value">
-          <option value="file" {% if evidence.kind == "file" %}selected{% endif %}>Uploaded file</option>
-          <option value="link" {% if evidence.kind == "link" %}selected{% endif %}>External link</option>
+          {% if uploads_enabled %}<option value="file" {% if evidence.kind == "file" %}selected{% endif %}>Uploaded file</option>{% endif %}
+          <option value="link" {% if evidence.kind == "link" or evidence.kind == "file" and not uploads_enabled %}selected{% endif %}>External link</option>
           <option value="text" {% if evidence.kind == "text" %}selected{% endif %}>Reference note</option>
         </select>
       </div>
-      <div class="field" x-show="kind === 'file'"><label>File<input type="file" name="file"></label></div>
+      {% if uploads_enabled %}<div class="field" x-show="kind === 'file'"><label>File<input type="file" name="file"></label></div>{% endif %}
       <div class="field" x-show="kind === 'link'"><label>URL<input type="url" name="external_url"></label></div>
       <div class="field" x-show="kind === 'text'"><label>Reference note<textarea name="reference_text"></textarea></label></div>
       <button type="submit">Add new version</button>

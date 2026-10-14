@@ -11,6 +11,7 @@ urlpatterns = [
     path("<int:pk>/", views.evidence_detail, name="detail"),
     path("<int:pk>/edit/", views.evidence_edit, name="edit"),
     path("<int:pk>/copy-links/", views.evidence_copy_links, name="copy_links"),
+    path("<int:pk>/download/", views.evidence_download, name="download"),
     path("<int:pk>/link-control/", views.evidence_link_control, name="link_control"),
     path("<int:pk>/link-requirement/", views.evidence_link_requirement, name="link_requirement"),
     path("<int:pk>/delete/", views.evidence_delete, name="delete"),

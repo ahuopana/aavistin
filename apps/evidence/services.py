@@ -6,6 +6,7 @@ reuse-over-re-upload, and delete protection tied to approval.
 
 import hashlib
 
+from django.conf import settings
 from django.db import IntegrityError, transaction
 
 from apps.assessments.models import Assessment, AssessmentStatus
@@ -35,7 +36,14 @@ def store_evidence_file(django_file, *, actor=None) -> EvidenceFile:
     existing EvidenceFile with the same checksum instead of writing the
     bytes again (docs/architecture.md, "Evidence": "The blob is not the
     record").
+
+    Raises EvidenceError when uploads are not configured (MEDIA_ROOT unset).
     """
+    if not settings.UPLOADS_ENABLED:
+        raise EvidenceError(
+            "File uploads are not enabled on this server (MEDIA_ROOT is not configured). "
+            "Add a link or reference note instead."
+        )
     checksum = _checksum(django_file)
     existing = EvidenceFile.objects.filter(checksum=checksum).first()
     if existing is not None:

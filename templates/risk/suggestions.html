@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load profile_tags %}
 
 {% block title %}Suggestions · Risk register · {{ configuration.name }} · Aavistin{% endblock %}
 
@@ -61,7 +62,7 @@
           <tr>
             <td>{{ e.label }} <span class="badge">{{ e.get_entry_type_display }}</span><div class="field-hint">{{ e.source_catalog.source }}</div></td>
             <td>{{ e.dismissal_reason }}</td>
-            <td>{{ e.created_by|default:"—" }}<div class="field-hint">{{ e.created_at|date:"Y-m-d" }}</div></td>
+            <td>{{ e.created_by|default:"—" }}<div class="field-hint">{{ e.created_at|userdate }}</div></td>
             {% if can_edit %}
               <td>
                 <form method="post" action="{% url 'risk:suggestion_restore' configuration.pk e.pk %}">

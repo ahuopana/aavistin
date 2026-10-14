@@ -659,7 +659,7 @@ class PortfolioProgressTests(NavigationFixture):
 
 
 class CompareTests(DashboardFixture):
-    """ADR 0038: generic comparison of two entities of one kind."""
+    """ADR 0040: generic comparison of two entities of one kind."""
 
     def setUp(self):
         super().setUp()

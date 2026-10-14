@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load profile_tags %}
 {% load assessment_tags %}
 
 {% block title %}Assessment #{{ assessment.pk }} · Aavistin{% endblock %}
@@ -12,13 +13,13 @@
   <p>
     {{ assessment.configuration }}
     · <a href="{% url 'core:compare' %}?kind=assessment&amp;a={{ assessment.pk }}">Compare with another assessment</a>
-    {% if assessment.approved_at %} · approved {{ assessment.approved_at|date:"Y-m-d" }}{% if assessment.approved_by %} by {{ assessment.approved_by }}{% endif %}{% endif %}
+    {% if assessment.approved_at %} · approved {{ assessment.approved_at|userdate }}{% if assessment.approved_by %} by {{ assessment.approved_by }}{% endif %}{% endif %}
     {% if assessment.sod_warning %}<span class="message message-warning">approved despite separation-of-duties warning</span>{% endif %}
   </p>
   {% if assessment.stale %}
     <div class="message message-warning">
       {% if staleness and staleness.summary %}
-        <strong>Changed since approval{% if assessment.approved_at %} on {{ assessment.approved_at|date:"Y-m-d" }}{% endif %}:</strong> {{ staleness.summary }}.
+        <strong>Changed since approval{% if assessment.approved_at %} on {{ assessment.approved_at|userdate }}{% endif %}:</strong> {{ staleness.summary }}.
         {% for p in staleness.packages %}<br>Package {{ p.source }}: {{ p.before|default:"not active" }} &rarr; {{ p.after|default:"no longer active" }}.{% endfor %}
         {% for e in staleness.evidence %}<br>Evidence changed for {{ e.source }} requirement <code>{{ e.requirement_id }}</code> (expired, superseded or relinked).{% endfor %}
         {% for r in staleness.requirements %}<br>{{ r.source }}: {% if r.entered %}{{ r.entered|length }} requirement{{ r.entered|pluralize }} now in force{% endif %}{% if r.entered and r.left %}, {% endif %}{% if r.left %}{{ r.left|length }} no longer in force{% endif %}.{% endfor %}

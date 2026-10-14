@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.assessments.models import Assessment, AssessmentStatus
@@ -411,6 +411,17 @@ class ViewTests(EvidenceFixture):
         evidence = Evidence.objects.get(title="SBOM")
         self.assertIsNotNone(evidence.file)
 
+    def test_download_requires_login_and_streams_file(self):
+        stored = store_evidence_file(SimpleUploadedFile("sbom.json", b"sbom bytes"))
+        evidence = Evidence.objects.create(
+            product=self.product, title="SBOM", kind=EvidenceKind.FILE, file=stored
+        )
+        url = reverse("evidence:download", args=[evidence.pk])
+        self.assertEqual(self.client.get(url).status_code, 302)
+        self.client.force_login(self.viewer)
+        response = self.client.get(url)
+        self.assertEqual(b"".join(response.streaming_content), b"sbom bytes")
+
     def test_editor_can_link_and_unlink_control(self):
         self.client.force_login(self.editor)
         evidence = self.make_text_evidence()
@@ -689,3 +700,50 @@ class RequirementChoicesTests(TestCase):
         self.assertContains(response, "Test report")
         self.assertContains(response, "attach evidence")
         self.assertContains(response, "?requirement=demo-widget-safety%7C1.1.0%7C")
+
+
+class UploadsDisabledTests(EvidenceFixture):
+    """With MEDIA_ROOT unset, file evidence is refused; other kinds work."""
+
+    def setUp(self):
+        super().setUp()
+        # Applied here, not as a class decorator, so it wins over the autouse
+        # conftest fixture that enables uploads for every other test.
+        override = override_settings(MEDIA_ROOT="", UPLOADS_ENABLED=False)
+        override.enable()
+        self.addCleanup(override.disable)
+        self.editor = User.objects.create_user(username="edith", password="x")
+        RoleAssignment.objects.create(role=Role.EDITOR, user=self.editor, product=self.product)
+
+    def test_store_evidence_file_refuses(self):
+        with self.assertRaises(EvidenceError):
+            store_evidence_file(SimpleUploadedFile("a.txt", b"x"))
+
+    def test_upload_post_is_rejected(self):
+        self.client.force_login(self.editor)
+        response = self.client.post(
+            reverse("evidence:create", args=[self.product.pk]),
+            {"title": "SBOM", "kind": "file", "file": SimpleUploadedFile("s.json", b"x")},
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Evidence.objects.filter(title="SBOM").exists())
+        self.assertFalse(EvidenceFile.objects.exists())
+
+    def test_form_hides_file_option(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("evidence:product_list", args=[self.product.pk]))
+        self.assertNotContains(response, "Uploaded file")
+
+    def test_text_evidence_still_works(self):
+        self.client.force_login(self.editor)
+        self.client.post(
+            reverse("evidence:create", args=[self.product.pk]),
+            {"title": "Policy", "kind": "text", "reference_text": "wiki"},
+        )
+        self.assertTrue(Evidence.objects.filter(title="Policy").exists())
+
+    def test_new_version_form_hides_file_option(self):
+        evidence = self.make_text_evidence()
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("evidence:detail", args=[evidence.pk]))
+        self.assertNotContains(response, "Uploaded file")

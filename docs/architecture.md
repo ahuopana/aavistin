@@ -209,7 +209,7 @@ flowchart TD
 
 Only configurations actually shipped are defined, to avoid assessing every combination.
 
-**Target markets first.** Each hardware variant and software release selects its target markets (e.g. EU, US). A configuration's markets are the intersection when both are set, otherwise whichever is set (ADR 0020). The hardware revision of a configuration is optional, so software-only products need no nominal hardware (ADR 0036). Only packages for those jurisdictions are active, so their questions alone are asked; FCC questions never appear for an EU-only variant. Adding a market later adds unanswered questions and marks approved assessments stale.
+**Target markets first.** Each hardware variant and software release selects its target markets (e.g. EU, US). A configuration's markets are the intersection when both are set, otherwise whichever is set (ADR 0020). The hardware revision of a configuration is optional, so software-only products need no nominal hardware (ADR 0038). Only packages for those jurisdictions are active, so their questions alone are asked; FCC questions never appear for an EU-only variant. Adding a market later adds unanswered questions and marks approved assessments stale.
 
 **Answer inheritance.**
 

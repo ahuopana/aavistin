@@ -1114,7 +1114,7 @@ class ReleaseMarketTests(ConfigurationFixture):
 
 
 class SoftwareOnlyConfigurationTests(ConfigurationFixture):
-    """ADR 0036: a configuration may have no hardware revision."""
+    """ADR 0038: a configuration may have no hardware revision."""
 
     def setUp(self):
         super().setUp()
