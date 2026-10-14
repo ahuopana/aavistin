@@ -18,6 +18,8 @@ from apps.packages.models import PackageStatus, RequirementPackage
 from apps.risk.approval import build_snapshot
 from apps.risk.models import RiskAssessmentStatus, RiskEntry
 
+from .summary import build_summary
+
 SECTIONS = [
     ("product", "Product"),
     ("hardware", "Hardware"),
@@ -426,6 +428,7 @@ def build_content(
             }
     if "evidence" in sections:
         content["evidence"] = _evidence(product)
+    content["summary"] = build_summary(content)
     return content
 
 

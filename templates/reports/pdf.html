@@ -45,6 +45,15 @@
   .badge-info { color: var(--muted); background: var(--surface); }
   .badge-ok { color: var(--success); background: #e8f5ee; }
   .badge-out { color: var(--muted); background: var(--surface); }
+  .summary { display: flex; flex-wrap: wrap; gap: 4mm; margin-top: 4mm; }
+  .summary table { width: 82mm; margin: 0; }
+  .summary caption { text-align: left; font-weight: 600; color: var(--brand); padding-bottom: 1mm; }
+  .summary td.num { text-align: right; width: 14mm; font-weight: 600; }
+  .summary td.sub { background: var(--surface); color: var(--muted); font-size: 8pt; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tone-action_required { color: var(--danger); }
+  .tone-caution { color: var(--warning); }
+  .tone-ok { color: var(--success); }
+  .tone-info { color: var(--muted); }
   .watermark { position: fixed; top: 110mm; left: 0; right: 0; text-align: center; font-size: 80pt; color: rgba(179,54,46,0.08); transform: rotate(-30deg); }
 </style>
 </head>
@@ -75,6 +84,23 @@
     {% if content_hash %}<dt>Content SHA-256</dt><dd class="mono">{{ content_hash }}</dd>{% endif %}
     <dt>Sections</dt><dd>{{ c.section_labels|join:", " }}</dd>
   </dl>
+  {% if c.summary %}
+    <h2>Summary</h2>
+    <div class="summary">
+      {% for g in c.summary %}
+        <table>
+          <caption>{{ g.title }}</caption>
+          {% for row in g.rows %}
+            {% if row.value == "" %}
+              <tr><td colspan="2" class="sub">{{ row.label }}</td></tr>
+            {% else %}
+              <tr><td>{{ row.label }}</td><td class="num{% if row.tone %} tone-{{ row.tone }}{% endif %}">{{ row.value }}</td></tr>
+            {% endif %}
+          {% endfor %}
+        </table>
+      {% endfor %}
+    </div>
+  {% endif %}
 </section>
 
 {% if c.product %}

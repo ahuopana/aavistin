@@ -296,3 +296,77 @@ class FilterTests(ReportFixture):
         )
         self.assertEqual(report_date("2026-10-04"), "4 October 2026")
         self.assertEqual(report_time(""), "")
+
+
+class SummaryTests(ReportFixture):
+    def rows(self, content, title):
+        group = next(g for g in content["summary"] if g["title"] == title)
+        return {r["label"]: r["value"] for r in group["rows"]}
+
+    def test_assessment_summary_counts_findings_by_level(self):
+        self._ready_answers(has_wireless=True)
+        Answer.objects.filter(question_id="rated_power_watts").update(value=100)
+        content = ContentTests.build(self, sections=("assessment",))
+        rows = self.rows(content, "Assessment")
+        self.assertEqual(rows["Findings: action required"], 1)
+        self.assertEqual(rows["Findings: caution"], 1)
+        self.assertEqual(rows["Findings: info"], 0)
+        self.assertEqual(rows["Regulations in scope"], 1)
+        self.assertEqual(rows["Requirements in force"], 2)
+
+    def test_out_of_scope_findings_are_counted_separately(self):
+        self._ready_answers(has_wireless=True)
+        Answer.objects.filter(question_id="has_power_source").update(value=False)
+        rows = self.rows(ContentTests.build(self, sections=("assessment",)), "Assessment")
+        self.assertEqual(rows["Regulations out of scope"], 1)
+        self.assertEqual(rows["Findings of out-of-scope regulations"], 1)
+
+    def test_summary_has_only_the_selected_sections(self):
+        self.assertEqual(ContentTests.build(self, sections=("product",))["summary"], [])
+        titles = [g["title"] for g in ContentTests.build(self, sections=("evidence",))["summary"]]
+        self.assertEqual(titles, ["Evidence"])
+
+    def test_risk_mitigation_and_evidence_counts(self):
+        from .summary import build_summary
+
+        content = {
+            "sections": ["risks", "mitigations", "evidence"],
+            "risks": {
+                "entries": [
+                    {"type": "Threat", "ratings": [{"acceptance": "must_treat"}]},
+                    {"type": "Threat", "ratings": [{"acceptance": "accept"}]},
+                    {"type": "Hazard", "ratings": [{"acceptance": "must_treat"}]},
+                    {"type": "Asset", "ratings": []},
+                ]
+            },
+            "mitigations": {
+                "treatments": [
+                    {"treatment": "mitigate", "residual": {"acceptance": "accept"}},
+                    {"treatment": "mitigate", "residual": {"acceptance": None}},
+                ],
+                "controls": [
+                    {"status": "planned", "evidence_count": 0},
+                    {"status": "verified", "evidence_count": 1},
+                ],
+            },
+            "evidence": [
+                {"sha256": "ab", "expired": True, "superseded": False},
+                {"sha256": "", "expired": False, "superseded": True},
+            ],
+        }
+        groups = {
+            g["title"]: {r["label"]: r["value"] for r in g["rows"]} for g in build_summary(content)
+        }
+        self.assertEqual(groups["Risks"]["Threats"], 2)
+        self.assertEqual(groups["Risks"]["Must treat"], 2)
+        self.assertEqual(groups["Mitigations"]["Treatments: mitigate"], 2)
+        self.assertEqual(groups["Mitigations"]["Controls without evidence"], 1)
+        self.assertEqual(groups["Evidence"]["Expired"], 1)
+        self.assertEqual(groups["Evidence"]["Files (with checksum)"], 1)
+
+    def test_summary_is_printed_on_the_cover(self):
+        self._ready_answers()
+        pdf = generate_draft(self.configuration, ["assessment"], user=self.approver)
+        text = " ".join(p.extract_text() for p in PdfReader(io.BytesIO(pdf)).pages)
+        self.assertIn("Summary", text)
+        self.assertIn("Findings: action required", text)

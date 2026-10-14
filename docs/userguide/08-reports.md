@@ -53,6 +53,11 @@ later, issue a new one.
   assessment and risk snapshot IDs with their approvers (and a
   separation-of-duties warning if the approver also edited an answer),
   and a hash of the report content.
+- **Summary:** under the cover details, counts for each section you
+  included: findings by level (action required, caution, info),
+  regulations in scope, requirements in force, risks by type and by
+  acceptance, treatments, controls and their status, and evidence that
+  is expired or superseded.
 
 Reports contain requirement labels and references from the packages,
 never text from standards. Evidence is listed with its title, kind,
