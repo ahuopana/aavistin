@@ -12,6 +12,7 @@ from django.utils.text import slugify
 from apps.assessments.evaluation import evaluate_configuration
 from apps.assessments.progress import questionnaire_progress
 from apps.orgs.models import ProductFamily, Role, RoleAssignment
+from apps.packages.models import RequirementPackage
 from apps.risk.mitigation import mitigation_controls, treatment_counts
 from apps.risk.models import EntryType, RiskEntry
 from apps.risk.rating import evaluate_residual_rating
@@ -29,38 +30,125 @@ from .models import (
 ACCEPTABLE_RESIDUAL_RATINGS = ("accept", "justify")
 
 
-def compliance_ratio(product) -> tuple[int, int]:
+COMPLIANCE_HINT = (
+    "Requirements in scope whose package has no action-required finding, "
+    "across the product's configurations"
+)
+
+
+def compliance_breakdown(product) -> list[dict]:
+    """Per configuration, the in-scope packages of its current evaluation
+    (live, not frozen to an approved snapshot) with their requirements and
+    the action-required findings that block them. ``compliance_ratio`` is
+    computed from this, so the ratio and its breakdown always agree.
+
+    Each item: ``{configuration, assessment (latest, or None), packages:
+    [{source, version, title, requirements: [{id, label, ref}], blocking:
+    [finding]}], out_of_scope: [package title]}``.
+    """
+    configurations = Configuration.objects.filter(
+        hardware_revision__hardware_variant__product=product
+    ).order_by("pk")
+    breakdown = []
+    for configuration in configurations:
+        evaluation = evaluate_configuration(configuration)
+        packages = {
+            p.pk: p
+            for p in RequirementPackage.objects.filter(
+                pk__in=[r.get("package_id") for r in evaluation["results"]]
+            )
+        }
+        items = []
+        out_of_scope = []
+        for result in evaluation["results"]:
+            content = getattr(packages.get(result.get("package_id")), "content", {})
+            if not result["in_scope"]:
+                out_of_scope.append(content.get("title") or result["source"])
+                continue
+            by_id = {r["id"]: r for r in content.get("requirements", [])}
+            items.append(
+                {
+                    "source": result["source"],
+                    "version": result["version"],
+                    "title": content.get("title") or result["source"],
+                    "requirements": [
+                        {
+                            "id": requirement_id,
+                            "label": by_id.get(requirement_id, {}).get("label") or requirement_id,
+                            "ref": by_id.get(requirement_id, {}).get("ref", ""),
+                        }
+                        for requirement_id in result["requirements"]
+                    ],
+                    "blocking": [
+                        {**f, "anchor": f"finding-{f['source']}-{f['id']}"}
+                        for f in evaluation["findings"]
+                        if f["level"] == "action_required"
+                        and (f["source"], f["version"]) == (result["source"], result["version"])
+                    ],
+                }
+            )
+        breakdown.append(
+            {
+                "configuration": configuration,
+                "assessment": configuration.assessments.first(),
+                "packages": items,
+                "out_of_scope": out_of_scope,
+            }
+        )
+    return breakdown
+
+
+class Ratio(tuple):
+    """``(ok, total)`` plus ``empty``: what to show instead of the ratio
+    when ``total`` is 0 (templates read ``ratio.0``, ``ratio.1`` and
+    ``ratio.empty``)."""
+
+    empty = "no data yet"
+
+    def __new__(cls, ok, total, empty=None):
+        ratio = super().__new__(cls, (ok, total))
+        if empty:
+            ratio.empty = empty
+        return ratio
+
+
+NOT_IN_SCOPE = "Not in scope"
+NOTHING_IN_FORCE = "None in force yet"
+
+
+def _empty_compliance_label(breakdown) -> str | None:
+    """Why a product has no requirements to count: ``NOT_IN_SCOPE`` when its
+    configurations were evaluated against active packages and none is in
+    scope; ``NOTHING_IN_FORCE`` when a package is in scope but none of its
+    requirements is in force yet; None (no data yet) otherwise."""
+    if any(item["packages"] for item in breakdown):
+        return NOTHING_IN_FORCE
+    if any(item["out_of_scope"] for item in breakdown):
+        return NOT_IN_SCOPE
+    return None
+
+
+def compliance_ratio(product, breakdown=None) -> Ratio:
     """(fulfilled, total) in-scope requirements across the product's
-    configurations' current evaluation (live, not frozen to an approved
-    snapshot). A requirement counts as fulfilled unless its package has
-    an unresolved action-required finding in that evaluation -- findings
-    aren't tracked per requirement, only per package, so this is a
-    package-level proxy, not a true per-requirement pass/fail.
+    configurations' current evaluation (see ``compliance_breakdown``). A
+    requirement counts as fulfilled unless its package has an unresolved
+    action-required finding in that evaluation -- findings aren't tracked
+    per requirement, only per package, so this is a package-level proxy,
+    not a true per-requirement pass/fail. A requirement in force for several
+    configurations counts once, and as unfulfilled if any of them blocks it.
     """
     total: set[tuple[str, str, str]] = set()
     bad: set[tuple[str, str, str]] = set()
-
-    configurations = Configuration.objects.filter(
-        hardware_revision__hardware_variant__product=product
-    )
-    for configuration in configurations:
-        evaluation = evaluate_configuration(configuration)
-        blocking_packages = {
-            (f["source"], f["version"])
-            for f in evaluation["findings"]
-            if f["level"] == "action_required"
-        }
-        for result in evaluation["results"]:
-            if not result["in_scope"]:
-                continue
-            package_key = (result["source"], result["version"])
-            for requirement_id in result["requirements"]:
-                key = (*package_key, requirement_id)
+    if breakdown is None:
+        breakdown = compliance_breakdown(product)
+    for item in breakdown:
+        for package in item["packages"]:
+            for requirement in package["requirements"]:
+                key = (package["source"], package["version"], requirement["id"])
                 total.add(key)
-                if package_key in blocking_packages:
+                if package["blocking"]:
                     bad.add(key)
-
-    return len(total - bad), len(total)
+    return Ratio(len(total - bad), len(total), _empty_compliance_label(breakdown))
 
 
 def questions_ratio(product) -> tuple[int, int]:

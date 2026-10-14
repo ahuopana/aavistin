@@ -13,6 +13,8 @@ from apps.assessments.models import AssessmentStatus
 from apps.orgs.models import Role
 from apps.products.models import Configuration
 from apps.products.services import (
+    Ratio,
+    compliance_breakdown,
     compliance_ratio,
     editable_products,
     questions_ratio,
@@ -51,30 +53,39 @@ def _ratio_fraction(ratio: tuple[int, int]) -> float:
 
 def compliance_overview(user):
     """Every product the user can view (uncapped), with its questionnaire
-    progress and compliance and risk ratios, worst-compliance-first (risk
-    as tiebreak) -- and the same three ratios summed across the whole
+    progress, compliance and risk ratios and open action-required findings,
+    worst-compliance-first (risk as tiebreak) -- and the same three ratios summed across the whole
     portfolio.
     """
     products = editable_products(user, role=None).select_related(
         "product_family", "product_family__organisation"
     )
 
-    rows = [
-        {
-            "product": product,
-            "organisation": product.product_family.organisation,
-            "family": product.product_family,
-            "questions": questions_ratio(product),
-            "compliance": compliance_ratio(product),
-            "risk": risk_ratio(product),
-        }
-        for product in products
-    ]
+    rows = []
+    for product in products:
+        breakdown = compliance_breakdown(product)
+        rows.append(
+            {
+                "product": product,
+                "organisation": product.product_family.organisation,
+                "family": product.product_family,
+                "questions": questions_ratio(product),
+                "compliance": compliance_ratio(product, breakdown),
+                "action_required": sum(
+                    len(package["blocking"]) for item in breakdown for package in item["packages"]
+                ),
+                "risk": risk_ratio(product),
+            }
+        )
     rows.sort(key=lambda r: (_ratio_fraction(r["compliance"]), _ratio_fraction(r["risk"])))
 
-    totals_compliance = (
+    totals_compliance = Ratio(
         sum(r["compliance"][0] for r in rows),
         sum(r["compliance"][1] for r in rows),
+        # Every product with no requirements to count for the same reason.
+        rows[0]["compliance"].empty
+        if rows and len({r["compliance"].empty for r in rows}) == 1
+        else None,
     )
     totals_risk = (sum(r["risk"][0] for r in rows), sum(r["risk"][1] for r in rows))
     totals_questions = (

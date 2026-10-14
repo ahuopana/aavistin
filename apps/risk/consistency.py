@@ -10,10 +10,9 @@ there is no automatic recomputation to implement; rule 4, one rating per
 applicable method per entry, is already how Rating's uniqueness works).
 """
 
-from .models import ImpactCategory, TreatmentType
+from .impact import hazard_linkable_ids
+from .models import TreatmentType
 from .rating import evaluate_entry_rating
-
-LINKED_IMPACT_CATEGORIES = (ImpactCategory.SAFETY, ImpactCategory.PROPERTY_DAMAGE)
 
 
 def _issue(code, message):
@@ -23,10 +22,9 @@ def _issue(code, message):
 def check_threat_hazard_consistency(threat) -> list[dict]:
     """Issues for a threat whose consequences link to hazard entries."""
     issues: list[dict] = []
+    linkable = hazard_linkable_ids()
     linked_consequences = [
-        c
-        for c in threat.consequences.all()
-        if c.hazard_id and c.impact_category in LINKED_IMPACT_CATEGORIES
+        c for c in threat.consequences.all() if c.hazard_id and c.impact_category in linkable
     ]
     if not linked_consequences:
         return issues

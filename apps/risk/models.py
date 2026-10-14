@@ -34,6 +34,9 @@ class CauseType(models.TextChoices):
 
 
 class ImpactCategory(models.TextChoices):
+    """The built-in default categories. Method packages may declare their
+    own (apps.risk.impact, ADR 0034); ThreatConsequence stores the id."""
+
     SAFETY = "safety", "Safety (people)"
     PROPERTY_DAMAGE = "property_damage", "Property damage"
     OPERATIONAL = "operational", "Operational"
@@ -202,7 +205,8 @@ class ThreatConsequence(models.Model):
     """
 
     threat = models.ForeignKey(RiskEntry, on_delete=models.CASCADE, related_name="consequences")
-    impact_category = models.CharField(max_length=32, choices=ImpactCategory.choices)
+    # An impact category id from the rating methods (apps.risk.impact).
+    impact_category = models.CharField(max_length=32)
     severity = models.PositiveSmallIntegerField()
     severity_is_override = models.BooleanField(default=False)
     override_justification = models.TextField(blank=True, default="")
@@ -218,6 +222,12 @@ class ThreatConsequence(models.Model):
     def __str__(self):
         return f"{self.threat.label} / {self.impact_category}={self.severity}"
 
+    @property
+    def impact_category_label(self) -> str:
+        from .impact import category_label
+
+        return category_label(self.impact_category)
+
     def clean(self):
         if self.severity_is_override and not self.override_justification:
             raise ValidationError(
@@ -227,12 +237,11 @@ class ThreatConsequence(models.Model):
                     )
                 }
             )
-        if self.hazard_id and self.impact_category not in (
-            ImpactCategory.SAFETY,
-            ImpactCategory.PROPERTY_DAMAGE,
-        ):
+        from .impact import hazard_linkable_ids
+
+        if self.hazard_id and self.impact_category not in hazard_linkable_ids():
             raise ValidationError(
-                {"hazard": "Only safety or property-damage consequences link to a hazard."}
+                {"hazard": "Only harm to people or property (e.g. safety) links to a hazard."}
             )
 
 

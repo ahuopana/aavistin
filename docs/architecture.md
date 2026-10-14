@@ -156,7 +156,7 @@ A package contains:
 - **Classifications:** classes or categories that change requirements and assessment routes (CRA default / important I / important II / critical; RED 3(3)(d)(e)(f) categories).
 - **Requirements:** tagged by role (manufacturer, importer, distributor, authorised representative, steward) and class, with an optional condition (`applies_when`, e.g. placed on the market after a date) and calendar dates (`applies_from`/`applies_until`, compared with the assessment date). A package may derive the economic operator role from answers. See ADR 0019.
 - **Assessment routes:** internal control, type examination, notified body, and when each is allowed.
-- **Finding rules:** info, caution or action-required findings raised by answer combinations.
+- **Finding rules:** info, caution or action-required findings raised by answer combinations, each with an optional `guidance` text saying what the user should do (docs/adr/0035-acting-on-findings.md).
 - **Test fixtures:** example products with expected outcomes.
 
 Rules are declarative expressions (JSONLogic or a small custom language) evaluated safely, never Python `eval`.
@@ -227,7 +227,7 @@ Only configurations actually shipped are defined, to avoid assessing every combi
 
 Whether a dormant feature is in scope is an interpretation encoded in the package with a legal reference, not in application code.
 
-**Findings.** Rules produce findings alongside scope results, at three levels: info, caution and action required. A caution is the "OK, but" case, e.g. "Wi-Fi hardware present but disabled; enabling it by update or option changes RED and CRA scope and requires re-assessment." Findings appear in reports and later feed the risk assessment (dormant capability is attack surface). An option that enables a flagged feature triggers re-assessment automatically.
+**Findings.** Rules produce findings alongside scope results, at three levels: info, caution and action required. A caution is the "OK, but" case, e.g. "Wi-Fi hardware present but disabled; enabling it by update or option changes RED and CRA scope and requires re-assessment." Findings appear in reports and later feed the risk assessment (dormant capability is attack surface). The assessment page shows each finding with the answers that triggered it and its guidance; a product's compliance breakdown lists the action-required findings that keep its Compliance ratio down (docs/adr/0035-acting-on-findings.md). An option that enables a flagged feature triggers re-assessment automatically.
 
 **Results.** Per active source: in scope, out of scope, excluded (with reason and article), or in scope with limitations (class and assessment route).
 
@@ -300,6 +300,9 @@ One register per product holds typed entries: assets, threats and hazards. Cause
 | Operational | Device or connected systems unavailable | — |
 | Financial | Fraud, recall costs | — |
 | Privacy | Personal data exposed | GDPR |
+| Legal and contractual | Breach of contract or specification, or breaking law | — |
+
+The categories come from the method package (`impact_categories`; ADR 0034); the table is the set `default-cia-5x5` 1.1.0 declares. A method without them uses the first five. A category marked `links_to_hazard` (safety, property damage) links the consequence to a hazard entry.
 
 **Hazards and causes.** Hazards (LVD and other safety regulations) harm people or property and are scored with the safety method. A hazard lists its causes: hardware failure, software fault, foreseeable misuse, or cyberattack. Software bugs that cause harm are safety causes, not security threats; only intentional manipulation is a threat.
 

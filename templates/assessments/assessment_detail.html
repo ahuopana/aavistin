@@ -51,7 +51,7 @@
       <h2>Before you approve</h2>
       <ul>
         <li>{% if approval_check.open %}<strong>{{ approval_check.open }} question{{ approval_check.open|pluralize }} still open.</strong>{% else %}All questions are answered.{% endif %}</li>
-        <li>Findings: {{ approval_check.findings.action_required }} action required, {{ approval_check.findings.caution }} caution, {{ approval_check.findings.info }} info (listed below).</li>
+        <li>Findings: {{ approval_check.findings.action_required }} action required, {{ approval_check.findings.caution }} caution, {{ approval_check.findings.info }} info (<a href="#findings">listed below</a>).</li>
         <li>Risk register: {{ approval_check.risk_entries }} entr{{ approval_check.risk_entries|pluralize:"y,ies" }};
           {% if approval_check.risk_state == "approved" %}approved{% elif approval_check.risk_state == "stale" %}approved but stale{% else %}not approved yet{% endif %}
           (<a href="{% url 'risk:register' assessment.configuration.pk %}#approval">open</a>).</li>
@@ -116,16 +116,41 @@
     {% include "core/_readiness.html" with checks=readiness %}
   {% endfor %}
 
-  <h2>Findings</h2>
-  {% if evaluation.findings %}
+  <h2 id="findings">Findings</h2>
+  {% if findings %}
+    <details class="findings-help" open>
+      <summary>What to do with findings</summary>
+      <dl>
+        <dt><span class="badge badge-deleted">Action required</span></dt>
+        <dd>Something the regulation requires is missing or needs a specific procedure. Fix it in the product or your processes, then update the answers it is based on; the finding disappears when the answers no longer trigger it. If an answer is simply wrong, correct it. Until then the finding counts against the product's Compliance ratio. You can still approve the assessment: an approved assessment records the finding as open.</dd>
+        <dt><span class="badge badge-warning">Caution</span></dt>
+        <dd>Not a gap yet, but a point to check or decide on. Read it, decide whether it applies to you, and record the decision, for example as a risk register entry. Cautions do not affect the Compliance ratio.</dd>
+        <dt><span class="badge">Info</span></dt>
+        <dd>For your information; nothing to do.</dd>
+      </dl>
+      <p class="field-hint">"Based on" lists the answers that raised a finding; follow a link to review or change that answer. A finding marked "package not in scope" comes from a regulation that doesn't apply to this configuration with the current answers; it doesn't count against compliance, but becomes relevant if the scope changes.</p>
+    </details>
     <table>
-      <thead><tr><th>Level</th><th>Message</th><th>Source</th></tr></thead>
+      <thead><tr><th>Level</th><th>Finding</th><th>Source</th></tr></thead>
       <tbody>
-        {% for finding in evaluation.findings %}
-          <tr>
-            <td><span class="badge {% if finding.level == 'action_required' %}badge-deleted{% elif finding.level == 'caution' %}badge-warning{% endif %}">{{ finding.level|choice_label }}</span></td>
-            <td>{{ finding.message }}</td>
-            <td>{{ finding.source }}@{{ finding.version }}</td>
+        {% for finding in findings %}
+          <tr id="{{ finding.anchor }}">
+            <td><span class="badge {% if finding.level == 'action_required' %}badge-deleted{% elif finding.level == 'caution' %}badge-warning{% endif %}">{{ finding.level|choice_label }}</span>{% if finding.out_of_scope %}<br><span class="field-hint">package not in scope</span>{% endif %}</td>
+            <td>
+              {{ finding.message }}
+              {% if finding.guidance %}<p class="finding-guidance"><strong>What to do:</strong> {{ finding.guidance }}</p>{% endif %}
+              {% if finding.based_on %}
+                <details class="finding-based-on">
+                  <summary>Based on {{ finding.based_on|length }} answer{{ finding.based_on|pluralize }}</summary>
+                  <ul>
+                    {% for q in finding.based_on %}
+                      <li><a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}#q-{{ q.id }}">{{ q.label }}</a>: {% include "assessments/_answer_value.html" with value=q.value type=q.type %}</li>
+                    {% endfor %}
+                  </ul>
+                </details>
+              {% endif %}
+            </td>
+            <td>{{ finding.source }}@{{ finding.version }}{% if finding.ref %}<br><span class="field-hint">{{ finding.ref }}</span>{% endif %}</td>
           </tr>
         {% endfor %}
       </tbody>
