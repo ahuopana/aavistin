@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ report.report_id }} · Aavistin{% endblock %}
+{% block content %}
+  <h1>{{ report.title }}</h1>
+  <p><strong>{{ report.report_id }}</strong> · generated {{ report.generated_at|date:"Y-m-d H:i" }} by {{ report.generated_by_name }}</p>
+  {% if not report.is_current %}<p class="field-hint">A source snapshot has gone stale since this report was issued. The report is unchanged; consider issuing a new one.</p>{% endif %}
+  <p>Sections: {{ report.sections|join:", " }}</p>
+  <p>PDF SHA-256: <code>{{ report.pdf_sha256 }}</code></p>
+  <p><a href="{% url 'reports:pdf' report.report_id %}">Download PDF</a> · <a href="{% url 'verify' report.report_id %}">Public verification page</a> · <a href="{% url 'reports:list' %}">All reports</a></p>
+{% endblock %}

@@ -36,7 +36,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libldap2-dev libsasl2-dev
+          sudo apt-get install -y --no-install-recommends libldap2-dev libsasl2-dev libpango-1.0-0 libpangoft2-1.0-0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
@@ -94,7 +94,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libldap2-dev libsasl2-dev
+          sudo apt-get install -y --no-install-recommends libldap2-dev libsasl2-dev libpango-1.0-0 libpangoft2-1.0-0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3

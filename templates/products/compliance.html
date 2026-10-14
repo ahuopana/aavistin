@@ -18,6 +18,7 @@
     <h2>{{ item.configuration.name }}</h2>
     <p>
       <a href="{% url 'assessments:configuration_detail' item.configuration.pk %}">Questionnaire</a>
+      · <a href="{% url 'reports:generate' item.configuration.pk %}">Report</a>
       {% if item.assessment %} · <a href="{% url 'assessments:assessment_detail' item.assessment.pk %}">Assessment #{{ item.assessment.pk }}</a>{% endif %}
     </p>
     {% if item.packages %}

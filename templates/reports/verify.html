@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Verify report · Aavistin{% endblock %}
+{% block content %}
+  <h1>Verify a report</h1>
+  {% if report %}
+    <p><strong>{{ report.report_id }}</strong> is an approved report issued by this Aavistin installation.</p>
+    <dl>
+      <dt>Title</dt><dd>{{ report.title }}</dd>
+      <dt>Generated</dt><dd>{{ report.generated_at|date:"Y-m-d H:i" }} by {{ report.generated_by_name }}</dd>
+      <dt>PDF SHA-256</dt><dd><code>{{ report.pdf_sha256 }}</code></dd>
+    </dl>
+    {% if not report.is_current %}<p class="field-hint">A source snapshot has gone stale since this report was issued. The report itself is unchanged.</p>{% endif %}
+    {% if result == "match" %}<p><strong>The uploaded file is identical to the issued report.</strong></p>
+    {% elif result == "mismatch" %}<p><strong>The uploaded file does not match this report.</strong></p>{% endif %}
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <label>Check a PDF against this report <input type="file" name="pdf" accept="application/pdf" required></label>
+      <button type="submit">Check</button>
+    </form>
+  {% else %}
+    <p>No approved report with the ID <code>{{ report_id }}</code> was found. Drafts are not recorded and cannot be verified.</p>
+  {% endif %}
+{% endblock %}

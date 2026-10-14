@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Reports · Aavistin{% endblock %}
+{% block content %}
+  <h1>Reports</h1>
+  <p>Approved reports issued from a product's Compliance page. Drafts are not kept.</p>
+  {% if reports %}
+    <table>
+      <thead><tr><th>Report ID</th><th>Title</th><th>Configuration</th><th>Generated</th><th>By</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for r in reports %}
+          <tr>
+            <td><a href="{% url 'reports:detail' r.report_id %}">{{ r.report_id }}</a></td>
+            <td>{{ r.title }}</td>
+            <td>{{ r.configuration.name }}</td>
+            <td>{{ r.generated_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ r.generated_by_name }}</td>
+            <td>{% if r.is_current %}Approved{% else %}Approved, source now stale{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No approved reports yet. Open a product's Compliance page and choose a configuration's report.</p>
+  {% endif %}
+{% endblock %}

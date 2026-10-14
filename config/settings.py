@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.assessments",
     "apps.risk",
     "apps.evidence",
+    "apps.reports",
     "apps.userguide",
 ]
 
