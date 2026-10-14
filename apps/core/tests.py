@@ -808,3 +808,41 @@ def evaluate_snapshot(configuration):
     from apps.assessments.evaluation import evaluate_configuration
 
     return evaluate_configuration(configuration)
+
+
+class ThemeCssGuardTests(SimpleTestCase):
+    """Native form controls must follow the theme (a white checkbox on a dark
+    page was reported three times). Fast static guards; the real-browser check
+    is e2e/test_dark_mode.py."""
+
+    css = (Path(settings.BASE_DIR) / "static" / "css" / "base.css").read_text()
+
+    def test_every_theme_declares_its_color_scheme(self):
+        light = re.search(r"^:root \{(.*?)^\}", self.css, re.S | re.M).group(1)
+        dark = re.search(r':root\[data-theme="dark"\] \{(.*?)^\}', self.css, re.S | re.M).group(1)
+        auto = re.search(r"prefers-color-scheme: dark\) \{(.*?)^\}", self.css, re.S | re.M).group(
+            1
+        )
+        self.assertIn("color-scheme: light", light)
+        self.assertIn("color-scheme: dark", dark)
+        self.assertIn("color-scheme: dark", auto)
+
+    def test_every_form_control_in_templates_is_styled(self):
+        """A control type used in a template needs a rule in base.css, or must be
+        one the browser draws from color-scheme (checkbox, radio) or that is not a
+        field (buttons, hidden). A typeless <input> is a text field and would
+        escape the `input[type="text"]` rule."""
+        styled = set(re.findall(r'input\[type="([a-z-]+)"\]', self.css))
+        browser_themed = {"checkbox", "radio", "hidden", "submit", "button", "reset"}
+        unstyled = []
+        for template in (Path(settings.BASE_DIR) / "templates").rglob("*.html"):
+            for tag in re.findall(r"<input\b[^>]*>", template.read_text()):
+                found = re.search(r'type="([a-z-]+)"', tag)
+                kind = found.group(1) if found else None
+                if kind is None and "type=" in tag:
+                    continue  # computed by a template tag
+                if kind not in styled | browser_themed:
+                    unstyled.append(f"{template.name}: {tag[:80]}")
+        self.assertEqual(unstyled, [], "form controls with no styling rule in base.css")
+        for selector in ("select,", "textarea"):
+            self.assertIn(selector, self.css)
