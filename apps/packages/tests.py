@@ -1,4 +1,5 @@
 import json
+from datetime import date
 from io import StringIO
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from django.test import TestCase
 
 from .catalog_engine import run_catalog_fixtures, triggered_entries
 from .diffing import diff_packages
+from .evaluator import evaluate_package
 from .fixtures_runner import run_fixtures
 from .importer import PackageImportError, approve_package, import_package
 from .linting import lint_catalog, lint_method, lint_package
@@ -360,6 +362,78 @@ class ImportPipelineTests(TestCase):
         package = import_package(load_package("eu-cra", "1.0.0"), is_official=True)
         self.assertEqual(package.lint_report, [])
         self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+
+    def test_import_eu_lvd_package_reaches_fixtures_passed(self):
+        approve_package(
+            import_package(
+                load_package("common", "1.4.0"), kind=PackageKind.QUESTION_SET, is_official=True
+            )
+        )
+        package = import_package(load_package("eu-lvd", "1.0.0"), is_official=True)
+        self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+        self.assertEqual(package.lint_report, [])
+        self.assertTrue(all(r["passed"] for r in package.fixture_report), package.fixture_report)
+
+    def test_real_packages_pass_with_common_1_4_0(self):
+        approve_package(
+            import_package(
+                load_package("common", "1.4.0"), kind=PackageKind.QUESTION_SET, is_official=True
+            )
+        )
+        for source, version in (("eu-cra", "1.0.0"), ("eu-red", "1.0.0"), ("eu-red", "1.1.0")):
+            with self.subTest(source=source, version=version):
+                package = import_package(load_package(source, version), is_official=True)
+                self.assertEqual(package.lint_report, [])
+                self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+                self.assertTrue(all(r["passed"] for r in package.fixture_report))
+
+    def test_eu_red_1_1_0_and_eu_lvd_never_both_carry_electrical_safety(self):
+        """RED Art. 3(1)(a) applies the LVD safety objectives to radio equipment,
+        and LVD excludes radio equipment: for each product exactly one package
+        lists the safety objectives (ADR 0042)."""
+        red = load_package("eu-red", "1.1.0")
+        lvd = load_package("eu-lvd", "1.0.0")
+        mains = {
+            "product_form": "hardware_with_software",
+            "ac_voltage_rating": 230,
+            "dc_voltage_rating": 0,
+            "lvd_annex_ii_category": "none",
+            "is_commercial_activity": True,
+            "economic_operator_role": "manufacturer",
+        }
+        products = {
+            "mains wi-fi device": (
+                {"wireless_interface_capability": "present", "wireless_enablement": "enabled"},
+                "eu-red",
+            ),
+            "mains device without radio": (
+                {"wireless_interface_capability": "not_present"},
+                "eu-lvd",
+            ),
+            "radio enableable only by update": (
+                {
+                    "wireless_interface_capability": "present",
+                    "wireless_enablement": "disabled_manufacturer_update_only",
+                },
+                "eu-lvd",
+            ),
+        }
+        as_of = date(2026, 10, 1)
+        for name, (radio, expected) in products.items():
+            with self.subTest(product=name):
+                answers = {**mains, **radio}
+                results = {
+                    "eu-red": evaluate_package(red, answers, as_of=as_of),
+                    "eu-lvd": evaluate_package(lvd, answers, as_of=as_of),
+                }
+                carrying = [
+                    source
+                    for source, result in results.items()
+                    if {"art_3_1_a_insulation", "annex_i_2d_insulation"}
+                    & set(result["requirements"])
+                ]
+                self.assertEqual(carrying, [expected])
+                self.assertEqual([s for s, r in results.items() if r["in_scope"]], [expected])
 
 
 class ManagementCommandTests(TestCase):
@@ -1063,10 +1137,15 @@ class QuestionGroupLintTests(TestCase):
             "ungrouped_question", self.lint([{"id": "g", "title": "G", "questions": ["a"]}])
         )
 
-    def test_eu_cra_and_eu_red_group_every_question(self):
-        for source in ("eu-cra", "eu-red"):
-            with self.subTest(source=source):
-                content = load_package(source, "1.0.0")
+    def test_real_packages_group_every_question(self):
+        for source, version in (
+            ("eu-cra", "1.0.0"),
+            ("eu-red", "1.0.0"),
+            ("eu-red", "1.1.0"),
+            ("eu-lvd", "1.0.0"),
+        ):
+            with self.subTest(source=source, version=version):
+                content = load_package(source, version)
                 grouped = [q for g in content["question_groups"] for q in g["questions"]]
                 self.assertEqual(len(grouped), len(set(grouped)))
                 known = {q["id"] for q in content["questions"]} | {

@@ -8,13 +8,16 @@ assessment routes and finding rules. Packages are authored data, not
 application code — Aavistin never hard-codes what a regulation requires;
 it only knows how to evaluate a package against your answers. See the
 [EU CRA package](https://github.com/ahuopana/aavistin/tree/main/packages/eu-cra)
-for a real example.
+and the
+[EU Low Voltage Directive package](https://github.com/ahuopana/aavistin/tree/main/packages/eu-lvd)
+for real examples.
 
 Each package targets a **jurisdiction** (e.g. EU, US). A package is only
 active for a configuration if that configuration's target markets include
 it (the hardware variant's and the software release's markets, see
 [organisations and products](organisations-and-products)). Real, non-demo
-packages (such as the EU Cyber Resilience Act) live in the `packages/`
+packages (such as the EU Cyber Resilience Act and the Low Voltage
+Directive) live in the `packages/`
 directory of the Aavistin repository, alongside a README noting anything
 still pending legal review.
 
