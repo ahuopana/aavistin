@@ -143,8 +143,8 @@
 {% if c.risks %}
 <h2>Risks</h2>
 <p class="note">{% if c.risks.frozen %}Frozen at approval.{% else %}Live register, not approved.{% endif %}
-Methods: {% for m in c.risks.methods %}{{ m.0 }}@{{ m.1 }}{% if not forloop.last %}, {% endif %}{% empty %}none{% endfor %}.
-Catalogs: {% for m in c.risks.catalogs %}{{ m.0 }}@{{ m.1 }}{% if not forloop.last %}, {% endif %}{% empty %}none{% endfor %}.</p>
+Methods: {% for m in c.risks.methods %}{{ m.title }} (version {{ m.version }}){% if not forloop.last %}, {% endif %}{% empty %}none{% endfor %}.
+Catalogs: {% for m in c.risks.catalogs %}{{ m.title }} (version {{ m.version }}){% if not forloop.last %}, {% endif %}{% empty %}none{% endfor %}.</p>
 <table><tr><th>Type</th><th>Entry</th><th>Ratings</th></tr>
 {% for e in c.risks.entries %}<tr><td>{{ e.type }}</td><td>{{ e.label }}</td><td>
   {% for r in e.ratings %}{{ r.method }}: {% if r.property %}{{ r.property|choice_label }} {{ r.severity }}{% else %}{{ r.level|default:"unrated"|choice_label }}{% if r.acceptance %} ({{ r.acceptance|choice_label }}){% endif %}{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %}

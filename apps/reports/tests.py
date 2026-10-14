@@ -202,6 +202,31 @@ class ContentTests(ReportFixture):
         self.assertIn("No", values.values())
         self.assertNotIn("False", values.values())
 
+    def test_shared_question_ids_get_their_label(self):
+        from apps.core.tests import load_package
+        from apps.packages.importer import approve_package, import_package
+
+        from .content import _assessment
+
+        approve_package(
+            import_package(load_package("common", "1.2.0"), kind="question_set", is_official=True)
+        )
+        evaluation = {
+            "as_of": "2026-10-14",
+            "results": [],
+            "findings": [],
+            "resolved_answers": {
+                "dos_resilience_measures": {
+                    "value": True,
+                    "needs_confirmation": False,
+                    "origin": "",
+                }
+            },
+        }
+        answers = _assessment(evaluation, False, include_out_of_scope=False)["answers"]
+        self.assertNotIn("dos_resilience_measures", answers[0]["question"])
+        self.assertTrue(answers[0]["question"].endswith("?"))
+
     def test_out_of_scope_packages_are_optional(self):
         self._ready_answers()
         Answer.objects.filter(question_id="has_power_source").update(value=False)
@@ -221,6 +246,19 @@ class ContentTests(ReportFixture):
         Answer.objects.filter(question_id="has_power_source").update(value=False)
         findings = self.build()["assessment"]["findings"]
         self.assertTrue(all(f["out_of_scope"] for f in findings))
+
+    def test_evidence_requirements_show_their_label(self):
+        from apps.evidence.models import Evidence, EvidenceKind
+        from apps.evidence.services import link_evidence
+
+        evidence = Evidence.objects.create(
+            product=self.product, title="Manual", kind=EvidenceKind.TEXT, reference_text="wiki"
+        )
+        link_evidence(
+            evidence, requirement=("demo-widget-safety", "1.1.0", "provide_widget_manual")
+        )
+        item = self.build(sections=("evidence",))["evidence"][0]
+        self.assertEqual(item["requirements"], ["Provide a safety manual with the widget"])
 
     def test_version_is_recorded(self):
         self.assertEqual(self.build()["aavistin_version"], aavistin_version())

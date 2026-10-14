@@ -9,12 +9,12 @@ from apps.assessments.evaluation import evaluate_configuration
 from apps.assessments.findings import finding_details
 from apps.assessments.models import AssessmentStatus
 from apps.assessments.templatetags.assessment_tags import choice_label
-from apps.core.compare import display
+from apps.core.compare import display, question_labels
 from apps.core.version import aavistin_version
 from apps.evidence.models import Evidence
 from apps.orgs.models import Role
 from apps.orgs.services import roles_for_user
-from apps.packages.models import RequirementPackage
+from apps.packages.models import PackageStatus, RequirementPackage
 from apps.risk.approval import build_snapshot
 from apps.risk.models import RiskAssessmentStatus, RiskEntry
 
@@ -140,7 +140,20 @@ def _labels(evaluation):
                 route["id"]
             )
         labels["titles"][package.pk] = content.get("title") or package.source
+    # Shared questions (e.g. package "common") belong to no result package.
+    for qid, label in question_labels().items():
+        labels["questions"].setdefault(qid, label)
     return labels
+
+
+def _package_titles() -> dict[str, str]:
+    """Source id -> title, for methods and catalogs ("default-cia-5x5" -> its title)."""
+    titles = {}
+    for package in RequirementPackage.objects.filter(status=PackageStatus.APPROVED).order_by(
+        "version"
+    ):
+        titles[package.source] = package.content.get("title") or package.source
+    return titles
 
 
 def _answer_text(value):
@@ -229,7 +242,7 @@ def _entry_labels(snapshot):
     return {e["id"]: e["label"] for e in snapshot["entries"]}
 
 
-def _risks(snapshot):
+def _risks(snapshot, titles):
     entries = RiskEntry.objects.filter(pk__in=[e["id"] for e in snapshot["entries"]])
     types = {e.pk: e.get_entry_type_display() for e in entries}
     return [
@@ -237,21 +250,24 @@ def _risks(snapshot):
             "type": types.get(e["id"], e["entry_type"]),
             "label": e["label"],
             "baseline": e["is_baseline"],
-            "ratings": e.get("ratings") or e.get("asset_ratings") or [],
+            "ratings": [
+                {**r, "method": titles.get(r["method"], r["method"])}
+                for r in e.get("ratings") or e.get("asset_ratings") or []
+            ],
             "consistency_issues": e.get("consistency_issues", []),
         }
         for e in snapshot["entries"]
     ]
 
 
-def _mitigations(snapshot):
+def _mitigations(snapshot, titles):
     labels = _entry_labels(snapshot)
     controls = {c["id"]: c for c in snapshot["controls"]}
     return {
         "treatments": [
             {
                 "entry": e["label"],
-                "method": t["method"],
+                "method": titles.get(t["method"], t["method"]),
                 "treatment": t["treatment_type"],
                 "residual": t["residual"],
             }
@@ -271,8 +287,20 @@ def _mitigations(snapshot):
     }
 
 
+def _requirement_label(cache, source, version, requirement_id):
+    key = (source, version)
+    if key not in cache:
+        package = RequirementPackage.objects.filter(source=source, version=version).first()
+        cache[key] = {
+            r["id"]: r.get("label") or r["id"]
+            for r in (package.content.get("requirements", []) if package else [])
+        }
+    return cache[key].get(requirement_id, requirement_id)
+
+
 def _evidence(product):
     items = []
+    cache = {}
     for ev in (
         Evidence.objects.filter(product=product)
         .prefetch_related("links__control")
@@ -288,7 +316,13 @@ def _evidence(product):
                 "expired": ev.is_expired,
                 "superseded": ev.is_superseded,
                 "controls": [k.control.name for k in ev.links.all() if k.control_id],
-                "requirements": [k.requirement_id for k in ev.links.all() if k.requirement_id],
+                "requirements": [
+                    _requirement_label(
+                        cache, k.requirement_source, k.requirement_version, k.requirement_id
+                    )
+                    for k in ev.links.all()
+                    if k.requirement_id
+                ],
             }
         )
     return items
@@ -368,15 +402,22 @@ def build_content(
     if "risks" in sections or "mitigations" in sections:
         risk = latest_approved_risk_assessment(configuration) if approved else None
         snapshot = risk.snapshot if risk else build_snapshot(configuration)
+        titles = _package_titles()
         if "risks" in sections:
             content["risks"] = {
                 "frozen": bool(risk),
-                "entries": _risks(snapshot),
-                "methods": snapshot["methods"],
-                "catalogs": snapshot["catalogs"],
+                "entries": _risks(snapshot, titles),
+                "methods": [
+                    {"title": titles.get(source, source), "version": version}
+                    for source, version in snapshot["methods"]
+                ],
+                "catalogs": [
+                    {"title": titles.get(source, source), "version": version}
+                    for source, version in snapshot["catalogs"]
+                ],
             }
         if "mitigations" in sections:
-            content["mitigations"] = {"frozen": bool(risk), **_mitigations(snapshot)}
+            content["mitigations"] = {"frozen": bool(risk), **_mitigations(snapshot, titles)}
         if risk:
             content["sources"]["risk"] = {
                 "id": risk.pk,
