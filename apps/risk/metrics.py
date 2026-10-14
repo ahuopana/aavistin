@@ -447,7 +447,7 @@ def _versions_behind(snapshot) -> list[dict]:
 
 def register_metrics(configuration) -> dict:
     """Metrics for one configuration's register view (baseline plus deltas)."""
-    product = configuration.hardware_revision.hardware_variant.product
+    product = configuration.product
     metrics = _compute(
         register_for_configuration(configuration), product, include_unlinked_controls=False
     )
@@ -460,7 +460,7 @@ def _product_entries(product) -> list[RiskEntry]:
     configurations, each once; the baseline when there are no configurations."""
     configurations = list(
         Configuration.objects.filter(
-            hardware_revision__hardware_variant__product=product
+            software_release__product=product
         ).select_related("hardware_revision__hardware_variant", "software_release")
     )
     if not configurations:
@@ -500,7 +500,7 @@ def product_metrics(product) -> dict:
     metrics = _compute(_product_entries(product), product, include_unlinked_controls=True)
     rows = []
     configurations = Configuration.objects.filter(
-        hardware_revision__hardware_variant__product=product
+        software_release__product=product
     ).select_related("hardware_revision__hardware_variant", "software_release")
     for configuration in configurations:
         per = register_metrics(configuration)
