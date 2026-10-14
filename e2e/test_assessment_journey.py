@@ -76,7 +76,6 @@ def test_assessment_journey(page, live_server, world):
 
     submit_form = form_for(page, "products:product_create", world["family"].pk)
     submit_form.locator("[name=name]").fill("TempSense")
-    submit_form.locator("[name=slug]").fill("tempsense")
     submit(page, submit_form)
 
     expect(page.get_by_role("heading", level=1)).to_contain_text("TempSense")
@@ -85,8 +84,8 @@ def test_assessment_journey(page, live_server, world):
     # Hardware variant, then mark it for the EU market via its edit form.
     form = form_for(page, "products:hardware_variant_create", product_id)
     form.locator("[name=name]").fill("EU variant")
-    form.locator("[name=slug]").fill("eu-variant")
     submit(page, form)
+    # The slug is derived from the name.
     variant = HardwareVariant.objects.get(product_id=product_id, slug="eu-variant")
 
     variant_row = page.locator("tr", has_text="EU variant").first
@@ -118,13 +117,14 @@ def test_assessment_journey(page, live_server, world):
     form.locator("[name=software_release]").select_option(index=1)
     submit(page, form)
     open_tab(page, "Configurations")
-    expect(page.get_by_role("link", name="TempSense EU 1.0")).to_be_visible()
+    configuration_row = page.locator("tr", has_text="TempSense EU 1.0").first
+    expect(configuration_row).to_contain_text("Next: Answer 3 open questions")
 
     # --- The editor answers the questionnaire ----------------------------------------
-    page.get_by_role("link", name="TempSense EU 1.0").click()
+    configuration_row.get_by_role("link", name="Questions", exact=True).click()
     expect(page.get_by_role("heading", name="Questions")).to_be_visible()
     for question in (POWER_QUESTION, TOY_QUESTION, RATED_POWER_QUESTION):
-        expect(page.locator("tr", has_text=question).locator("td").nth(2)).to_have_text(
+        expect(page.locator("tr", has_text=question).locator("td").nth(2)).to_contain_text(
             "unanswered"
         )
 
@@ -139,7 +139,7 @@ def test_assessment_journey(page, live_server, world):
     ):
         cells = page.locator("tr", has_text=question).locator("td")
         expect(cells.nth(1)).to_have_text(re.compile(shown))
-        expect(cells.nth(2)).not_to_have_text("unanswered")
+        expect(cells.nth(2)).not_to_contain_text("unanswered")
 
     # --- A draft assessment evaluates the answers ------------------------------------
     configuration_url = page.url
@@ -150,7 +150,7 @@ def test_assessment_journey(page, live_server, world):
     expect(page.get_by_role("heading", name=re.compile(r"Assessment #\d+"))).to_be_visible()
     expect(page.get_by_role("heading", name="demo-widget-safety@1.0.0")).to_be_visible()
     expect(page.get_by_text("In scope", exact=True)).to_be_visible()
-    expect(page.get_by_text("Classifications: high_power")).to_be_visible()
+    expect(page.get_by_text("Classifications: High power widget")).to_be_visible()
     expect(page.get_by_role("cell", name=HIGH_POWER_FINDING)).to_be_visible()
     sign_out(page)
 
@@ -185,5 +185,11 @@ def test_assessment_journey(page, live_server, world):
     expect(page.get_by_text("stale", exact=True)).to_be_visible()
     # The approved snapshot is frozen: it still shows the finding from 150 W.
     expect(page.get_by_role("cell", name=HIGH_POWER_FINDING)).to_be_visible()
+    # The way forward is a new assessment, offered on the page and as the next step.
+    expect(page.locator(".workflow-next")).to_contain_text("Start a new assessment to re-review")
+    with page.expect_navigation():
+        page.get_by_role("button", name="Start a new assessment", exact=True).click()
+    assert page.url != assessment_url
+    expect(page.get_by_role("heading", name=re.compile(r"Assessment #\d+ Draft"))).to_be_visible()
 
     assert page_errors == []

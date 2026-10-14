@@ -72,8 +72,8 @@ def test_cra_journey(page, live_server, world):
         f"{live_server.url}{reverse('assessments:configuration_detail', args=[configuration.pk])}"
     )
     expect(page.get_by_role("heading", name="Questions")).to_be_visible()
-    answer(page, "What kind of product is this?", "hardware_with_software")
-    answer(page, "What is your role for this product?", "manufacturer")
+    answer(page, "What kind of product is this?", "Hardware with software")
+    answer(page, "What is your role for this product?", "Manufacturer")
     answer(page, "Is the product supplied in the course of a commercial activity?", "Yes")
     answer(page, "Can the product exchange digital data", "Yes")
 
@@ -94,12 +94,17 @@ def test_cra_journey(page, live_server, world):
             page.get_by_role("button", name="Start new assessment").click()
         assert re.search(r"/assessments/\d+/$", page.url)
         expect(page.get_by_role("heading", name="eu-cra@2024-2847@2026-10")).to_be_visible()
-        expect(page.get_by_text("Economic operator role: manufacturer")).to_be_visible()
+        expect(page.get_by_text("Economic operator role: Manufacturer")).to_be_visible()
+        # Requirements are listed by their labels, folded per status.
+        page.locator("summary", has_text="Requirements in force").click()
         expect(
-            page.get_by_text(re.compile(r"art_14_report_exploited_vulnerabilities"))
+            page.get_by_text(re.compile(r"Notify actively exploited vulnerabilities"))
         ).to_be_visible()
-        upcoming = page.locator("p", has_text="Not in force yet:")
-        expect(upcoming).to_contain_text("annex_i_2a_no_known_exploitable_vulnerabilities")
-        expect(upcoming).to_contain_text("(from 2027-12-11)")
+        page.locator("summary", has_text="Not in force yet").click()
+        upcoming = page.locator("details", has_text="Not in force yet")
+        expect(upcoming).to_contain_text(
+            "Place the product on the market without known exploitable vulnerabilities"
+        )
+        expect(upcoming).to_contain_text("from 2027-12-11")
 
     assert page_errors == []

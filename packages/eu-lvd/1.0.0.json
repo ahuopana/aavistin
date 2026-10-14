@@ -23,6 +23,7 @@
     "common:is_medical_device",
     "common:is_in_vitro_diagnostic",
     "common:wireless_interface_capability",
+    "common:wireless_enablement",
     "common:hardware_still_placed_on_market",
     "common:hardware_last_placed_on_market"
   ],
@@ -44,7 +45,8 @@
         "ac_voltage_rating",
         "dc_voltage_rating",
         "is_basic_component",
-        "wireless_interface_capability"
+        "wireless_interface_capability",
+        "wireless_enablement"
       ]
     },
     {
@@ -1299,11 +1301,23 @@
       {
         "id": "radio_equipment",
         "when": {
-          "==": [
+          "and": [
             {
-              "var": "wireless_interface_capability"
+              "==": [
+                {
+                  "var": "wireless_interface_capability"
+                },
+                "present"
+              ]
             },
-            "present"
+            {
+              "!=": [
+                {
+                  "var": "wireless_enablement"
+                },
+                "disabled_manufacturer_update_only"
+              ]
+            }
           ]
         },
         "ref": "Directive 2014/53/EU, Art. 3(1)(a)"
@@ -1929,11 +1943,23 @@
       "id": "radio_equipment_under_red",
       "level": "info",
       "when": {
-        "==": [
+        "and": [
           {
-            "var": "wireless_interface_capability"
+            "==": [
+              {
+                "var": "wireless_interface_capability"
+              },
+              "present"
+            ]
           },
-          "present"
+          {
+            "!=": [
+              {
+                "var": "wireless_enablement"
+              },
+              "disabled_manufacturer_update_only"
+            ]
+          }
         ]
       },
       "message": "Radio equipment: the LVD safety objectives apply through RED Art. 3(1)(a), with no voltage limit. Assess electrical safety under the RED package.",
@@ -1943,14 +1969,38 @@
       "id": "disabled_radio_check_red",
       "level": "caution",
       "when": {
-        "==": [
+        "or": [
           {
-            "var": "wireless_interface_capability"
+            "==": [
+              {
+                "var": "wireless_interface_capability"
+              },
+              "present_physically_disabled"
+            ]
           },
-          "present_physically_disabled"
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "wireless_interface_capability"
+                  },
+                  "present"
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "wireless_enablement"
+                  },
+                  "disabled_manufacturer_update_only"
+                ]
+              }
+            ]
+          }
         ]
       },
-      "message": "Radio hardware present but physically disabled: confirm that the product is not radio equipment. If RED applies, LVD safety objectives are assessed under RED instead.",
+      "message": "Radio hardware present but disabled (physically, or until a manufacturer update): the product is under LVD, not RED, while the radio stays disabled. Enabling it makes the product radio equipment and requires re-assessment under RED.",
       "ref": "Directive 2014/53/EU, Art. 2(1)(1)"
     },
     {
@@ -2421,6 +2471,44 @@
         "in_scope": true,
         "findings": [
           "disabled_radio_check_red"
+        ]
+      }
+    },
+    {
+      "id": "radio-enableable-only-by-update-stays-under-lvd",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "disabled_manufacturer_update_only"
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "disabled_radio_check_red"
+        ]
+      }
+    },
+    {
+      "id": "user-enableable-radio-under-red",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "disabled_user_enableable"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "radio_equipment_under_red"
         ]
       }
     },

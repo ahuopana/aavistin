@@ -23,6 +23,7 @@ from apps.products.models import (
 from .approval import (
     RiskAssessmentError,
     approve_risk_assessment,
+    build_snapshot,
     recompute_all_staleness,
     recompute_staleness,
 )
@@ -715,3 +716,921 @@ class EmptyRegisterReadinessTests(RiskFixture):
         response = self.client.get(self.url, {"q": "zzz"})
         self.assertContains(response, "No register entries match the current filter.")
         self.assertNotContains(response, "No register entries yet")
+
+
+class EntryAuthoringTests(RiskFixture):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        self.base = f"/risk/configurations/{self.configuration.pk}/"
+        self.create_url = f"{self.base}entries/new/"
+
+    def test_editor_sees_add_button(self):
+        response = self.client.get(self.base)
+        self.assertContains(response, f'href="{self.create_url}"')
+
+    def test_non_editor_cannot_add(self):
+        viewer = User.objects.create_user(username="vic", password="x")
+        RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
+        self.client.force_login(viewer)
+        response = self.client.get(self.base)
+        self.assertNotContains(response, f'href="{self.create_url}"')
+        response = self.client.post(
+            self.create_url, {"entry_type": "asset", "label": "Sneaky asset"}
+        )
+        self.assertRedirects(response, self.base)
+        self.assertFalse(RiskEntry.objects.filter(label="Sneaky asset").exists())
+
+    def test_add_asset(self):
+        response = self.client.post(
+            self.create_url,
+            {"entry_type": "asset", "label": "User data", "description": "Wi-Fi credentials"},
+        )
+        entry = RiskEntry.objects.get(label="User data")
+        self.assertRedirects(response, f"{self.base}entries/{entry.pk}/")
+        self.assertEqual(entry.entry_type, EntryType.ASSET)
+        self.assertEqual(entry.product, self.product)
+        self.assertEqual(entry.suggestion_status, SuggestionStatus.CUSTOM)
+        self.assertEqual(entry.created_by, self.editor)
+        self.assertTrue(entry.is_baseline)
+        self.assertEqual(entry.history.first().history_user, self.editor)
+
+    def test_add_threat_with_asset_and_scope(self):
+        asset = self.make_asset()
+        self.client.post(
+            self.create_url,
+            {
+                "entry_type": "threat",
+                "label": "Firmware tampering",
+                "asset": str(asset.pk),
+                "violates": "integrity",
+                "scope": f"sw:{self.release.pk}",
+            },
+        )
+        threat = RiskEntry.objects.get(label="Firmware tampering")
+        self.assertEqual(threat.asset, asset)
+        self.assertEqual(threat.violates, "integrity")
+        self.assertEqual(threat.scope_software_release, self.release)
+        self.assertIsNone(threat.base_entry)
+
+    def test_threat_without_property_is_rejected_and_input_kept(self):
+        response = self.client.post(
+            self.create_url,
+            {"entry_type": "threat", "label": "Half-filled threat", "description": "keep me"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Threats must name the property they violate.")
+        self.assertContains(response, 'value="Half-filled threat"')
+        self.assertContains(response, "keep me")
+        self.assertFalse(RiskEntry.objects.filter(label="Half-filled threat").exists())
+
+    def test_hazard_drops_threat_only_fields(self):
+        asset = self.make_asset()
+        self.client.post(
+            self.create_url,
+            {
+                "entry_type": "hazard",
+                "label": "Electric shock",
+                "asset": str(asset.pk),
+                "violates": "integrity",
+            },
+        )
+        hazard = RiskEntry.objects.get(label="Electric shock")
+        self.assertIsNone(hazard.asset)
+        self.assertEqual(hazard.violates, "")
+
+    def test_asset_and_scope_of_another_product_are_rejected(self):
+        other = Product.objects.create(product_family=self.family, name="Other", slug="other")
+        foreign_asset = RiskEntry.objects.create(
+            product=other, entry_type=EntryType.ASSET, label="Foreign"
+        )
+        foreign_release = SoftwareRelease.objects.create(product=other, version="9.9")
+        response = self.client.post(
+            self.create_url,
+            {
+                "entry_type": "threat",
+                "label": "Cross-product threat",
+                "asset": str(foreign_asset.pk),
+                "violates": "integrity",
+            },
+        )
+        self.assertContains(response, "Choose an asset of this product.")
+        response = self.client.post(
+            self.create_url,
+            {"entry_type": "asset", "label": "Cross-scope", "scope": f"sw:{foreign_release.pk}"},
+        )
+        self.assertContains(response, "Choose a valid scope.")
+        self.assertFalse(
+            RiskEntry.objects.filter(label__in=["Cross-product threat", "Cross-scope"]).exists()
+        )
+
+    def test_violates_choices_come_from_approved_methods(self):
+        response = self.client.get(self.create_url)
+        values = [c["value"] for c in response.context["violates_choices"]]
+        self.assertEqual(values[:3], ["confidentiality", "integrity", "availability"])
+
+    def test_edit_updates_fields_but_not_type(self):
+        asset = self.make_asset()
+        threat = self.make_threat(asset)
+        url = f"{self.base}entries/{threat.pk}/edit/"
+        response = self.client.get(url)
+        self.assertContains(response, "Edit threat")
+        response = self.client.post(
+            url,
+            {
+                "entry_type": "hazard",
+                "label": "Eavesdropping over Wi-Fi",
+                "asset": str(asset.pk),
+                "violates": "confidentiality",
+                "scope": f"hw:{self.variant.pk}",
+            },
+        )
+        self.assertRedirects(response, f"{self.base}entries/{threat.pk}/")
+        threat.refresh_from_db()
+        self.assertEqual(threat.entry_type, EntryType.THREAT)
+        self.assertEqual(threat.label, "Eavesdropping over Wi-Fi")
+        self.assertEqual(threat.scope_hardware_variant, self.variant)
+
+    def test_entry_with_deltas_keeps_its_scope(self):
+        asset = self.make_asset()
+        threat = self.make_threat(asset)
+        self.make_threat(
+            asset,
+            label="Eavesdropping (TLS)",
+            scope_software_release=self.release,
+            base_entry=threat,
+            delta_justification="TLS enforced",
+        )
+        url = f"{self.base}entries/{threat.pk}/edit/"
+        self.client.post(
+            url,
+            {
+                "label": "Renamed",
+                "asset": str(asset.pk),
+                "violates": "confidentiality",
+                "scope": f"hw:{self.variant.pk}",
+            },
+        )
+        threat.refresh_from_db()
+        self.assertEqual(threat.label, "Renamed")
+        self.assertTrue(threat.is_baseline)
+
+    def test_detail_shows_edit_link_to_editor_only(self):
+        asset = self.make_asset()
+        url = f"{self.base}entries/{asset.pk}/"
+        self.assertContains(self.client.get(url), f'href="{url}edit/"')
+        viewer = User.objects.create_user(username="vic", password="x")
+        RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
+        self.client.force_login(viewer)
+        self.assertNotContains(self.client.get(url), f'href="{url}edit/"')
+
+    def test_save_and_add_another_keeps_type_scope_and_asset(self):
+        asset = self.make_asset()
+        response = self.client.post(
+            self.create_url,
+            {
+                "entry_type": "threat",
+                "label": "Firmware <tampering>",
+                "asset": str(asset.pk),
+                "violates": "integrity",
+                "scope": f"sw:{self.release.pk}",
+                "next": "another",
+            },
+            follow=True,
+        )
+        threat = RiskEntry.objects.get(label="Firmware <tampering>")
+        self.assertEqual(response.request["PATH_INFO"], self.create_url)
+        self.assertContains(
+            response,
+            f'Added <a href="{self.base}entries/{threat.pk}/">Firmware &lt;tampering&gt;</a>',
+        )
+        self.assertEqual(response.context["entry"].entry_type, EntryType.THREAT)
+        self.assertEqual(response.context["entry"].asset, asset)
+        self.assertEqual(response.context["scope_value"], f"sw:{self.release.pk}")
+        self.assertEqual(response.context["entry"].label, "")
+
+    def test_prefilled_asset_of_another_product_is_ignored(self):
+        other = Product.objects.create(product_family=self.family, name="Other", slug="other")
+        foreign = RiskEntry.objects.create(product=other, entry_type=EntryType.ASSET, label="F")
+        response = self.client.get(self.create_url, {"type": "threat", "asset": foreign.pk})
+        self.assertIsNone(response.context["entry"].asset)
+
+    def _post_threat(self, *properties, label="Remote code execution", **extra):
+        return self.client.post(
+            self.create_url,
+            {
+                "entry_type": "threat",
+                "label": label,
+                "asset": str(self.make_asset().pk),
+                "violates": list(properties),
+                **extra,
+            },
+        )
+
+    def test_several_properties_add_one_threat_each(self):
+        response = self._post_threat("confidentiality", "integrity", "availability")
+        threats = RiskEntry.objects.filter(entry_type=EntryType.THREAT).order_by("label")
+        self.assertEqual(
+            [(t.label, t.violates) for t in threats],
+            [
+                ("Remote code execution (Availability)", "availability"),
+                ("Remote code execution (Confidentiality)", "confidentiality"),
+                ("Remote code execution (Integrity)", "integrity"),
+            ],
+        )
+        asset = RiskEntry.objects.get(entry_type=EntryType.ASSET)
+        self.assertTrue(all(t.asset == asset and t.is_baseline for t in threats))
+        self.assertTrue(all(t.created_by == self.editor for t in threats))
+        self.assertRedirects(response, f"{self.base}?type=threat", fetch_redirect_response=False)
+        followed = self.client.get(f"{self.base}?type=threat")
+        self.assertContains(followed, "Added 3 threats:")
+
+    def test_single_property_keeps_plain_label(self):
+        self._post_threat("integrity", label="Firmware tampering")
+        self.assertTrue(
+            RiskEntry.objects.filter(label="Firmware tampering", violates="integrity").exists()
+        )
+
+    def test_split_is_all_or_nothing(self):
+        # 190 + " (Confidentiality)" exceeds the 200-character label limit,
+        # while 190 + " (Integrity)" does not: nothing may be saved.
+        response = self._post_threat("integrity", "confidentiality", label="x" * 190)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(RiskEntry.objects.filter(entry_type=EntryType.THREAT).exists())
+
+    def test_unknown_property_is_rejected(self):
+        response = self._post_threat("integrity", "telepathy")
+        self.assertContains(response, "Choose a property from the risk methods.")
+        self.assertFalse(RiskEntry.objects.filter(entry_type=EntryType.THREAT).exists())
+
+    def test_save_and_add_another_with_several_properties(self):
+        response = self._post_threat("integrity", "availability", next="another")
+        self.assertEqual(RiskEntry.objects.filter(entry_type=EntryType.THREAT).count(), 2)
+        self.assertTrue(response["Location"].startswith(self.create_url + "?type=threat"))
+
+    def test_edit_keeps_property_of_a_method_no_longer_approved(self):
+        hazard_threat = self.make_threat(
+            self.make_asset(), label="Unsafe state", violates="safety"
+        )
+        RequirementPackage.objects.filter(pk=self.safety_method.pk).update(
+            status=PackageStatus.DRAFT
+        )
+        url = f"{self.base}entries/{hazard_threat.pk}/edit/"
+        self.client.post(url, {"label": "Unsafe state renamed", "violates": "safety"})
+        hazard_threat.refresh_from_db()
+        self.assertEqual(hazard_threat.label, "Unsafe state renamed")
+        self.assertEqual(hazard_threat.violates, "safety")
+
+
+class RatingAndTreatmentAuthoringTests(RiskFixture):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        self.asset = self.make_asset()
+        self.threat = self.make_threat(self.asset, violates="integrity")
+        self.hazard = self.make_hazard()
+
+    def url(self, entry, action=""):
+        base = f"/risk/configurations/{self.configuration.pk}/entries/{entry.pk}/"
+        return f"{base}{action}/" if action else base
+
+    def test_asset_rating_saves_and_clears_per_property(self):
+        self.client.post(
+            self.url(self.asset, "asset-rating"),
+            {"method": self.cia_method.pk, "confidentiality": "2", "integrity": "4"},
+        )
+        ratings = {r.property: r.severity for r in self.asset.asset_ratings.all()}
+        self.assertEqual(ratings, {"confidentiality": 2, "integrity": 4})
+        self.client.post(
+            self.url(self.asset, "asset-rating"),
+            {"method": self.cia_method.pk, "confidentiality": "", "integrity": "5"},
+        )
+        ratings = {r.property: r.severity for r in self.asset.asset_ratings.all()}
+        self.assertEqual(ratings, {"integrity": 5})
+
+    def test_asset_rating_out_of_scale_is_rejected(self):
+        response = self.client.post(
+            self.url(self.asset, "asset-rating"),
+            {"method": self.cia_method.pk, "integrity": "9"},
+            follow=True,
+        )
+        self.assertContains(response, "Choose a severity between 1 and 5.")
+        self.assertFalse(self.asset.asset_ratings.exists())
+
+    def test_consequence_inherits_asset_rating_or_needs_justification(self):
+        AssetRating.objects.create(
+            entry=self.asset, method=self.cia_method, property="integrity", severity=4
+        )
+        self.assertContains(self.client.get(self.url(self.threat)), "starts at 4")
+        self.client.post(
+            self.url(self.threat, "consequences"),
+            {"impact_category": "operational", "severity": "4"},
+        )
+        inherited = self.threat.consequences.get()
+        self.assertFalse(inherited.severity_is_override)
+
+        response = self.client.post(
+            self.url(self.threat, "consequences"),
+            {"impact_category": "financial", "severity": "2"},
+            follow=True,
+        )
+        self.assertContains(response, "needs a justification")
+        self.client.post(
+            self.url(self.threat, "consequences"),
+            {
+                "impact_category": "financial",
+                "severity": "2",
+                "override_justification": "Recall is cheap for this product",
+            },
+        )
+        override = self.threat.consequences.get(impact_category="financial")
+        self.assertTrue(override.severity_is_override)
+
+    def test_consequence_links_hazard_only_for_safety_categories(self):
+        response = self.client.post(
+            self.url(self.threat, "consequences"),
+            {"impact_category": "privacy", "severity": "3", "hazard": self.hazard.pk},
+            follow=True,
+        )
+        self.assertContains(response, "Only harm to people or property")
+        self.client.post(
+            self.url(self.threat, "consequences"),
+            {"impact_category": "safety", "severity": "3", "hazard": self.hazard.pk},
+        )
+        self.assertEqual(self.threat.consequences.get().hazard, self.hazard)
+
+    def test_consequence_delete(self):
+        c = ThreatConsequence.objects.create(
+            threat=self.threat, impact_category=ImpactCategory.OPERATIONAL, severity=3
+        )
+        self.client.post(self.url(self.threat, f"consequences/{c.pk}/delete"))
+        self.assertFalse(self.threat.consequences.exists())
+
+    def test_threat_rating_uses_applicable_method_only(self):
+        self.client.post(
+            self.url(self.threat, "rating"), {"method": self.cia_method.pk, "likelihood": "3"}
+        )
+        self.assertEqual(Rating.objects.get(entry=self.threat).likelihood, 3)
+        response = self.client.post(
+            self.url(self.threat, "rating"),
+            {"method": self.safety_method.pk, "likelihood": "3"},
+            follow=True,
+        )
+        self.assertContains(response, "doesn&#x27;t apply to this entry")
+        self.assertEqual(Rating.objects.filter(entry=self.threat).count(), 1)
+
+    def test_hazard_rated_under_safety_method_with_severity(self):
+        detail = self.client.get(self.url(self.hazard))
+        rows = [r["method"] for r in detail.context["method_rows"]]
+        self.assertEqual(rows, [self.safety_method])
+        self.client.post(
+            self.url(self.hazard, "rating"),
+            {"method": self.safety_method.pk, "severity": "4", "likelihood": "4"},
+        )
+        result = evaluate_entry_rating(self.hazard, self.safety_method)
+        self.assertEqual(result["acceptance"], "must_treat")
+        response = self.client.post(
+            self.url(self.hazard, "rating"),
+            {"method": self.safety_method.pk, "severity": "", "likelihood": "2"},
+            follow=True,
+        )
+        self.assertContains(response, "Hazards must have a directly-rated severity.")
+
+    def test_clearing_likelihood_removes_rating_and_treatment(self):
+        Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=3)
+        Treatment.objects.create(
+            entry=self.threat, method=self.cia_method, treatment_type=TreatmentType.MITIGATE
+        )
+        self.client.post(
+            self.url(self.threat, "rating"), {"method": self.cia_method.pk, "likelihood": ""}
+        )
+        self.assertFalse(Rating.objects.filter(entry=self.threat).exists())
+        self.assertFalse(Treatment.objects.filter(entry=self.threat).exists())
+
+    def test_treatment_needs_a_rating_first(self):
+        response = self.client.post(
+            self.url(self.threat, "treatment"),
+            {"method": self.cia_method.pk, "treatment_type": "mitigate"},
+            follow=True,
+        )
+        self.assertContains(response, "Rate the entry under default-cia-5x5 first.")
+        self.assertFalse(Treatment.objects.exists())
+
+    def test_treatment_mitigated_to_acceptable_needs_no_justification(self):
+        Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=4)
+        Control.objects.create(product=self.product, name="Signed updates").threats.add(
+            self.threat
+        )
+        self.client.post(
+            self.url(self.threat, "treatment"),
+            {
+                "method": self.cia_method.pk,
+                "treatment_type": "mitigate",
+                "residual_severity": "2",
+                "residual_likelihood": "2",
+            },
+        )
+        treatment = Treatment.objects.get(entry=self.threat)
+        self.assertEqual(evaluate_residual_rating(treatment)["acceptance"], "accept")
+        self.assertEqual(treatment.history.first().history_user, self.editor)
+
+    def test_accept_or_justify_level_residual_needs_justification(self):
+        Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=4)
+        for treatment_type, sev, lik in (("accept", "", ""), ("mitigate", "3", "3")):
+            response = self.client.post(
+                self.url(self.threat, "treatment"),
+                {
+                    "method": self.cia_method.pk,
+                    "treatment_type": treatment_type,
+                    "residual_severity": sev,
+                    "residual_likelihood": lik,
+                },
+                follow=True,
+            )
+            self.assertContains(response, "Explain this treatment decision")
+        self.assertFalse(Treatment.objects.exists())
+
+    def test_residual_needs_both_values(self):
+        Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=4)
+        response = self.client.post(
+            self.url(self.threat, "treatment"),
+            {
+                "method": self.cia_method.pk,
+                "treatment_type": "mitigate",
+                "residual_severity": "2",
+                "residual_likelihood": "",
+            },
+            follow=True,
+        )
+        self.assertContains(response, "Give both residual severity and likelihood")
+
+    def test_create_link_status_and_unlink_control(self):
+        self.client.post(
+            self.url(self.threat, "controls"), {"name": "Secure boot", "status": "planned"}
+        )
+        control = Control.objects.get(name="Secure boot")
+        self.assertEqual(list(control.threats.all()), [self.threat])
+        self.client.post(
+            self.url(self.threat, f"controls/{control.pk}/status"), {"status": "implemented"}
+        )
+        control.refresh_from_db()
+        self.assertEqual(control.status, "implemented")
+        other = self.make_threat(self.asset, label="Rollback", violates="integrity")
+        self.client.post(self.url(other, "controls"), {"control": control.pk})
+        self.assertEqual(control.threats.count(), 2)
+        self.client.post(self.url(self.threat, f"controls/{control.pk}/unlink"))
+        self.assertEqual(list(control.threats.all()), [other])
+
+    def test_control_of_another_product_cannot_be_linked(self):
+        other = Product.objects.create(product_family=self.family, name="Other", slug="other")
+        foreign = Control.objects.create(product=other, name="Foreign")
+        response = self.client.post(self.url(self.threat, "controls"), {"control": foreign.pk})
+        self.assertEqual(response.status_code, 404)
+
+    def test_viewer_cannot_change_anything(self):
+        viewer = User.objects.create_user(username="vic", password="x")
+        RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
+        self.client.force_login(viewer)
+        self.client.post(
+            self.url(self.threat, "rating"), {"method": self.cia_method.pk, "likelihood": "3"}
+        )
+        self.client.post(self.url(self.threat, "controls"), {"name": "Sneaky"})
+        self.assertFalse(Rating.objects.exists())
+        self.assertFalse(Control.objects.exists())
+        page = self.client.get(self.url(self.threat))
+        self.assertNotContains(page, "Save rating")
+
+    def test_get_is_not_allowed_on_actions(self):
+        response = self.client.get(self.url(self.threat, "rating"))
+        self.assertEqual(response.status_code, 405)
+
+    def test_delete_entry_confirms_then_deletes_and_unlinks(self):
+        Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=3)
+        url = self.url(self.asset, "delete")
+        page = self.client.get(url)
+        self.assertContains(page, "no longer targets an asset")
+        self.assertTrue(RiskEntry.objects.filter(pk=self.asset.pk).exists())
+        response = self.client.post(url)
+        self.assertRedirects(response, f"/risk/configurations/{self.configuration.pk}/")
+        self.assertFalse(RiskEntry.objects.filter(pk=self.asset.pk).exists())
+        self.threat.refresh_from_db()
+        self.assertIsNone(self.threat.asset)
+        self.client.post(self.url(self.threat, "delete"))
+        self.assertFalse(Rating.objects.exists())
+
+    def test_entry_with_deltas_cannot_be_deleted(self):
+        self.make_threat(
+            self.asset,
+            label="Tampering (signed)",
+            violates="integrity",
+            scope_software_release=self.release,
+            base_entry=self.threat,
+            delta_justification="Signed updates",
+        )
+        response = self.client.post(self.url(self.threat, "delete"), follow=True)
+        self.assertContains(response, "delete those first")
+        self.assertTrue(RiskEntry.objects.filter(pk=self.threat.pk).exists())
+
+    def test_viewer_cannot_delete(self):
+        viewer = User.objects.create_user(username="vic", password="x")
+        RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
+        self.client.force_login(viewer)
+        self.client.post(self.url(self.hazard, "delete"))
+        self.assertTrue(RiskEntry.objects.filter(pk=self.hazard.pk).exists())
+
+
+class HazardCauseAuthoringTests(RiskFixture):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        self.hazard = self.make_hazard()
+        self.threat = self.make_threat(self.make_asset(), violates="integrity")
+        self.base = f"/risk/configurations/{self.configuration.pk}/entries/{self.hazard.pk}/"
+
+    def test_add_and_remove_cause(self):
+        self.client.post(
+            f"{self.base}causes/",
+            {"cause_type": "hardware_failure", "description": "Thermal fuse fails closed"},
+        )
+        cause = self.hazard.causes.get()
+        self.assertEqual(cause.description, "Thermal fuse fails closed")
+        self.client.post(f"{self.base}causes/{cause.pk}/delete/")
+        self.assertFalse(self.hazard.causes.exists())
+
+    def test_cyberattack_cause_needs_a_threat_of_the_product(self):
+        response = self.client.post(
+            f"{self.base}causes/", {"cause_type": "cyberattack"}, follow=True
+        )
+        self.assertContains(response, "should link the responsible threat entry")
+        self.client.post(
+            f"{self.base}causes/", {"cause_type": "cyberattack", "threat": self.threat.pk}
+        )
+        self.assertEqual(self.hazard.causes.get().threat, self.threat)
+
+    def test_threat_is_ignored_for_non_cyber_causes(self):
+        self.client.post(
+            f"{self.base}causes/", {"cause_type": "software_fault", "threat": self.threat.pk}
+        )
+        self.assertIsNone(self.hazard.causes.get().threat)
+
+    def test_controls_link_per_cause(self):
+        cause = HazardCause.objects.create(hazard=self.hazard, cause_type="hardware_failure")
+        self.client.post(
+            f"{self.base}controls/",
+            {"cause": cause.pk, "name": "Thermal fuse", "status": "planned"},
+        )
+        control = Control.objects.get(name="Thermal fuse")
+        self.assertEqual(list(control.hazard_causes.all()), [cause])
+        self.assertFalse(control.threats.exists())
+        self.client.post(f"{self.base}controls/{control.pk}/unlink/", {"cause": cause.pk})
+        self.assertFalse(control.hazard_causes.exists())
+
+    def test_cause_of_another_hazard_is_refused(self):
+        other = self.make_hazard(label="Electric shock")
+        foreign = HazardCause.objects.create(hazard=other, cause_type="hardware_failure")
+        response = self.client.post(
+            f"{self.base}controls/", {"cause": foreign.pk, "name": "Sneaky"}, follow=True
+        )
+        self.assertContains(response, "one of a hazard&#x27;s causes")
+        self.assertFalse(Control.objects.exists())
+
+    def test_catalog_hazard_prompts_for_missing_cyberattack_cause(self):
+        catalog_hazard = accept_suggestion(self.product, self.catalog, "overheating_fire")
+        url = f"/risk/configurations/{self.configuration.pk}/entries/{catalog_hazard.pk}/"
+        self.assertContains(self.client.get(url), "The catalog lists a cyberattack")
+        HazardCause.objects.create(
+            hazard=catalog_hazard, cause_type="cyberattack", threat=self.threat
+        )
+        self.assertNotContains(self.client.get(url), "The catalog lists a cyberattack")
+
+
+class SuggestionReviewTests(RiskFixture):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        Answer.objects.create(
+            question_id="has_wireless", value=True, hardware_revision=self.revision
+        )
+        Answer.objects.create(
+            question_id="rated_power_watts", value=100, hardware_revision=self.revision
+        )
+        Answer.objects.create(
+            question_id="has_power_source", value=True, hardware_revision=self.revision
+        )
+        Answer.objects.create(question_id="is_toy_widget", value=False, product=self.product)
+        self.url = f"/risk/configurations/{self.configuration.pk}/suggestions/"
+        self.key = f"{self.catalog.pk}:unauthorized_wireless_access"
+
+    def test_page_lists_pending_and_register_links_to_it(self):
+        response = self.client.get(self.url)
+        self.assertContains(response, "Unauthorised access via wireless interface")
+        self.assertContains(response, "Overheating leading to fire")
+        register = self.client.get(f"/risk/configurations/{self.configuration.pk}/")
+        self.assertContains(register, f'href="{self.url}"')
+
+    def test_accept_threat_with_asset_and_suggested_controls(self):
+        asset = self.make_asset()
+        existing = Control.objects.create(product=self.product, name="Secure boot")
+        self.client.post(
+            f"{self.url}accept/", {"suggestion": self.key, "asset": asset.pk, "add_controls": "1"}
+        )
+        entry = RiskEntry.objects.get(source_catalog_entry_id="unauthorized_wireless_access")
+        self.assertEqual(entry.suggestion_status, SuggestionStatus.ACCEPTED)
+        self.assertEqual(entry.asset, asset)
+        self.assertEqual(entry.created_by, self.editor)
+        self.assertEqual(
+            sorted(entry.controls.values_list("name", flat=True)),
+            ["Authenticate wireless clients", "Secure boot"],
+        )
+        self.assertIn(existing, entry.controls.all())  # reused, not duplicated
+        self.assertEqual(Control.objects.filter(name="Secure boot").count(), 1)
+        pending = self.client.get(self.url).context["pending"]
+        self.assertNotIn(self.key, [s["key"] for s in pending])
+
+    def test_accept_without_controls(self):
+        self.client.post(f"{self.url}accept/", {"suggestion": self.key})
+        entry = RiskEntry.objects.get(source_catalog_entry_id="unauthorized_wireless_access")
+        self.assertFalse(entry.controls.exists())
+
+    def test_dismiss_needs_reason_and_restore_accepts(self):
+        response = self.client.post(
+            f"{self.url}dismiss/", {"suggestion": self.key, "reason": ""}, follow=True
+        )
+        self.assertContains(response, "Give a reason")
+        self.assertFalse(RiskEntry.objects.exists())
+        self.client.post(
+            f"{self.url}dismiss/", {"suggestion": self.key, "reason": "No radio in this variant"}
+        )
+        entry = RiskEntry.objects.get()
+        self.assertEqual(entry.suggestion_status, SuggestionStatus.DISMISSED)
+        page = self.client.get(self.url)
+        self.assertContains(page, "No radio in this variant")
+        self.client.post(f"{self.url}{entry.pk}/restore/")
+        entry.refresh_from_db()
+        self.assertEqual(entry.suggestion_status, SuggestionStatus.ACCEPTED)
+        self.assertEqual(entry.dismissal_reason, "")
+
+    def test_untriggered_or_decided_suggestion_is_refused(self):
+        response = self.client.post(
+            f"{self.url}accept/",
+            {"suggestion": f"{self.catalog.pk}:no_such_entry"},
+            follow=True,
+        )
+        self.assertContains(response, "no longer pending")
+        self.client.post(f"{self.url}accept/", {"suggestion": self.key})
+        response = self.client.post(f"{self.url}accept/", {"suggestion": self.key}, follow=True)
+        self.assertContains(response, "no longer pending")
+        self.assertEqual(RiskEntry.objects.count(), 1)
+
+    def test_viewer_sees_but_cannot_act(self):
+        viewer = User.objects.create_user(username="vic", password="x")
+        RoleAssignment.objects.create(role=Role.VIEWER, user=viewer, product_family=self.family)
+        self.client.force_login(viewer)
+        page = self.client.get(self.url)
+        self.assertContains(page, "Unauthorised access via wireless interface")
+        self.assertNotContains(page, "Dismiss…")
+        self.client.post(f"{self.url}accept/", {"suggestion": self.key})
+        self.assertFalse(RiskEntry.objects.exists())
+
+    def test_readiness_links_to_review(self):
+        response = self.client.get(f"/risk/configurations/{self.configuration.pk}/")
+        self.assertContains(response, "Review suggestions")
+
+    def test_catalog_hazard_lists_suggested_controls_until_linked(self):
+        catalog_hazard = accept_suggestion(self.product, self.catalog, "overheating_fire")
+        url = f"/risk/configurations/{self.configuration.pk}/entries/{catalog_hazard.pk}/"
+        response = self.client.get(url)
+        self.assertEqual(
+            response.context["catalog_controls"], ["Thermal fuse", "Firmware power limiting"]
+        )
+        cause = catalog_hazard.causes.get()  # hardware_failure, created on accept
+        Control.objects.create(product=self.product, name="Thermal fuse").hazard_causes.add(cause)
+        response = self.client.get(url)
+        self.assertEqual(response.context["catalog_controls"], ["Firmware power limiting"])
+
+
+class MitigationPlanTests(RiskFixture):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        self.threat = self.make_threat(self.make_asset(), violates="integrity")
+        Rating.objects.create(entry=self.threat, method=self.cia_method, likelihood=4)
+        self.url = f"/risk/configurations/{self.configuration.pk}/entries/{self.threat.pk}/"
+
+    def _mitigate(self):
+        return self.client.post(
+            f"{self.url}treatment/",
+            {
+                "method": self.cia_method.pk,
+                "treatment_type": "mitigate",
+                "residual_severity": "2",
+                "residual_likelihood": "1",
+            },
+            follow=True,
+        )
+
+    def test_mitigation_needs_a_linked_control(self):
+        response = self._mitigate()
+        self.assertContains(response, "Pick at least one control")
+        self.assertFalse(Treatment.objects.exists())
+
+    def test_planned_then_in_place(self):
+        control = Control.objects.create(product=self.product, name="Signed updates")
+        control.threats.add(self.threat)
+        response = self._mitigate()
+        self.assertContains(response, "mitigation planned")
+        self.assertContains(response, "counts once every control below is implemented")
+        control.status = "implemented"
+        control.save()
+        response = self.client.get(self.url)
+        self.assertContains(response, "controls in place")
+
+    def test_unlinked_controls_are_flagged(self):
+        control = Control.objects.create(product=self.product, name="Signed updates")
+        control.threats.add(self.threat)
+        self._mitigate()
+        control.threats.remove(self.threat)
+        response = self.client.get(self.url)
+        self.assertContains(response, "no controls linked")
+        self.assertContains(response, "rating doesn't count")
+
+    def test_accept_needs_no_control(self):
+        self.client.post(
+            f"{self.url}treatment/",
+            {"method": self.cia_method.pk, "treatment_type": "accept", "justification": "Low"},
+        )
+        self.assertTrue(Treatment.objects.filter(treatment_type="accept").exists())
+
+    def test_hazard_mitigation_needs_control_on_a_cause(self):
+        hazard = self.make_hazard()
+        Rating.objects.create(entry=hazard, method=self.safety_method, severity=4, likelihood=3)
+        url = f"/risk/configurations/{self.configuration.pk}/entries/{hazard.pk}/treatment/"
+        data = {
+            "method": self.safety_method.pk,
+            "treatment_type": "mitigate",
+            "residual_severity": "1",
+            "residual_likelihood": "1",
+        }
+        response = self.client.post(url, data, follow=True)
+        self.assertContains(response, "under the hazard cause it addresses")
+        cause = HazardCause.objects.create(hazard=hazard, cause_type="hardware_failure")
+        Control.objects.create(product=self.product, name="Thermal fuse").hazard_causes.add(cause)
+        self.client.post(url, data)
+        self.assertTrue(Treatment.objects.filter(entry=hazard).exists())
+
+    def _mitigate_with(self, **picks):
+        return self.client.post(
+            f"{self.url}treatment/",
+            {
+                "method": self.cia_method.pk,
+                "treatment_type": "mitigate",
+                "residual_severity": "2",
+                "residual_likelihood": "1",
+                "controls_form": "1",
+                **picks,
+            },
+            follow=True,
+        )
+
+    def test_picking_an_existing_control_saves_the_mitigation(self):
+        control = Control.objects.create(product=self.product, name="Signed updates")
+        response = self._mitigate_with(controls=[str(control.pk)])
+        self.assertContains(response, "Treatment under")
+        self.assertTrue(Treatment.objects.filter(entry=self.threat).exists())
+        self.assertEqual(list(self.threat.controls.all()), [control])
+
+    def test_naming_a_new_control_creates_and_links_it(self):
+        self._mitigate_with(new_control_name="Secure boot", new_control_status="implemented")
+        control = Control.objects.get(name="Secure boot")
+        self.assertEqual(control.status, "implemented")
+        self.assertEqual(list(self.threat.controls.all()), [control])
+        response = self.client.get(self.url)
+        self.assertContains(response, "controls in place")
+        self.assertContains(response, "no evidence yet")
+
+    def test_unticking_replaces_the_threats_links(self):
+        kept = Control.objects.create(product=self.product, name="Signed updates")
+        dropped = Control.objects.create(product=self.product, name="Firewall")
+        self.threat.controls.add(kept, dropped)
+        self._mitigate_with(controls=[str(kept.pk)])
+        self.assertEqual(list(self.threat.controls.all()), [kept])
+
+    def test_failed_save_leaves_no_new_control_or_link(self):
+        existing = Control.objects.create(product=self.product, name="Signed updates")
+        response = self.client.post(
+            f"{self.url}treatment/",
+            {
+                "method": self.cia_method.pk,
+                "treatment_type": "mitigate",
+                "residual_severity": "2",
+                "residual_likelihood": "",
+                "controls_form": "1",
+                "controls": [str(existing.pk)],
+                "new_control_name": "Secure boot",
+            },
+            follow=True,
+        )
+        self.assertContains(response, "Give both residual severity and likelihood")
+        self.assertFalse(Control.objects.filter(name="Secure boot").exists())
+        self.assertFalse(self.threat.controls.exists())
+        self.assertFalse(Treatment.objects.exists())
+
+    def test_hazard_picks_controls_per_cause(self):
+        hazard = self.make_hazard()
+        Rating.objects.create(entry=hazard, method=self.safety_method, severity=4, likelihood=3)
+        cause = HazardCause.objects.create(hazard=hazard, cause_type="hardware_failure")
+        url = f"/risk/configurations/{self.configuration.pk}/entries/{hazard.pk}/treatment/"
+        self.client.post(
+            url,
+            {
+                "method": self.safety_method.pk,
+                "treatment_type": "mitigate",
+                "residual_severity": "1",
+                "residual_likelihood": "1",
+                "controls_form": "1",
+                "new_control_name": "Thermal fuse",
+                "new_control_cause": str(cause.pk),
+            },
+        )
+        self.assertTrue(Treatment.objects.filter(entry=hazard).exists())
+        self.assertEqual([c.name for c in cause.controls.all()], ["Thermal fuse"])
+
+    def test_form_offers_the_picker(self):
+        Control.objects.create(product=self.product, name="Signed updates")
+        response = self.client.get(self.url)
+        self.assertContains(response, "How is it mitigated?")
+        self.assertContains(response, 'name="controls"')
+        self.assertContains(response, 'name="new_control_name"')
+
+    def test_relinking_control_makes_approved_snapshot_stale(self):
+        control = Control.objects.create(product=self.product, name="Signed updates")
+        snapshot = build_snapshot(self.configuration)
+        control.threats.add(self.threat)
+        self.assertNotEqual(build_snapshot(self.configuration), snapshot)
+
+
+class ImpactCategoryTests(RiskFixture):
+    """Impact categories come from the rating methods (ADR 0034)."""
+
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.editor)
+        self.threat = self.make_threat(self.make_asset(), violates="integrity")
+        self.url = f"/risk/configurations/{self.configuration.pk}/entries/{self.threat.pk}/"
+
+    def _upgrade_cia_method(self):
+        method = import_package(
+            load_package("default-cia-5x5", "1.1.0"), kind=PackageKind.METHOD, is_official=True
+        )
+        self.assertEqual(method.status, PackageStatus.FIXTURES_PASSED, method.lint_report)
+        approve_package(method)
+        return method
+
+    def _add(self, category, **extra):
+        return self.client.post(
+            f"{self.url}consequences/",
+            {"impact_category": category, "severity": "3", **extra},
+            follow=True,
+        )
+
+    def test_method_without_categories_offers_the_defaults(self):
+        from .impact import DEFAULT_CATEGORIES
+
+        response = self.client.get(self.url)
+        self.assertEqual(
+            [c["id"] for c in response.context["impact_categories"]],
+            [c["id"] for c in DEFAULT_CATEGORIES],
+        )
+
+    def test_declared_category_is_offered_and_labelled(self):
+        self._upgrade_cia_method()
+        response = self.client.get(self.url)
+        self.assertIn(
+            "legal_contractual", [c["id"] for c in response.context["impact_categories"]]
+        )
+        self._add("legal_contractual", override_justification="Contract penalty")
+        consequence = self.threat.consequences.get()
+        self.assertEqual(consequence.impact_category_label, "Legal and contractual")
+
+    def test_category_outside_the_methods_is_rejected(self):
+        response = self._add("legal_contractual")
+        self.assertContains(response, "Choose an impact category")
+        self.assertFalse(self.threat.consequences.exists())
+
+    def test_only_hazard_linkable_categories_link_a_hazard(self):
+        self._upgrade_cia_method()
+        hazard = self.make_hazard()
+        response = self._add("legal_contractual", hazard=str(hazard.pk))
+        self.assertContains(response, "Only harm to people or property")
+        self._add("safety", hazard=str(hazard.pk), override_justification="x")
+        self.assertEqual(self.threat.consequences.get().hazard, hazard)
+
+    def test_linter_rejects_duplicate_category_ids(self):
+        from apps.packages.linting import lint_method
+
+        content = load_package("default-cia-5x5", "1.1.0")
+        content["impact_categories"].append({"id": "privacy", "label": "Again"})
+        issues = lint_method(
+            content, is_official=False, existing_packages=RequirementPackage.objects.none()
+        )
+        self.assertIn("duplicate_impact_category", [i["code"] for i in issues])

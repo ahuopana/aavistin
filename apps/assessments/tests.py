@@ -11,19 +11,22 @@ from apps.accounts.models import User
 from apps.evidence.models import Evidence, EvidenceKind
 from apps.evidence.services import link_evidence
 from apps.orgs.models import Organisation, ProductFamily, Role, RoleAssignment, SoDPolicy
-from apps.packages.importer import approve_package, import_package
+from apps.packages.importer import approve_package, import_package, validate_schema
 from apps.products.models import (
     Configuration,
     HardwareRevision,
     HardwareVariant,
     Product,
+    SoftwareOption,
     SoftwareRelease,
     TargetMarket,
 )
 
 from .carryforward import confirm_answers, copy_answers_forward
 from .evaluation import evaluate_configuration
+from .findings import finding_details
 from .models import Answer, Assessment, AssessmentStatus
+from .progress import questionnaire_progress
 from .resolution import resolve_answer, resolve_answers
 from .services import (
     AssessmentError,
@@ -33,6 +36,7 @@ from .services import (
     recompute_staleness,
 )
 from .tasks import refresh_staleness_task
+from .templatetags.assessment_tags import choice_label
 from .views import _coerce_value
 
 DEMO_DIR = Path(settings.BASE_DIR) / "packages" / "demo-widget-safety"
@@ -374,11 +378,15 @@ class EuCraResultsPageTests(EuCraConfigurationFixture):
             response = self.client.get(
                 reverse("assessments:assessment_detail", args=[assessment.pk])
             )
-        self.assertContains(response, "Economic operator role: manufacturer")
-        self.assertContains(response, "art_14_report_exploited_vulnerabilities")
-        self.assertContains(response, "Not in force yet:")
+        # Results show the package's labels, not requirement ids.
+        self.assertContains(response, "Economic operator role: Manufacturer")
+        self.assertContains(response, "Notify actively exploited vulnerabilities")
+        self.assertNotContains(response, "art_14_report_exploited_vulnerabilities")
+        self.assertContains(response, "Not in force yet (")
         self.assertContains(
-            response, "annex_i_2a_no_known_exploitable_vulnerabilities (from 2027-12-11)"
+            response,
+            "Place the product on the market without known exploitable vulnerabilities "
+            '<span class="field-hint">from 2027-12-11',
         )
 
 
@@ -647,6 +655,107 @@ class BackgroundTaskTests(ConfigurationFixture):
         self.assertTrue(assessment.stale)
 
 
+class QuestionnaireProgressTests(ConfigurationFixture):
+    def test_nothing_answered(self):
+        progress = questionnaire_progress(self.configuration)
+        self.assertEqual(progress["total"], 3)
+        self.assertEqual(progress["done"], 0)
+        self.assertEqual(progress["unanswered"], 3)
+        self.assertEqual(progress["open"], 3)
+
+    def test_answered_and_needs_confirmation_counted_separately(self):
+        Answer.objects.create(
+            question_id="has_power_source", value=True, hardware_revision=self.revision
+        )
+        Answer.objects.create(
+            question_id="is_toy_widget",
+            value=False,
+            product=self.product,
+            needs_confirmation=True,
+        )
+        progress = questionnaire_progress(self.configuration)
+        self.assertEqual(
+            progress,
+            {
+                "total": 3,
+                "done": 1,
+                "unanswered": 1,
+                "needs_confirmation": 1,
+                "derived": 0,
+                "open": 2,
+            },
+        )
+
+    def test_cleared_answer_counts_as_unanswered(self):
+        Answer.objects.create(question_id="is_toy_widget", value="", product=self.product)
+        self.assertEqual(questionnaire_progress(self.configuration)["unanswered"], 3)
+
+    def test_no_active_packages(self):
+        self.package.__class__.objects.update(status="superseded")
+        progress = questionnaire_progress(self.configuration)
+        self.assertEqual(progress["total"], 0)
+        self.assertEqual(progress["open"], 0)
+
+
+class FindingGuidanceTests(ConfigurationFixture):
+    def setUp(self):
+        super().setUp()
+        Answer.objects.create(
+            question_id="rated_power_watts", value=150, hardware_revision=self.revision
+        )
+        self.assessment = Assessment.objects.create(configuration=self.configuration)
+        self.client.force_login(self.editor)
+
+    def _get(self):
+        return self.client.get(reverse("assessments:assessment_detail", args=[self.assessment.pk]))
+
+    def test_finding_shows_level_help_and_the_answers_it_is_based_on(self):
+        response = self._get()
+        self.assertContains(response, "What to do with findings")
+        self.assertContains(response, 'id="finding-demo-widget-safety-high_power_caution"')
+        self.assertContains(response, "Based on 1 answer")
+        config_url = reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        self.assertContains(response, f'href="{config_url}#q-rated_power_watts"')
+        self.assertNotContains(response, "What to do:</strong>")
+
+    def test_rule_guidance_is_shown(self):
+        content = self.package.content
+        content["finding_rules"][0]["guidance"] = "Apply the high-power safety requirements."
+        self.package.content = content
+        self.package.save()
+        response = self._get()
+        self.assertContains(response, "Apply the high-power safety requirements.")
+
+    def test_guidance_validates_against_the_package_schema(self):
+        content = load_demo("1.0.0")
+        content["finding_rules"][0]["guidance"] = "Do this."
+        validate_schema(content)  # raises on an unknown property
+
+    def test_findings_are_listed_most_severe_first(self):
+        details = finding_details(
+            [
+                {"id": "a", "level": "info", "message": "", "source": "x", "version": "1"},
+                {
+                    "id": "b",
+                    "level": "action_required",
+                    "message": "",
+                    "source": "x",
+                    "version": "1",
+                },
+                {"id": "c", "level": "caution", "message": "", "source": "x", "version": "1"},
+            ]
+        )
+        self.assertEqual([d["id"] for d in details], ["b", "c", "a"])
+
+    def test_finding_of_an_out_of_scope_package_is_marked(self):
+        finding = {"id": "a", "level": "action_required", "message": "", "source": "x"}
+        details = finding_details(
+            [{**finding, "version": "1"}],
+            results=[{"source": "x", "version": "1", "in_scope": False}],
+        )
+        self.assertTrue(details[0]["out_of_scope"])
+
+
 class ViewTests(ConfigurationFixture):
     def _answer_payload(self, **overrides):
         payload = {
@@ -667,9 +776,38 @@ class ViewTests(ConfigurationFixture):
         self.client.force_login(self.editor)
         response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
         config_url = reverse("assessments:configuration_detail", args=[self.configuration.pk])
-        self.assertContains(response, f'href="{config_url}#questions"')
+        # The workflow bar's Questions step links to the open questions.
+        self.assertContains(response, f'href="{config_url}?show=open#questions"')
         self.assertContains(response, f'href="{config_url}#q-has_power_source"')
         self.assertContains(response, "Does the widget have a power source?")
+
+    def test_configuration_detail_shows_questionnaire_progress(self):
+        Answer.objects.create(
+            question_id="has_power_source", value=True, hardware_revision=self.revision
+        )
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, "Questionnaire progress")
+        self.assertContains(response, "1/3")
+        self.assertEqual(response.context["progress"]["open"], 2)
+        # Answered rows hide under the "only open" filter; open rows never do.
+        # Both also follow the level filter.
+        self.assertContains(
+            response,
+            'id="q-has_power_source" x-show="(!openOnly || false) && '
+            "(level === '' || level === 'hardware')",
+        )
+        self.assertContains(response, 'id="q-is_toy_widget" x-show="(!openOnly || true)')
+
+    def test_draft_assessment_links_to_open_questions(self):
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
+        config_url = reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        self.assertContains(response, "3 of 3 questions still to answer")
+        self.assertContains(response, f'href="{config_url}?show=open#questions"')
 
     def test_assessment_without_active_packages_explains_why(self):
         assessment = Assessment.objects.create(configuration=self.configuration)
@@ -1050,3 +1188,186 @@ class DateAnswerViewTests(ConfigurationFixture):
     def test_invalid_date_is_rejected(self):
         self.post("15.1.2028")
         self.assertFalse(Answer.objects.filter(question_id="first_shipped").exists())
+
+
+class EuRedEvaluationTests(TestCase):
+    """The real eu-red package end to end: radio enablement per option,
+    Delegated Regulation 2022/30 dates, and roles."""
+
+    def setUp(self):
+        org = Organisation.objects.create(name="Acme", slug="acme")
+        family = ProductFamily.objects.create(organisation=org, name="Cameras", slug="cameras")
+        product = Product.objects.create(product_family=family, name="CamOne", slug="camone")
+        variant = HardwareVariant.objects.create(product=product, name="EU", slug="eu")
+        variant.target_markets.add(TargetMarket.objects.get(code="EU"))
+        self.revision = HardwareRevision.objects.create(hardware_variant=variant, label="A")
+        self.release = SoftwareRelease.objects.create(product=product, version="1.0")
+        self.configuration = Configuration.objects.create(
+            name="CamOne EU 1.0", hardware_revision=self.revision, software_release=self.release
+        )
+        approve_package(
+            import_package(load_package("common", "1.2.0"), kind="question_set", is_official=True)
+        )
+        approve_package(import_package(load_package("eu-red", "1.0.0"), is_official=True))
+        self._answer(
+            self.revision,
+            product_form="hardware_with_software",
+            wireless_interface_capability="present",
+            is_commercial_activity=True,
+            economic_operator_role="manufacturer",
+            communicates_over_internet=True,
+            processes_personal_data=True,
+            transfers_money_or_value=False,
+            common_charger_category="None of these",
+            hardware_first_placed_on_market="2024-03-01",
+            hardware_still_placed_on_market=True,
+        )
+
+    def _answer(self, owner, **values):
+        field = {
+            HardwareRevision: "hardware_revision",
+            SoftwareRelease: "software_release",
+            SoftwareOption: "software_option",
+        }[type(owner)]
+        for question_id, value in values.items():
+            Answer.objects.create(question_id=question_id, value=value, **{field: owner})
+
+    def _result(self, **kwargs):
+        evaluation = evaluate_configuration(self.configuration, **kwargs)
+        return evaluation, next(r for r in evaluation["results"] if r["source"] == "eu-red")
+
+    def test_cyber_requirements_in_force_for_units_still_placed(self):
+        from datetime import date
+
+        _, result = self._result(as_of=date(2026, 10, 1))
+        self.assertTrue(result["in_scope"])
+        self.assertEqual(
+            sorted(result["classifications"]),
+            ["art_3_3_d_network_protection", "art_3_3_e_privacy"],
+        )
+        self.assertIn("art_3_3_d_no_harm_to_network", result["requirements"])
+        self.assertIn("art_3_3_e_protect_personal_data", result["requirements"])
+
+    def test_cyber_requirements_upcoming_before_august_2025(self):
+        from datetime import date
+
+        _, result = self._result(as_of=date(2025, 3, 1))
+        upcoming = {r["id"]: r["applies_from"] for r in result["upcoming_requirements"]}
+        self.assertEqual(upcoming["art_3_3_d_no_harm_to_network"], "2025-08-01")
+        self.assertIn("art_3_1_a_health_and_safety", result["requirements"])
+
+    def test_option_that_disables_radio_takes_release_out_of_scope(self):
+        self._answer(self.release, wireless_enablement="enabled")
+        option = SoftwareOption.objects.create(
+            software_release=self.release, name="Radio off", slug="radio-off"
+        )
+        self._answer(option, wireless_enablement="disabled_manufacturer_update_only")
+        _, result = self._result()
+        self.assertTrue(result["in_scope"])
+
+        self.configuration.software_options.add(option)
+        evaluation, result = self._result()
+        self.assertFalse(result["in_scope"])
+        self.assertIn("dormant_radio", [f["id"] for f in evaluation["findings"]])
+
+    def test_distributor_gets_only_distributor_obligations(self):
+        from datetime import date
+
+        Answer.objects.filter(question_id="economic_operator_role").update(value="distributor")
+        _, result = self._result(as_of=date(2026, 10, 1))
+        self.assertEqual(result["role"], "distributor")
+        self.assertEqual(
+            sorted(result["requirements"]),
+            ["art_13_distributor_checks", "art_13_distributor_cooperation"],
+        )
+
+
+class ChoiceLabelTests(TestCase):
+    def test_choice_id_becomes_sentence_case_label(self):
+        self.assertEqual(choice_label("hardware_with_software"), "Hardware with software")
+
+    def test_non_strings_and_empty_pass_through(self):
+        self.assertEqual(choice_label(""), "")
+        self.assertIsNone(choice_label(None))
+        self.assertIs(choice_label(True), True)
+
+
+class ChoiceLabelRenderingTests(EuCraConfigurationFixture):
+    def setUp(self):
+        super().setUp()
+        self.editor = User.objects.create_user(username="edna", password="x")
+        RoleAssignment.objects.create(
+            role=Role.EDITOR, user=self.editor, product_family=self.family
+        )
+        RoleAssignment.objects.create(
+            role=Role.VIEWER, user=self.editor, product_family=self.family
+        )
+        Answer.objects.create(
+            question_id="product_form", value="hardware_with_software", product=self.product
+        )
+
+    def test_questionnaire_shows_labels_but_posts_ids(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(
+            reverse("assessments:configuration_detail", args=[self.configuration.pk])
+        )
+        self.assertContains(response, "<td>Hardware with software", html=False)
+        self.assertContains(
+            response,
+            '<option value="hardware_with_software" selected>Hardware with software</option>',
+            html=True,
+        )
+
+    def test_assessment_answers_show_labels(self):
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("assessments:assessment_detail", args=[assessment.pk]))
+        self.assertContains(response, "Hardware with software")
+        self.assertNotContains(response, ">hardware_with_software<")
+
+
+class StalenessReportTests(EuCraConfigurationFixture):
+    """What changed since an approved assessment, itemised (ADR 0032)."""
+
+    def setUp(self):
+        super().setUp()
+        from apps.assessments.services import approve_assessment
+
+        self.approver = User.objects.create_user(username="ana", password="x")
+        RoleAssignment.objects.create(
+            role=Role.APPROVER, user=self.approver, product_family=self.family
+        )
+        RoleAssignment.objects.create(
+            role=Role.VIEWER, user=self.approver, product_family=self.family
+        )
+        self._manufacturer()
+        self.assessment = Assessment.objects.create(configuration=self.configuration)
+        approve_assessment(self.assessment, actor=self.approver)
+
+    def test_report_lists_changed_answers_and_matches_staleness(self):
+        from .services import recompute_staleness, staleness_report, staleness_summary
+
+        self.assertFalse(staleness_report(self.assessment)["any"])
+        Answer.objects.filter(question_id="is_commercial_activity").update(value=False)
+        report = staleness_report(self.assessment)
+        self.assertEqual(
+            [(a["id"], a["before"], a["after"]) for a in report["answers"]],
+            [("is_commercial_activity", True, False)],
+        )
+        self.assertEqual(staleness_summary(report), "1 answer")
+        self.assertTrue(recompute_staleness(self.assessment))
+
+    def test_stale_page_summarises_and_marks_changed_answers(self):
+        from .services import recompute_staleness
+
+        Answer.objects.filter(question_id="is_commercial_activity").update(value=False)
+        recompute_staleness(self.assessment)
+        self.client.force_login(self.approver)
+        response = self.client.get(
+            reverse("assessments:assessment_detail", args=[self.assessment.pk])
+        )
+        self.assertContains(response, "Changed since approval")
+        self.assertContains(response, "1 answer.")
+        self.assertContains(response, 'href="?changed=1#answers"')
+        self.assertContains(response, 'class="row-changed"')
+        self.assertContains(response, "Stale: 1 answer changed")

@@ -69,7 +69,9 @@ def register_readiness(configuration, *, pending_suggestions: int) -> list[dict]
             _check(
                 f"{pending_suggestions} suggested entries are waiting for review",
                 True,
-                "Reviewing suggestions in the app is not available yet.",
+                "Accept them into the register or dismiss them with a reason.",
+                reverse("risk:suggestions", args=[configuration.pk]),
+                "Review suggestions",
                 keep_detail=True,
             )
         )

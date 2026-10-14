@@ -7,6 +7,7 @@ app_name = "products"
 urlpatterns = [
     path("families/<int:family_id>/products/new/", views.product_create, name="product_create"),
     path("<int:pk>/", views.product_detail, name="product_detail"),
+    path("<int:pk>/compliance/", views.product_compliance, name="product_compliance"),
     path("<int:pk>/edit/", views.product_edit, name="product_edit"),
     path("<int:pk>/close/", views.product_close, name="product_close"),
     path("<int:pk>/archive/", views.product_archive, name="product_archive"),

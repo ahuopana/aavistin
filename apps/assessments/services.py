@@ -43,6 +43,19 @@ def _editors_of(resolved) -> set[int]:
     return editor_ids
 
 
+def sod_preview(assessment: Assessment, user, resolved=None) -> str | None:
+    """What separation of duties would say if ``user`` approved now:
+    ``None`` (no conflict or policy off), ``"warn"`` or ``"enforce"``."""
+    if resolved is None:
+        resolved, _packages = resolve_answers(assessment.configuration)
+    if user.id not in _editors_of(resolved):
+        return None
+    policy = effective_sod_policy(product_family=_product_family(assessment.configuration))
+    if policy in (SoDPolicy.WARN, SoDPolicy.ENFORCE):
+        return policy
+    return None
+
+
 def approve_assessment(assessment: Assessment, *, actor) -> Assessment:
     if assessment.status == AssessmentStatus.APPROVED:
         raise AssessmentError("assessment is already approved")
@@ -97,6 +110,112 @@ def _in_force_requirements(results) -> dict:
     return {(r["source"], r["version"]): sorted(r.get("requirements", [])) for r in results}
 
 
+def staleness_report(assessment: Assessment, current=None) -> dict:
+    """What differs between an approved assessment's snapshot and the
+    current evaluation: the same four checks that make it stale, itemised
+    so the assessment page can say why.
+
+    ``{"answers": [{"id", "before", "after"}], "packages": [{"source",
+    "before", "after"}], "evidence": [{"source", "version",
+    "requirement_id"}], "requirements": [{"source", "version", "entered",
+    "left"}], "any": bool}``. ``before``/``after`` are None for an answer or
+    package that is new or gone.
+    """
+    snapshot = assessment.snapshot or {}
+    if current is None:
+        current = evaluate_configuration(assessment.configuration)
+
+    then_answers = snapshot.get("resolved_answers", {})
+    now_answers = current["resolved_answers"]
+    answers = [
+        {
+            "id": qid,
+            "before": (then_answers.get(qid) or {}).get("value"),
+            "after": (now_answers.get(qid) or {}).get("value"),
+        }
+        for qid in sorted(set(then_answers) | set(now_answers))
+        if then_answers.get(qid) != now_answers.get(qid)
+    ]
+
+    then_packages = {(p["source"], p["version"]) for p in snapshot.get("packages", [])}
+    now_packages = {(r["source"], r["version"]) for r in current["results"]}
+    sources = sorted({s for s, _ in then_packages ^ now_packages})
+    packages = [
+        {
+            "source": source,
+            "before": next(
+                (v for s, v in sorted(then_packages - now_packages) if s == source), None
+            ),
+            "after": next(
+                (v for s, v in sorted(now_packages - then_packages) if s == source), None
+            ),
+        }
+        for source in sources
+    ]
+
+    then_evidence = _requirement_evidence_snapshot(snapshot.get("results", []))
+    now_evidence = _requirement_evidence_snapshot(current["results"])
+    evidence = [
+        {"source": key[0], "version": key[1], "requirement_id": requirement_id}
+        for key in sorted(set(then_evidence) | set(now_evidence))
+        for requirement_id in sorted(
+            set(then_evidence.get(key, {})) | set(now_evidence.get(key, {}))
+        )
+        if then_evidence.get(key, {}).get(requirement_id)
+        != now_evidence.get(key, {}).get(requirement_id)
+    ]
+
+    then_in_force = _in_force_requirements(snapshot.get("results", []))
+    now_in_force = _in_force_requirements(current["results"])
+    requirements = []
+    # Requirements also move with answers and packages; listed on their own
+    # only when neither changed, i.e. a date brought them into or out of force.
+    for key in sorted(set(then_in_force) & set(now_in_force)) if not (answers or packages) else []:
+        before, after = set(then_in_force[key]), set(now_in_force[key])
+        if before != after:
+            requirements.append(
+                {
+                    "source": key[0],
+                    "version": key[1],
+                    "entered": sorted(after - before),
+                    "left": sorted(before - after),
+                }
+            )
+    # A package whose version changed is reported under packages; its
+    # requirements and evidence differ by definition.
+    changed = {(p["source"]) for p in packages}
+    evidence = [e for e in evidence if e["source"] not in changed]
+    any_change = bool(answers or packages or evidence or requirements) or (
+        then_in_force != now_in_force
+    )
+    return {
+        "answers": answers,
+        "packages": packages,
+        "evidence": evidence,
+        "requirements": requirements,
+        "any": any_change,
+    }
+
+
+def staleness_summary(report: dict) -> str:
+    """One line for the stale warning and the workflow chip, e.g.
+    "3 answers, 1 package version, evidence for 1 requirement"."""
+    parts = []
+    if report["answers"]:
+        n = len(report["answers"])
+        parts.append(f"{n} answer{'s' if n != 1 else ''}")
+    if report["packages"]:
+        n = len(report["packages"])
+        parts.append(f"{n} package version{'s' if n != 1 else ''}")
+    if report["evidence"]:
+        n = len(report["evidence"])
+        parts.append(f"evidence for {n} requirement{'s' if n != 1 else ''}")
+    if report["requirements"]:
+        n = sum(len(r["entered"]) + len(r["left"]) for r in report["requirements"])
+        parts.append(f"{n} requirement{'s' if n != 1 else ''} in or out of force by date")
+    return ", ".join(parts)
+
+
 def recompute_staleness(assessment: Assessment) -> bool:
     """Recomputes and persists Assessment.stale; returns the new value.
 
@@ -110,20 +229,7 @@ def recompute_staleness(assessment: Assessment) -> bool:
     if assessment.status != AssessmentStatus.APPROVED or assessment.snapshot is None:
         return False
 
-    current = evaluate_configuration(assessment.configuration)
-    current_packages = {(r["source"], r["version"]) for r in current["results"]}
-    snapshot_packages = {
-        (p["source"], p["version"]) for p in assessment.snapshot.get("packages", [])
-    }
-
-    is_stale = (
-        current["resolved_answers"] != assessment.snapshot.get("resolved_answers", {})
-        or current_packages != snapshot_packages
-        or _requirement_evidence_snapshot(current["results"])
-        != _requirement_evidence_snapshot(assessment.snapshot.get("results", []))
-        or _in_force_requirements(current["results"])
-        != _in_force_requirements(assessment.snapshot.get("results", []))
-    )
+    is_stale = staleness_report(assessment)["any"]
     if is_stale != assessment.stale:
         assessment.stale = is_stale
         assessment.save(update_fields=["stale"])

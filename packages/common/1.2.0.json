@@ -11,11 +11,10 @@
       "choices": [
         "standalone_software",
         "hardware_with_software",
-        "hardware_without_software",
         "hardware_component",
         "software_component"
       ],
-      "guidance": "Software that is needed to operate the hardware (apps, drivers) is part of the product even when delivered separately. Hardware without software has no programmable parts (firmware counts as software), e.g. a kettle or a plain extension lead. A component is placed on the market on its own for others to integrate."
+      "guidance": "Software that is needed to operate the hardware (apps, drivers) is part of the product even when delivered separately. A component is placed on the market on its own for others to integrate."
     },
     {
       "id": "has_data_connection",
@@ -53,11 +52,33 @@
                   "any_network"
                 ]
               ]
+            },
+            {
+              "==": [
+                {
+                  "var": "communicates_over_internet"
+                },
+                true
+              ]
             }
           ]
         },
         "value": true
       }
+    },
+    {
+      "id": "communicates_over_internet",
+      "type": "boolean",
+      "level": "software",
+      "label": "Can the product communicate over the internet itself, directly or through other equipment?",
+      "guidance": "Through other equipment includes a phone app, a home router or a gateway that relays the product's own traffic to the internet. A product that only talks to a local device which never forwards its data is not internet-connected."
+    },
+    {
+      "id": "transfers_money_or_value",
+      "type": "boolean",
+      "level": "software",
+      "label": "Does the product let its user transfer money, monetary value or virtual currency?",
+      "guidance": "For example payment terminals, wallets, or devices that make purchases. Showing a price or a balance without moving value does not count."
     },
     {
       "id": "processes_personal_data",
@@ -77,7 +98,8 @@
         "authorised_representative",
         "steward"
       ],
-      "guidance": "Manufacturer: develops or has it developed and markets it under its own name. Importer: places a product from outside the EU on the EU market. Distributor: makes it available further down the supply chain. Authorised representative: acts for a manufacturer under a written mandate. Steward: a legal person that systematically supports free and open-source software it does not itself place on the market."
+      "guidance": "Manufacturer: develops or has it developed and markets it under its own name. Importer: places a product from outside the EU on the EU market. Distributor: makes it available further down the supply chain. Authorised representative: acts for a manufacturer under a written mandate. Steward: a legal person that systematically supports free and open-source software it does not itself place on the market. See the Blue Guide, section 3.1-3.4.",
+      "guidance_url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=oj%3AJOC_2022_247_R_0001"
     },
     {
       "id": "places_under_own_name_or_modifies",
@@ -95,7 +117,8 @@
           ]
         ]
       },
-      "guidance": "An importer or distributor that does either takes on the manufacturer's obligations."
+      "guidance": "An importer or distributor that does either takes on the manufacturer's obligations. See the Blue Guide, section 3.1.",
+      "guidance_url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=oj%3AJOC_2022_247_R_0001"
     },
     {
       "id": "is_free_and_open_source",
@@ -110,7 +133,7 @@
       "type": "boolean",
       "level": "product",
       "label": "Is the product supplied in the course of a commercial activity?",
-      "guidance": "Ask whether access to the software itself (not just optional paid support around it) is conditioned on payment, used to monetise other products or services, requires personal-data processing unrelated to security or compatibility, or makes donations a de facto condition of access. Plain donations, sponsored development and not-for-profit entities reinvesting earnings generally do not count on their own.",
+      "guidance": "Ask whether access to the software itself (not just optional paid support around it) is conditioned on payment, used to monetise other products or services, requires personal-data processing unrelated to security or compatibility, or makes donations a de facto condition of access. Plain donations, sponsored development and not-for-profit entities reinvesting earnings generally do not count on their own. For hardware and product law in general: supplying in a business context, paid or free, is commercial; occasional sales by private persons are not (Blue Guide, section 2.2).",
       "guidance_url": "https://ec.europa.eu/newsroom/dae/redirection/document/131456"
     },
     {
@@ -165,11 +188,31 @@
       "guidance": "Such products may fall outside product legislation, but national rules on classified information (for example security accreditation by the national security authority) then apply instead."
     },
     {
+      "id": "is_toy",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product a toy under Directive 2009/48/EC (designed or intended for play by children under 14)?"
+    },
+    {
+      "id": "is_childcare_product",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product designed or intended exclusively for childcare (e.g. a baby monitor)?"
+    },
+    {
+      "id": "is_wearable",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product designed or intended to be worn on, strapped to or hung from the body or clothing?",
+      "guidance": "Including the head, neck, trunk, arms, hands, legs and feet. It counts even if wearing it is only one of its uses (e.g. a smartwatch, fitness tracker, headphones)."
+    },
+    {
       "id": "hardware_first_placed_on_market",
       "type": "date",
       "level": "hardware",
       "label": "When were the first units of this hardware revision placed on the market?",
-      "guidance": "Placing on the market is the first time a unit is made available for distribution or use in the market. Hardware units count one by one."
+      "guidance": "Placing on the market is the first time a unit is made available for distribution or use in the market. Hardware units count one by one. See the Blue Guide, section 2.3.",
+      "guidance_url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=oj%3AJOC_2022_247_R_0001"
     },
     {
       "id": "hardware_still_placed_on_market",
@@ -220,6 +263,26 @@
         "present",
         "present_physically_disabled"
       ]
+    },
+    {
+      "id": "wireless_enablement",
+      "type": "choice",
+      "level": "software",
+      "label": "Is the radio enabled in this release or option?",
+      "choices": [
+        "enabled",
+        "disabled_user_enableable",
+        "disabled_manufacturer_update_only"
+      ],
+      "condition": {
+        "==": [
+          {
+            "var": "wireless_interface_capability"
+          },
+          "present"
+        ]
+      },
+      "guidance": "Answer per software release, and per option where an option changes it. 'User-enableable' means the user can switch the radio on without a new release from you (a setting, an app, a paid unlock)."
     },
     {
       "id": "physical_debug_interface",
@@ -702,6 +765,15 @@
       },
       "expected": {
         "security_testing_before_release": true
+      }
+    },
+    {
+      "id": "internet-connection-implies-data-connection",
+      "answers": {
+        "communicates_over_internet": true
+      },
+      "expected": {
+        "has_data_connection": true
       }
     }
   ]

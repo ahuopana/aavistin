@@ -7,19 +7,22 @@
 
   {% if families %}
     {% for family in families %}
-      <section class="portfolio-family">
-        <p class="tree-sublabel">{{ family.organisation.name }}</p>
+      <section class="portfolio-family" id="family-{{ family.pk }}">
+        <p class="tree-sublabel"><a href="{% url 'orgs:detail' family.organisation.slug %}">{{ family.organisation.name }}</a></p>
         <h2>{{ family.name }}</h2>
         {% if family.visible_products %}
           <table>
             <thead>
-              <tr><th>Product</th><th>Status</th><th>Description</th></tr>
+              <tr><th>Product</th><th>Status</th><th>Questions answered</th><th>Compliance</th><th>Risk</th><th>Description</th></tr>
             </thead>
             <tbody>
               {% for product in family.visible_products %}
                 <tr>
                   <td><a href="{% url 'products:product_detail' product.pk %}">{{ product.name }}</a></td>
                   <td><span class="badge badge-{{ product.status }}">{{ product.get_status_display }}</span></td>
+                  <td>{% include "core/_stat_bar.html" with label="" ok=product.questions.0 total=product.questions.1 fill="questions" %}</td>
+                  <td>{% url 'products:product_compliance' product.pk as compliance_url %}{% include "core/_stat_bar.html" with label="" ok=product.compliance.0 total=product.compliance.1 fill="compliance" href=compliance_url hint=compliance_hint %}</td>
+                  <td>{% include "core/_stat_bar.html" with label="" ok=product.risk.0 total=product.risk.1 fill="risk" %}</td>
                   <td>{{ product.description|default:"—"|truncatechars:100 }}</td>
                 </tr>
               {% endfor %}
@@ -31,8 +34,7 @@
         {% if family.id in editable_family_ids %}
           <form method="post" action="{% url 'products:product_create' family.id %}" class="inline-form">
             {% csrf_token %}
-            <input type="text" name="name" placeholder="Product name" required>
-            <input type="text" name="slug" placeholder="slug" required>
+            <input type="text" name="name" placeholder="Product name" aria-label="New product name" required>
             <button type="submit">+ Add product</button>
           </form>
         {% endif %}

@@ -15,33 +15,9 @@
               <a href="{% url 'products:product_detail' row.product.pk %}">{{ row.product.name }}</a>
               <span class="dashboard-product-family">{{ row.product.product_family }}</span>
 
-              <div class="stat-bar-row">
-                <span class="stat-bar-label">Compliance</span>
-                {% with ok=row.compliance.0 total=row.compliance.1 %}
-                  {% if total %}
-                    <div class="stat-bar" role="img" aria-label="Compliance {{ ok }} of {{ total }}">
-                      <div class="stat-bar-fill stat-bar-fill-compliance" style="width: {% widthratio ok total 100 %}%"></div>
-                    </div>
-                    <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
-                  {% else %}
-                    <span class="stat-bar-value">no data yet</span>
-                  {% endif %}
-                {% endwith %}
-              </div>
+              {% url 'products:product_compliance' row.product.pk as compliance_url %}{% include "core/_stat_bar.html" with label="Compliance" ok=row.compliance.0 total=row.compliance.1 fill="compliance" href=compliance_url hint=compliance_hint %}
 
-              <div class="stat-bar-row">
-                <span class="stat-bar-label">Risk</span>
-                {% with ok=row.risk.0 total=row.risk.1 %}
-                  {% if total %}
-                    <div class="stat-bar" role="img" aria-label="Risk {{ ok }} of {{ total }}">
-                      <div class="stat-bar-fill stat-bar-fill-risk" style="width: {% widthratio ok total 100 %}%"></div>
-                    </div>
-                    <span class="stat-bar-value">{{ ok }}/{{ total }}</span>
-                  {% else %}
-                    <span class="stat-bar-value">no data yet</span>
-                  {% endif %}
-                {% endwith %}
-              </div>
+              {% include "core/_stat_bar.html" with label="Risk" ok=row.risk.0 total=row.risk.1 fill="risk" %}
             </li>
           {% endfor %}
         </ul>
@@ -49,6 +25,22 @@
         <p><a href="{% url 'orgs:portfolio' %}">No products yet — click here to add one.</a></p>
       {% endif %}
     </section>
+
+    {% if approvals %}
+      <section class="dashboard-widget">
+        <h2>Waiting for your approval</h2>
+        {% if approvals.items %}
+          <ul class="dashboard-tasks">
+            {% for item in approvals.items %}
+              <li><a href="{{ item.url }}">{{ item.kind }}: {{ item.label }}</a> <span class="field-hint">{{ item.product.name }}</span></li>
+            {% endfor %}
+          </ul>
+          <p><a href="{% url 'core:approvals' %}">All {{ approvals.total }} &rarr;</a></p>
+        {% else %}
+          <p>Nothing is waiting for your approval.</p>
+        {% endif %}
+      </section>
+    {% endif %}
 
     <section class="dashboard-widget">
       <h2>Continue working on</h2>

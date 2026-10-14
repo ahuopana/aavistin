@@ -1,0 +1,11 @@
+{# Compact step status for one configuration, e.g. in the product's Configurations tab. #}
+<ol class="workflow-chips" aria-label="Progress of {{ workflow.configuration.name }}">
+  {% for step in workflow.steps %}
+    <li class="workflow-chip workflow-step-{{ step.state_class }}">
+      <a href="{{ step.url }}" title="{{ step.label }}: {{ step.detail }}">
+        <span class="workflow-step-marker" aria-hidden="true">{% if step.state_class == "done" %}&#10003;{% else %}{{ forloop.counter }}{% endif %}</span>
+        {{ step.label }}<span class="visually-hidden">: {{ step.detail }}</span>
+      </a>
+    </li>
+  {% endfor %}
+</ol>

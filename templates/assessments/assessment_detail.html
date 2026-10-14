@@ -1,92 +1,155 @@
 {% extends "base.html" %}
+{% load assessment_tags %}
 
 {% block title %}Assessment #{{ assessment.pk }} · Aavistin{% endblock %}
 
 {% block content %}
-  <h1>Assessment #{{ assessment.pk }}</h1>
+  {% include "core/_breadcrumb.html" %}
+  <h1>Assessment #{{ assessment.pk }}
+    <span class="badge badge-{% if assessment.status == 'approved' %}approved{% else %}draft{% endif %}">{{ assessment.get_status_display }}</span>
+    {% if assessment.stale %}<span class="badge badge-warning">stale</span>{% endif %}
+  </h1>
   <p>
-    {{ assessment.configuration }} — {{ assessment.get_status_display }}
-    {% if assessment.stale %}<span class="message message-warning">stale</span>{% endif %}
+    {{ assessment.configuration }}
+    {% if assessment.approved_at %} · approved {{ assessment.approved_at|date:"Y-m-d" }}{% if assessment.approved_by %} by {{ assessment.approved_by }}{% endif %}{% endif %}
     {% if assessment.sod_warning %}<span class="message message-warning">approved despite separation-of-duties warning</span>{% endif %}
   </p>
-
-  <p>
-    <a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}#questions">{% if assessment.status == "draft" %}Answer questions{% else %}View questions{% endif %} &rarr;</a>
-    · <a href="{% url 'risk:register' assessment.configuration.pk %}">Risk register</a>
-  </p>
-
-  {% if assessment.status == "draft" and can_approve %}
-    <form method="post" action="{% url 'assessments:assessment_approve' assessment.pk %}">
-      {% csrf_token %}
-      <button type="submit">Approve (freezes a snapshot)</button>
-    </form>
+  {% if assessment.stale %}
+    <div class="message message-warning">
+      {% if staleness and staleness.summary %}
+        <strong>Changed since approval{% if assessment.approved_at %} on {{ assessment.approved_at|date:"Y-m-d" }}{% endif %}:</strong> {{ staleness.summary }}.
+        {% for p in staleness.packages %}<br>Package {{ p.source }}: {{ p.before|default:"not active" }} &rarr; {{ p.after|default:"no longer active" }}.{% endfor %}
+        {% for e in staleness.evidence %}<br>Evidence changed for {{ e.source }} requirement <code>{{ e.requirement_id }}</code> (expired, superseded or relinked).{% endfor %}
+        {% for r in staleness.requirements %}<br>{{ r.source }}: {% if r.entered %}{{ r.entered|length }} requirement{{ r.entered|pluralize }} now in force{% endif %}{% if r.entered and r.left %}, {% endif %}{% if r.left %}{{ r.left|length }} no longer in force{% endif %}.{% endfor %}
+        {% if staleness.answers %}<br><a href="?changed=1#answers">See the changed answers &darr;</a>{% endif %}
+      {% else %}
+        Answers or packages changed after approval.
+      {% endif %}
+      <br>This approved assessment stays as it was; re-review starts a new assessment from the current answers, which an approver then approves.
+      {% if can_edit %}
+        <form method="post" action="{% url 'assessments:assessment_create' assessment.configuration.pk %}" class="inline-form">
+          {% csrf_token %}
+          <button type="submit" class="button-primary">Start a new assessment</button>
+        </form>
+      {% endif %}
+    </div>
   {% endif %}
 
-  <h2>Answers</h2>
-  {% if answer_rows %}
-    <table>
-      <thead><tr><th>Question</th><th>Answer</th><th>Origin</th></tr></thead>
-      <tbody>
-        {% for row in answer_rows %}
-          <tr>
-            <td>
-              <a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}#q-{{ row.id }}">{{ row.label }}</a>
-              {% if row.needs_confirmation %}<span class="badge badge-warning">needs confirmation</span>{% endif %}
-            </td>
-            <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% else %}{{ row.value }}{% endif %}</td>
-            <td><span class="badge badge-{{ row.origin|default:'unanswered' }}">{{ row.origin|default:"unanswered" }}</span></td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p>No questions apply to this configuration.</p>
+  {% include "core/_workflow.html" with current_step="assessment" %}
+
+  {% if progress and progress.open %}
+    <p class="message message-warning">
+      {{ progress.open }} of {{ progress.total }} question{{ progress.total|pluralize }} still to answer
+      ({{ progress.unanswered }} unanswered, {{ progress.needs_confirmation }} need{{ progress.needs_confirmation|pluralize:"s," }} confirmation).
+      <a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}?show=open#questions">Answer them &rarr;</a>
+    </p>
+  {% endif %}
+
+  {% if approval_check %}
+    <section class="approval-check" id="approve">
+      <h2>Before you approve</h2>
+      <ul>
+        <li>{% if approval_check.open %}<strong>{{ approval_check.open }} question{{ approval_check.open|pluralize }} still open.</strong>{% else %}All questions are answered.{% endif %}</li>
+        <li>Findings: {{ approval_check.findings.action_required }} action required, {{ approval_check.findings.caution }} caution, {{ approval_check.findings.info }} info (<a href="#findings">listed below</a>).</li>
+        <li>Risk register: {{ approval_check.risk_entries }} entr{{ approval_check.risk_entries|pluralize:"y,ies" }};
+          {% if approval_check.risk_state == "approved" %}approved{% elif approval_check.risk_state == "stale" %}approved but stale{% else %}not approved yet{% endif %}
+          (<a href="{% url 'risk:register' assessment.configuration.pk %}#approval">open</a>).</li>
+        {% if approval_check.sod == "warn" %}
+          <li class="workflow-waiting">You edited answers in this assessment. Your organisation's separation-of-duties policy is "warn": approving is allowed but recorded.</li>
+        {% elif approval_check.sod == "enforce" %}
+          <li class="workflow-waiting">You edited answers in this assessment, and separation of duties is enforced: another approver has to approve it.</li>
+        {% endif %}
+      </ul>
+      <form method="post" action="{% url 'assessments:assessment_approve' assessment.pk %}">
+        {% csrf_token %}
+        {% if approval_check.open %}
+          <p><label><input type="checkbox" name="confirm_open" value="1" required> Approve with {{ approval_check.open }} open question{{ approval_check.open|pluralize }}</label></p>
+        {% endif %}
+        <button type="submit" class="button-primary">Approve (freezes a snapshot)</button>
+      </form>
+    </section>
   {% endif %}
 
   <h2>Results</h2>
-  {% for result in evaluation.results %}
-    <h3>{{ result.source }}@{{ result.version }}</h3>
+  {% for result in results %}
+    <h3>{{ result.title }} <small class="field-hint">{{ result.source }}@{{ result.version }}</small></h3>
     <p>
-      {% if result.in_scope %}In scope{% else %}Out of scope{% endif %}
+      <span class="badge {% if result.in_scope %}badge-approved{% else %}badge-unanswered{% endif %}">{% if result.in_scope %}In scope{% else %}Out of scope{% endif %}</span>
       {% if not result.creates_legal_obligations %}(non-binding){% endif %}
     </p>
-    {% if result.classifications %}
-      <p>Classifications: {{ result.classifications|join:", " }}</p>
+    {% if result.classification_labels %}
+      <p>Classifications: {% for c in result.classification_labels %}{{ c.label }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
     {% endif %}
     {% if result.role %}
-      <p>Economic operator role: {{ result.role }}</p>
+      <p>Economic operator role: {{ result.role|choice_label }}</p>
     {% endif %}
-    {% if result.requirements %}
-      <p>Requirements: {{ result.requirements|join:", " }}</p>
+    {% if result.route_labels %}
+      <p>Assessment routes: {% for r in result.route_labels %}{{ r.label }}{% if not forloop.last %}; {% endif %}{% endfor %}</p>
     {% endif %}
-    {% if result.upcoming_requirements %}
-      <p>Not in force yet:
-        {% for r in result.upcoming_requirements %}{{ r.id }} (from {{ r.applies_from }}){% if not forloop.last %}, {% endif %}{% endfor %}
-      </p>
+    {% if result.requirement_labels %}
+      <details>
+        <summary>Requirements in force ({{ result.requirement_labels|length }})</summary>
+        <ul>
+          {% for r in result.requirement_labels %}<li>{{ r.label }} <span class="field-hint">{{ r.ref }}</span></li>{% endfor %}
+        </ul>
+      </details>
     {% endif %}
-    {% if result.ended_requirements %}
-      <p>No longer in force:
-        {% for r in result.ended_requirements %}{{ r.id }} (until {{ r.applies_until }}){% if not forloop.last %}, {% endif %}{% endfor %}
-      </p>
+    {% if result.upcoming_labels %}
+      <details>
+        <summary>Not in force yet ({{ result.upcoming_labels|length }})</summary>
+        <ul>
+          {% for r in result.upcoming_labels %}<li>{{ r.label }} <span class="field-hint">from {{ r.date }} · {{ r.ref }}</span></li>{% endfor %}
+        </ul>
+      </details>
     {% endif %}
-    {% if result.assessment_routes %}
-      <p>Assessment routes: {{ result.assessment_routes|join:", " }}</p>
+    {% if result.ended_labels %}
+      <details>
+        <summary>No longer in force ({{ result.ended_labels|length }})</summary>
+        <ul>
+          {% for r in result.ended_labels %}<li>{{ r.label }} <span class="field-hint">until {{ r.date }} · {{ r.ref }}</span></li>{% endfor %}
+        </ul>
+      </details>
     {% endif %}
   {% empty %}
     <p>No requirement packages are active for this configuration. Here is what is set up so far:</p>
     {% include "core/_readiness.html" with checks=readiness %}
   {% endfor %}
 
-  <h2>Findings</h2>
-  {% if evaluation.findings %}
+  <h2 id="findings">Findings</h2>
+  {% if findings %}
+    <details class="findings-help" open>
+      <summary>What to do with findings</summary>
+      <dl>
+        <dt><span class="badge badge-deleted">Action required</span></dt>
+        <dd>Something the regulation requires is missing or needs a specific procedure. Fix it in the product or your processes, then update the answers it is based on; the finding disappears when the answers no longer trigger it. If an answer is simply wrong, correct it. Until then the finding counts against the product's Compliance ratio. You can still approve the assessment: an approved assessment records the finding as open.</dd>
+        <dt><span class="badge badge-warning">Caution</span></dt>
+        <dd>Not a gap yet, but a point to check or decide on. Read it, decide whether it applies to you, and record the decision, for example as a risk register entry. Cautions do not affect the Compliance ratio.</dd>
+        <dt><span class="badge">Info</span></dt>
+        <dd>For your information; nothing to do.</dd>
+      </dl>
+      <p class="field-hint">"Based on" lists the answers that raised a finding; follow a link to review or change that answer. A finding marked "package not in scope" comes from a regulation that doesn't apply to this configuration with the current answers; it doesn't count against compliance, but becomes relevant if the scope changes.</p>
+    </details>
     <table>
-      <thead><tr><th>Level</th><th>Message</th><th>Source</th></tr></thead>
+      <thead><tr><th>Level</th><th>Finding</th><th>Source</th></tr></thead>
       <tbody>
-        {% for finding in evaluation.findings %}
-          <tr>
-            <td>{{ finding.level }}</td>
-            <td>{{ finding.message }}</td>
-            <td>{{ finding.source }}@{{ finding.version }}</td>
+        {% for finding in findings %}
+          <tr id="{{ finding.anchor }}">
+            <td><span class="badge {% if finding.level == 'action_required' %}badge-deleted{% elif finding.level == 'caution' %}badge-warning{% endif %}">{{ finding.level|choice_label }}</span>{% if finding.out_of_scope %}<br><span class="field-hint">package not in scope</span>{% endif %}</td>
+            <td>
+              {{ finding.message }}
+              {% if finding.guidance %}<p class="finding-guidance"><strong>What to do:</strong> {{ finding.guidance }}</p>{% endif %}
+              {% if finding.based_on %}
+                <details class="finding-based-on">
+                  <summary>Based on {{ finding.based_on|length }} answer{{ finding.based_on|pluralize }}</summary>
+                  <ul>
+                    {% for q in finding.based_on %}
+                      <li><a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}#q-{{ q.id }}">{{ q.label }}</a>: {% include "assessments/_answer_value.html" with value=q.value type=q.type %}</li>
+                    {% endfor %}
+                  </ul>
+                </details>
+              {% endif %}
+            </td>
+            <td>{{ finding.source }}@{{ finding.version }}{% if finding.ref %}<br><span class="field-hint">{{ finding.ref }}</span>{% endif %}</td>
           </tr>
         {% endfor %}
       </tbody>
@@ -94,4 +157,37 @@
   {% else %}
     <p>No findings.</p>
   {% endif %}
+
+  <div x-data="{ changedOnly: new URLSearchParams(window.location.search).get('changed') === '1' }">
+  <h2 id="answers">Answers</h2>
+  {% if staleness and staleness.answers %}
+    <p x-cloak><label><input type="checkbox" x-model="changedOnly"> Show only answers changed since approval ({{ staleness.answers|length }})</label></p>
+  {% endif %}
+  {% if answer_rows %}
+    <table>
+      <thead><tr><th>Question</th><th>Answer{% if staleness %} at approval{% endif %}</th>{% if staleness %}<th>Now</th>{% endif %}<th>Origin</th></tr></thead>
+      <tbody>
+        {% for row in answer_rows %}
+          <tr{% if staleness %} x-show="!changedOnly || {{ row.changed|yesno:'true,false' }}"{% if row.changed %} class="row-changed"{% endif %}{% endif %}>
+            <td>
+              <a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}#q-{{ row.id }}">{{ row.label }}</a>
+              {% if row.needs_confirmation %}<span class="badge badge-warning">needs confirmation</span>{% endif %}
+            </td>
+            <td>{% if row.value is True %}Yes{% elif row.value is False %}No{% elif row.value is None %}&mdash;{% elif row.type == "choice" %}{{ row.value|choice_label }}{% else %}{{ row.value }}{% endif %}</td>
+            {% if staleness %}
+              <td>{% if row.changed %}<strong>{% if row.now is True %}Yes{% elif row.now is False %}No{% elif row.now is None %}&mdash;{% elif row.type == "choice" %}{{ row.now|choice_label }}{% else %}{{ row.now }}{% endif %}</strong>{% endif %}</td>
+            {% endif %}
+            <td><span class="badge badge-{{ row.origin|default:'unanswered' }}">{{ row.origin|default:"unanswered"|choice_label }}</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No questions apply to this configuration.</p>
+  {% endif %}
+  {% if staleness.other_answers %}
+    <p class="field-hint">Questions that apply now but did not at approval, or no longer apply:
+      {% for a in staleness.other_answers %}<a href="{% url 'assessments:configuration_detail' assessment.configuration.pk %}#q-{{ a.id }}">{{ a.label }}</a>{% if not forloop.last %}; {% endif %}{% endfor %}</p>
+  {% endif %}
+  </div>
 {% endblock %}

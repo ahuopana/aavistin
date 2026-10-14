@@ -92,6 +92,11 @@ def _referenced_vars(expression, *, context=None):
             yield from _referenced_vars(sub, context=context)
 
 
+def referenced_questions(expression) -> list[str]:
+    """Ids of the questions ``expression`` reads, in order of first use."""
+    return list(dict.fromkeys(name for name, _ in _referenced_vars(expression)))
+
+
 def _date_issues(content: dict) -> list[dict]:
     issues: list[dict] = []
     dates = content.get("dates_of_application") or {}
@@ -425,6 +430,19 @@ def lint_method(content: dict, *, is_official: bool, existing_packages) -> list[
                             f"matrix[{i}].when",
                         )
                     )
+
+    seen_categories: set[str] = set()
+    for i, category in enumerate(content.get("impact_categories", [])):
+        if category.get("id") in seen_categories:
+            issues.append(
+                _issue(
+                    "error",
+                    "duplicate_impact_category",
+                    f"impact category '{category.get('id')}' is declared twice",
+                    f"impact_categories[{i}]",
+                )
+            )
+        seen_categories.add(category.get("id"))
 
     issues.extend(_date_issues(content))
     issues.extend(

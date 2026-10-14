@@ -9,11 +9,11 @@ from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
 
-from apps.assessments.models import Answer
+from apps.assessments.models import Answer, Assessment
 from apps.orgs.models import Organisation, ProductFamily, Role, RoleAssignment
 from apps.packages.importer import approve_package, import_package
 from apps.packages.models import PackageKind
-from apps.risk.models import EntryType, RiskEntry, Treatment
+from apps.risk.models import Control, ControlStatus, EntryType, HazardCause, RiskEntry, Treatment
 
 from .models import (
     Configuration,
@@ -36,6 +36,7 @@ from .services import (
     clone_software_option,
     clone_software_release,
     close_product,
+    compliance_breakdown,
     compliance_ratio,
     delete_entity,
     editable_product_families,
@@ -152,6 +153,51 @@ class ComplianceRatioTests(RatioFixture):
         self.assertEqual(compliance_ratio(self.product), (0, 2))
 
 
+class ComplianceBreakdownTests(RatioFixture):
+    def setUp(self):
+        super().setUp()
+        self.viewer = User.objects.create_user(username="vera", password="x")
+        RoleAssignment.objects.create(
+            role=Role.VIEWER, user=self.viewer, product_family=self.family
+        )
+        self.client.force_login(self.viewer)
+
+    def test_breakdown_lists_blocking_findings_per_package(self):
+        self._ready_answers(has_wireless=True)
+        breakdown = compliance_breakdown(self.product)
+        self.assertEqual(len(breakdown), 1)
+        (package,) = breakdown[0]["packages"]
+        self.assertEqual(package["source"], "demo-widget-safety")
+        self.assertEqual(len(package["requirements"]), 2)
+        self.assertEqual([f["id"] for f in package["blocking"]], ["wireless_action_required"])
+        self.assertEqual(compliance_ratio(self.product, breakdown), (0, 2))
+
+    def test_breakdown_page_links_findings_to_the_assessment(self):
+        self._ready_answers(has_wireless=True)
+        assessment = Assessment.objects.create(configuration=self.configuration)
+        response = self.client.get(reverse("products:product_compliance", args=[self.product.pk]))
+        self.assertContains(response, "Wireless radio present")
+        self.assertContains(
+            response,
+            reverse("assessments:assessment_detail", args=[assessment.pk])
+            + "#finding-demo-widget-safety-wireless_action_required",
+        )
+        self.assertContains(response, "not counted as fulfilled")
+
+    def test_compliance_ratio_links_to_the_breakdown(self):
+        self._ready_answers(has_wireless=False)
+        response = self.client.get(reverse("products:product_detail", args=[self.product.pk]))
+        self.assertContains(
+            response, reverse("products:product_compliance", args=[self.product.pk])
+        )
+        self.assertContains(response, "Requirements in scope whose package has no")
+
+    def test_breakdown_needs_a_role_on_the_product(self):
+        self.client.force_login(User.objects.create_user(username="nobody", password="x"))
+        response = self.client.get(reverse("products:product_compliance", args=[self.product.pk]))
+        self.assertRedirects(response, reverse("orgs:portfolio"))
+
+
 class RiskRatioTests(RatioFixture):
     def _make_threat(self, **kwargs):
         asset = RiskEntry.objects.create(
@@ -173,14 +219,62 @@ class RiskRatioTests(RatioFixture):
         self._make_threat()
         self.assertEqual(risk_ratio(self.product), (0, 1))
 
-    def test_accepted_residual_is_acceptable(self):
+    def _mitigate(self, entry, *, residual=1):
+        return Treatment.objects.create(
+            entry=entry,
+            method=self.method,
+            treatment_type="mitigate",
+            residual_severity=residual,
+            residual_likelihood=residual,
+        )
+
+    def test_mitigation_with_controls_in_place_is_acceptable(self):
+        threat = self._make_threat()
+        self._mitigate(threat)
+        Control.objects.create(
+            product=self.product, name="TLS", status=ControlStatus.IMPLEMENTED
+        ).threats.add(threat)
+        self.assertEqual(risk_ratio(self.product), (1, 1))
+
+    def test_mitigation_without_controls_does_not_count(self):
+        self._mitigate(self._make_threat())
+        self.assertEqual(risk_ratio(self.product), (0, 1))
+
+    def test_planned_mitigation_does_not_count_yet(self):
+        threat = self._make_threat()
+        self._mitigate(threat)
+        done = Control.objects.create(
+            product=self.product, name="TLS", status=ControlStatus.VERIFIED
+        )
+        planned = Control.objects.create(product=self.product, name="Key rotation")
+        done.threats.add(threat)
+        planned.threats.add(threat)
+        self.assertEqual(risk_ratio(self.product), (0, 1))
+        planned.status = ControlStatus.IMPLEMENTED
+        planned.save()
+        self.assertEqual(risk_ratio(self.product), (1, 1))
+
+    def test_hazard_mitigation_counts_controls_on_its_causes(self):
+        hazard = RiskEntry.objects.create(
+            product=self.product, entry_type=EntryType.HAZARD, label="Fire"
+        )
+        self._mitigate(hazard)
+        cause = HazardCause.objects.create(hazard=hazard, cause_type="hardware_failure")
+        self.assertEqual(risk_ratio(self.product), (0, 1))
+        Control.objects.create(
+            product=self.product, name="Thermal fuse", status=ControlStatus.IMPLEMENTED
+        ).hazard_causes.add(cause)
+        self.assertEqual(risk_ratio(self.product), (1, 1))
+
+    def test_accepted_treatment_needs_no_controls(self):
         threat = self._make_threat()
         Treatment.objects.create(
             entry=threat,
             method=self.method,
-            treatment_type="mitigate",
+            treatment_type="accept",
             residual_severity=1,
             residual_likelihood=1,
+            justification="Low exposure",
         )
         self.assertEqual(risk_ratio(self.product), (1, 1))
 

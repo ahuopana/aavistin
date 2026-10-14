@@ -2,19 +2,19 @@
 
 The EU Low Voltage Directive, Directive 2014/35/EU (CELEX `32014L0035`), as a requirement package. It applies from 20 April 2016 and replaced Directive 2006/95/EC. Further reading: the Commission's [LVD page and guidelines](https://single-market-economy.ec.europa.eu/sectors/electrical-and-electronic-engineering-industries-eei/low-voltage-directive-lvd_en).
 
-**Not legal advice, and not yet legally reviewed.** The article references in `ref` fields, the requirement summaries and the interpretations marked below were written from the directive's structure and the Commission guidelines, and must be checked against the Official Journal text before the package backs a real compliance decision. Design decisions: `docs/adr/0026-eu-lvd-package.md`.
+**Not legal advice, and not yet legally reviewed.** The article references in `ref` fields, the requirement summaries and the interpretations marked below were written from the directive's structure and the Commission guidelines, and must be checked against the Official Journal text before the package backs a real compliance decision. Design decisions: `docs/adr/0036-eu-lvd-package.md`.
 
 ## What it covers
 
 - **Scope (Art. 1):** electrical equipment rated 50–1000 V AC or 75–1500 V DC at its inputs or outputs. Software products are out. While a voltage rating is unanswered, nothing is hidden.
-- **Exclusions:** the Annex II categories (explosive atmospheres, medical and radiology equipment, lift parts, electricity meters, domestic plugs and sockets, electric fence controllers, specialised ship, aircraft and railway equipment, custom R&D evaluation kits), supply outside a commercial activity, and two interpretations from the Commission guidelines: basic components whose safety depends on how they are built in, and radio equipment, whose electrical safety is assessed under RED Art. 3(1)(a).
+- **Exclusions:** the Annex II categories (explosive atmospheres, medical and radiology equipment, lift parts, electricity meters, domestic plugs and sockets, electric fence controllers, specialised ship, aircraft and railway equipment, custom R&D evaluation kits), supply outside a commercial activity, and two interpretations from the Commission guidelines: basic components whose safety depends on how they are built in, and radio equipment, whose electrical safety is assessed under RED Art. 3(1)(a). Radio equipment is defined as `eu-red` defines its scope (ADR 0023): a radio that is physically disabled, or that only a manufacturer update can enable, leaves the product under LVD with a caution.
 - **Roles:** manufacturer, importer, distributor, authorised representative. An importer or distributor that places the product under its own name or modifies it is treated as the manufacturer (Art. 10).
 - **Requirements:** the Annex I safety objectives (8, one per point), the manufacturer obligations of Art. 6 with the declaration of conformity and CE marking (Art. 15–17), the obligations of authorised representatives (Art. 7), importers (Art. 8) and distributors (Art. 9), and identification of economic operators (Art. 11). All in force from 20 April 2016.
 - **Route:** internal production control (module A, Annex III). The directive has no third-party route.
-- **Findings:** below or above the voltage ranges, radio equipment (assess under RED), physically disabled radio, partial standards coverage, documentation and marking gaps, an unchecked supplier, an importer acting as manufacturer, steward chosen as role, and units placed before 20 April 2016 (Art. 27).
-- **Fixtures:** 33 example products (a mains kettle, battery and DC equipment, a mains adapter, a basic component, switchgear above the range, a Wi-Fi router, each Annex II category, each role, documentation gaps).
+- **Findings:** below or above the voltage ranges, radio equipment (assess under RED), a disabled radio, partial standards coverage, documentation and marking gaps, an unchecked supplier, an importer acting as manufacturer, steward chosen as role, and units placed before 20 April 2016 (Art. 27).
+- **Fixtures:** 35 example products (a mains kettle, battery and DC equipment, a mains adapter, a basic component, switchgear above the range, a Wi-Fi router, dormant radios, each Annex II category, each role, documentation gaps).
 
-Shared facts (product form, role, commercial activity, medical devices, radio capability, placement dates) come from the shared question library `packages/common` 1.2.0, which adds the `hardware_without_software` product form.
+Shared facts (product form, role, commercial activity, medical devices, radio capability and enablement, placement dates) come from the shared question library `packages/common` 1.3.0, which adds the `hardware_without_software` product form to 1.2.0.
 
 ## Known limitations
 
@@ -27,8 +27,8 @@ Shared facts (product form, role, commercial activity, medical devices, radio ca
 Import and approve the shared question library first, then this package. Run inside the `web` container:
 
 ```bash
-docker compose exec web python manage.py import_package packages/common/1.2.0.json --kind question_set --official
-docker compose exec web python manage.py approve_package common 1.2.0
+docker compose exec web python manage.py import_package packages/common/1.3.0.json --kind question_set --official
+docker compose exec web python manage.py approve_package common 1.3.0
 docker compose exec web python manage.py import_package packages/eu-lvd/1.0.0.json --kind requirement --official
 docker compose exec web python manage.py approve_package eu-lvd "2014-35@2026-10"
 ```

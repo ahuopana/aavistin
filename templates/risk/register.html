@@ -3,15 +3,17 @@
 {% block title %}Risk register · {{ configuration.name }} · Aavistin{% endblock %}
 
 {% block content %}
-  <p class="field-hint">
-    <a href="{% url 'products:product_detail' product.pk %}">{{ product.name }}</a> /
-    <a href="{% url 'assessments:configuration_detail' configuration.pk %}">{{ configuration.name }}</a>
-  </p>
-  <h1>Risk register</h1>
+  {% include "core/_breadcrumb.html" %}
+  <div class="page-header">
+    <h1>Risk register</h1>
+    {% if can_edit %}<a class="button button-primary" href="{% url 'risk:entry_create' configuration.pk %}">+ Add entry</a>{% endif %}
+  </div>
   <p>
     {{ configuration.hardware_revision }} / {{ configuration.software_release }} —
     product baseline plus the deltas that apply to this configuration.
   </p>
+
+  {% include "core/_workflow.html" with current_step="risk" %}
 
   <div class="risk-summary">
     <div class="risk-stat"><span class="risk-stat-value">{{ total }}</span> entries</div>
@@ -21,7 +23,7 @@
     <div class="risk-stat {% if must_treat %}risk-stat-alert{% endif %}"><span class="risk-stat-value">{{ must_treat }}</span> must treat</div>
     <div class="risk-stat"><span class="risk-stat-value">{{ unrated }}</span> unrated</div>
     <div class="risk-stat {% if issue_count %}risk-stat-alert{% endif %}"><span class="risk-stat-value">{{ issue_count }}</span> consistency issues</div>
-    <div class="risk-stat"><span class="risk-stat-value">{{ pending_suggestions }}</span> suggestions pending</div>
+    <a class="risk-stat" href="{% url 'risk:suggestions' configuration.pk %}"><span class="risk-stat-value">{{ pending_suggestions }}</span> suggestions pending</a>
   </div>
 
   <form method="get" class="risk-filters" role="search">
@@ -96,7 +98,35 @@
       <h2>No register entries yet</h2>
       <p>This product's register is empty. Here is what is set up so far:</p>
       {% include "core/_readiness.html" with checks=readiness %}
-      <p class="field-hint">Entries can also be added by hand once you have a risk method.</p>
+      {% if can_edit %}
+        <p><a href="{% url 'risk:entry_create' configuration.pk %}">Add the first entry by hand &rarr;</a></p>
+      {% endif %}
     {% endif %}
   {% endfor %}
+
+  <section class="approval-check" id="approval">
+    <h2>Approval</h2>
+    <p>
+      {% if risk_state == "approved" %}
+        <span class="badge badge-approved">Approved</span> on {{ risk_assessment.approved_at|date:"Y-m-d" }}{% if risk_assessment.approved_by %} by {{ risk_assessment.approved_by }}{% endif %}. The snapshot records the register, ratings, treatments, controls and method and catalog versions.
+      {% elif risk_state == "stale" %}
+        <span class="badge badge-warning">Stale</span> Approved on {{ risk_assessment.approved_at|date:"Y-m-d" }}, but the register has changed since. Approve again to record the current state.
+      {% else %}
+        <span class="badge badge-draft">Not approved</span> Approving freezes a snapshot of this configuration's register view; later changes mark it stale.
+      {% endif %}
+    </p>
+    {% if can_approve and risk_state != "approved" %}
+      {% if total %}
+        <ul>
+          <li>{{ must_treat }} rating{{ must_treat|pluralize }} must be treated, {{ unrated }} entr{{ unrated|pluralize:"y is,ies are" }} unrated, {{ issue_count }} consistency issue{{ issue_count|pluralize }}, {{ pending_suggestions }} suggestion{{ pending_suggestions|pluralize }} pending.</li>
+        </ul>
+        <form method="post" action="{% url 'risk:approve' configuration.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="button-primary">Approve risk register (freezes a snapshot)</button>
+        </form>
+      {% else %}
+        <p class="field-hint">Add entries before approving.</p>
+      {% endif %}
+    {% endif %}
+  </section>
 {% endblock %}

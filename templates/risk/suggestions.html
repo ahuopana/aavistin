@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Suggestions · Risk register · {{ configuration.name }} · Aavistin{% endblock %}
+
+{% block content %}
+  {% include "core/_breadcrumb.html" %}
+  <h1>Suggested register entries</h1>
+  <p>Risk catalogs suggest threats and hazards from this configuration's answers and findings. Accept a suggestion to add it to {{ product.name }}'s register, or dismiss it with a reason; either way it isn't suggested again.</p>
+
+  <h2>Pending <span class="badge">{{ pending|length }}</span></h2>
+  {% for s in pending %}
+    <section class="risk-method suggestion">
+      <h3>{{ s.label }} <span class="badge">{{ s.type_label }}</span></h3>
+      {% if s.description %}<p>{{ s.description }}</p>{% endif %}
+      <p class="field-hint">
+        From {{ s.catalog.title|default:s.catalog.source }} ({{ s.catalog.source }} {{ s.catalog.version }}).
+        {% if s.violates_label %}Violates {{ s.violates_label|lower }}.{% endif %}
+        {% if s.cause_labels %}Causes: {{ s.cause_labels|join:", "|lower }}.{% endif %}
+        {% if s.suggested_controls %}Suggested controls: {{ s.suggested_controls|join:", " }}.{% endif %}
+      </p>
+      {% if can_edit %}
+        <div class="suggestion-actions">
+          <form method="post" action="{% url 'risk:suggestion_accept' configuration.pk %}" class="inline-form">
+            {% csrf_token %}
+            <input type="hidden" name="suggestion" value="{{ s.key }}">
+            {% if s.entry_type == "threat" %}
+              <label>Targets asset
+                <select name="asset">
+                  <option value="">— choose later —</option>
+                  {% for a in assets %}<option value="{{ a.pk }}">{{ a.label }}</option>{% endfor %}
+                </select>
+              </label>
+              {% if s.suggested_controls %}
+                <label class="radio-option"><input type="checkbox" name="add_controls" value="1" checked> Add suggested controls as planned</label>
+              {% endif %}
+            {% endif %}
+            <button type="submit" class="button-primary">Accept</button>
+          </form>
+          <details>
+            <summary>Dismiss…</summary>
+            <form method="post" action="{% url 'risk:suggestion_dismiss' configuration.pk %}" class="inline-form">
+              {% csrf_token %}
+              <input type="hidden" name="suggestion" value="{{ s.key }}">
+              <label>Reason <input type="text" name="reason" required placeholder="e.g. the radio is disabled in hardware"></label>
+              <button type="submit" class="button-danger">Dismiss</button>
+            </form>
+          </details>
+        </div>
+      {% endif %}
+    </section>
+  {% empty %}
+    <p class="field-hint">Nothing pending. New suggestions appear when answers or findings trigger a catalog entry.</p>
+  {% endfor %}
+
+  {% if dismissed %}
+    <h2>Dismissed <span class="badge">{{ dismissed|length }}</span></h2>
+    <table>
+      <thead><tr><th>Entry</th><th>Reason</th><th>Dismissed by</th>{% if can_edit %}<th></th>{% endif %}</tr></thead>
+      <tbody>
+        {% for e in dismissed %}
+          <tr>
+            <td>{{ e.label }} <span class="badge">{{ e.get_entry_type_display }}</span><div class="field-hint">{{ e.source_catalog.source }}</div></td>
+            <td>{{ e.dismissal_reason }}</td>
+            <td>{{ e.created_by|default:"—" }}<div class="field-hint">{{ e.created_at|date:"Y-m-d" }}</div></td>
+            {% if can_edit %}
+              <td>
+                <form method="post" action="{% url 'risk:suggestion_restore' configuration.pk e.pk %}">
+                  {% csrf_token %}
+                  <button type="submit">Accept after all</button>
+                </form>
+              </td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock %}
