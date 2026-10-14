@@ -789,6 +789,15 @@ class CompareTests(DashboardFixture):
         diffs = {d.title: d for d in response.context["diffs"]}
         self.assertTrue(diffs["Resolved answers"].differences)
 
+    def test_choice_ids_are_shown_as_readable_text(self):
+        from apps.core.compare import display
+
+        self.assertEqual(display("logical_delete"), "Logical delete")
+        self.assertEqual(display(["a_b", "c"]), ["A b", "C"])
+        self.assertEqual(display("2027-12-11"), "2027-12-11")
+        self.assertEqual(display("Free text, with Capitals"), "Free text, with Capitals")
+        self.assertEqual(display(20), 20)
+
     def test_page_renders_labels_not_question_ids(self):
         response = self.get("configuration", self.configuration, self.config_b)
         self.assertContains(response, "Does the widget have a wireless radio?")

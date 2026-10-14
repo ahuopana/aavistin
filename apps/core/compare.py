@@ -7,12 +7,14 @@ only. Nothing here knows what a regulation, requirement or question means;
 labels come from the package content that produced the data.
 """
 
+import re
 from dataclasses import dataclass, field
 
 from django.urls import reverse
 
 from apps.assessments.evaluation import evaluate_configuration
 from apps.assessments.models import Answer, Assessment, AssessmentStatus
+from apps.assessments.templatetags.assessment_tags import choice_label as readable_choice
 from apps.packages.models import PackageStatus, RequirementPackage
 from apps.products.models import (
     Configuration,
@@ -88,6 +90,19 @@ def fmt(value) -> str:
     return str(value)
 
 
+_ID_SHAPED = re.compile(r"[a-z][a-z0-9]*(_[a-z0-9]+)*")
+
+
+def display(value):
+    """Readable form of a package id ("logical_delete" -> "Logical delete"),
+    as the questionnaire shows choices; anything else is left alone."""
+    if isinstance(value, str) and _ID_SHAPED.fullmatch(value):
+        return readable_choice(value)
+    if isinstance(value, list | tuple | set):
+        return [display(v) for v in value]
+    return value
+
+
 def _markets(manager) -> str:
     return fmt(list(manager.values_list("code", flat=True)))
 
@@ -108,7 +123,7 @@ def _owned_answers(**owner) -> dict[str, str]:
     labels = question_labels()
     rows = {}
     for answer in Answer.objects.filter(**owner).order_by("question_id"):
-        text = fmt(answer.value)
+        text = fmt(display(answer.value))
         if answer.needs_confirmation:
             text += " (needs confirmation)"
         rows[labels.get(answer.question_id, answer.question_id)] = text
@@ -127,7 +142,7 @@ def _evaluation_sections(evaluation: dict) -> list[tuple[str, dict[str, str]]]:
     labels = question_labels()
     answers = {}
     for qid, answer in evaluation.get("resolved_answers", {}).items():
-        text = fmt(answer.get("value"))
+        text = fmt(display(answer.get("value")))
         origin = answer.get("origin")
         if origin:
             text += f" · {str(origin).replace('_', ' ')}"
@@ -147,9 +162,9 @@ def _evaluation_sections(evaluation: dict) -> list[tuple[str, dict[str, str]]]:
         source = result["source"]
         parts = [f"v{result['version']}", "in scope" if result["in_scope"] else "out of scope"]
         if result.get("classifications"):
-            parts.append("class " + fmt(result["classifications"]))
+            parts.append("class " + fmt(display(result["classifications"])))
         if result.get("role"):
-            parts.append(f"role {result['role']}")
+            parts.append(f"role {fmt(display(result['role'])).lower()}")
         scope[source] = " · ".join(parts)
         by_id = {r["id"]: r for r in content.get("requirements", [])}
         for requirement_id in result.get("requirements", []):
@@ -158,7 +173,7 @@ def _evaluation_sections(evaluation: dict) -> list[tuple[str, dict[str, str]]]:
             requirements[f"{source}: {item.get('label') or requirement_id}{ref}"] = "in force"
 
     findings = {
-        f"{f['source']}: {f['id']}": f"{f['level']} — {f['message']}"
+        f"{f['source']}: {f['id']}": f"{display(f['level'])} — {f['message']}"
         for f in evaluation.get("findings", [])
     }
     return [
