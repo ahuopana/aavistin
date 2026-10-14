@@ -59,6 +59,11 @@ COPY --from=builder /app /app
 # the hashed-manifest storage). The throwaway key is only for this build step.
 RUN DJANGO_SECRET_KEY=build-only python manage.py collectstatic --noinput
 
+# Reports print this; a container has no git checkout to ask. Pass the tag or
+# commit: docker build --build-arg AAVISTIN_VERSION=$(git describe --tags --always) .
+ARG AAVISTIN_VERSION=
+ENV AAVISTIN_VERSION=${AAVISTIN_VERSION}
+
 EXPOSE 8000
 
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]

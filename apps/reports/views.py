@@ -49,6 +49,7 @@ def report_generate(request, configuration_pk):
 
     selected = request.POST.getlist("sections") if request.method == "POST" else DEFAULT_SECTIONS
     title = request.POST.get("title", "").strip() if request.method == "POST" else ""
+    include_out_of_scope = request.method == "POST" and "include_out_of_scope" in request.POST
     can_issue = _can_issue(request.user, product)
     blockers = issue_blockers(configuration, selected)
 
@@ -60,10 +61,22 @@ def report_generate(request, configuration_pk):
                         request, "Only an approver can issue an approved report."
                     )
                 else:
-                    report = issue_report(configuration, selected, user=request.user, title=title)
+                    report = issue_report(
+                        configuration,
+                        selected,
+                        user=request.user,
+                        title=title,
+                        include_out_of_scope=include_out_of_scope,
+                    )
                     return redirect("reports:detail", report_id=report.report_id)
             else:
-                pdf = generate_draft(configuration, selected, user=request.user, title=title)
+                pdf = generate_draft(
+                    configuration,
+                    selected,
+                    user=request.user,
+                    title=title,
+                    include_out_of_scope=include_out_of_scope,
+                )
                 response = HttpResponse(pdf, content_type="application/pdf")
                 response["Content-Disposition"] = 'attachment; filename="draft-report.pdf"'
                 return response
@@ -80,6 +93,7 @@ def report_generate(request, configuration_pk):
             "sections": SECTIONS,
             "selected": selected,
             "title": title or default_title(configuration),
+            "include_out_of_scope": include_out_of_scope,
             "can_issue": can_issue,
             "blockers": blockers,
         },

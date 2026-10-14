@@ -14,6 +14,8 @@
         <p><label><input type="checkbox" name="sections" value="{{ key }}"{% if key in selected %} checked{% endif %}> {{ label }}</label></p>
       {% endfor %}
     </fieldset>
+    <p><label><input type="checkbox" name="include_out_of_scope"{% if include_out_of_scope %} checked{% endif %}> List regulations that are out of scope for this configuration</label><br>
+      <span class="field-hint">Applies to the assessment section. Findings are always listed, since a finding can matter even when its regulation is out of scope; those are marked "package not in scope".</span></p>
     <p>
       <button type="submit" name="action" value="draft">Download draft</button>
       {% if can_issue and not blockers %}

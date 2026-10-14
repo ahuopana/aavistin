@@ -7,13 +7,16 @@ from django.urls import reverse
 from pypdf import PdfReader
 
 from apps.accounts.models import User
-from apps.assessments.models import Assessment
+from apps.assessments.models import Answer, Assessment
 from apps.assessments.services import approve_assessment
 from apps.core.tests import DashboardFixture
+from apps.core.version import aavistin_version
 from apps.orgs.models import Role, RoleAssignment
 
+from .content import build_content, document_type
 from .models import Report
 from .services import ReportError, generate_draft, issue_report
+from .templatetags.report_tags import report_date, report_time
 
 SECTIONS = ["product", "hardware", "software", "options", "assessment", "evidence"]
 
@@ -158,3 +161,100 @@ class PdfTextTests(ReportFixture):
         text = " ".join(p.extract_text() for p in PdfReader(io.BytesIO(bytes(report.pdf))).pages)
         self.assertIn(report.report_id, text)
         self.assertRegex(text, re.compile(r"Page 1 of \d+"))
+
+
+class ContentTests(ReportFixture):
+    def build(self, sections=("assessment",), user=None, **kwargs):
+        from django.utils import timezone
+
+        return build_content(
+            self.configuration,
+            list(sections),
+            title="T",
+            generated_by=user or self.approver,
+            generated_at=timezone.now(),
+            approved=False,
+            **kwargs,
+        )
+
+    def test_generator_is_named_with_their_role(self):
+        self.assertEqual(self.build()["generated_by"], "ann, Approver")
+        self.assertEqual(self.build(user=self.viewer)["generated_by"], "vera, Viewer")
+
+    def test_document_type_follows_the_sections(self):
+        self.assertEqual(
+            document_type(["assessment", "risks"]), "Product Compliance and Risk Assessment Report"
+        )
+        self.assertEqual(document_type(["assessment"]), "Product Compliance Assessment Report")
+        self.assertEqual(document_type(["mitigations"]), "Product Risk Assessment Report")
+        self.assertEqual(document_type(["product"]), "Product Report")
+
+    def test_classifications_use_package_labels(self):
+        self._ready_answers()
+        Answer.objects.filter(question_id="rated_power_watts").update(value=100)
+        result = self.build()["assessment"]["results"][0]
+        self.assertIn("High power widget", result["classifications"])
+        self.assertNotIn("high_power", result["classifications"])
+
+    def test_answers_read_as_text(self):
+        self._ready_answers()
+        values = {a["question"]: a["value"] for a in self.build()["assessment"]["answers"]}
+        self.assertIn("No", values.values())
+        self.assertNotIn("False", values.values())
+
+    def test_out_of_scope_packages_are_optional(self):
+        self._ready_answers()
+        Answer.objects.filter(question_id="has_power_source").update(value=False)
+        hidden = self.build()["assessment"]
+        self.assertEqual(hidden["results"], [])
+        self.assertEqual(hidden["out_of_scope_count"], 1)
+        shown = self.build(include_out_of_scope=True)["assessment"]
+        self.assertEqual([r["in_scope"] for r in shown["results"]], [False])
+
+    def test_findings_are_sorted_by_level_and_flag_out_of_scope(self):
+        self._ready_answers(has_wireless=True)
+        Answer.objects.filter(question_id="rated_power_watts").update(value=100)
+        findings = self.build()["assessment"]["findings"]
+        self.assertEqual([f["level_id"] for f in findings], ["action_required", "caution"])
+        self.assertEqual(findings[0]["level"], "Action required")
+        self.assertFalse(findings[0]["out_of_scope"])
+        Answer.objects.filter(question_id="has_power_source").update(value=False)
+        findings = self.build()["assessment"]["findings"]
+        self.assertTrue(all(f["out_of_scope"] for f in findings))
+
+    def test_version_is_recorded(self):
+        self.assertEqual(self.build()["aavistin_version"], aavistin_version())
+
+    def test_version_prefers_the_environment(self):
+        aavistin_version.cache_clear()
+        with self.settings(), unittest_env("AAVISTIN_VERSION", "v1.2.3"):
+            self.assertEqual(aavistin_version(), "v1.2.3")
+        aavistin_version.cache_clear()
+
+
+class unittest_env:
+    def __init__(self, name, value):
+        self.name, self.value = name, value
+
+    def __enter__(self):
+        import os
+
+        self.old = os.environ.get(self.name)
+        os.environ[self.name] = self.value
+
+    def __exit__(self, *exc):
+        import os
+
+        if self.old is None:
+            del os.environ[self.name]
+        else:
+            os.environ[self.name] = self.old
+
+
+class FilterTests(ReportFixture):
+    def test_time_is_human_friendly(self):
+        self.assertEqual(
+            report_time("2026-10-14T15:42:28.975282+00:00"), "14 October 2026, 15:42 UTC"
+        )
+        self.assertEqual(report_date("2026-10-04"), "4 October 2026")
+        self.assertEqual(report_time(""), "")

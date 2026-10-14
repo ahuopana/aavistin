@@ -6,8 +6,14 @@ snapshot when the report is approved, from live data for a draft.
 """
 
 from apps.assessments.evaluation import evaluate_configuration
+from apps.assessments.findings import finding_details
 from apps.assessments.models import AssessmentStatus
+from apps.assessments.templatetags.assessment_tags import choice_label
+from apps.core.compare import display
+from apps.core.version import aavistin_version
 from apps.evidence.models import Evidence
+from apps.orgs.models import Role
+from apps.orgs.services import roles_for_user
 from apps.packages.models import RequirementPackage
 from apps.risk.approval import build_snapshot
 from apps.risk.models import RiskAssessmentStatus, RiskEntry
@@ -23,6 +29,8 @@ SECTIONS = [
     ("evidence", "Evidence"),
 ]
 SECTION_KEYS = [key for key, _ in SECTIONS]
+LEVEL_LABELS = {"action_required": "Action required", "caution": "Caution", "info": "Info"}
+ROLE_ORDER = [Role.ORG_ADMIN, Role.APPROVER, Role.EDITOR, Role.CONTENT_CURATOR, Role.VIEWER]
 SNAPSHOT_SECTIONS = {"assessment": "assessment", "risks": "risk", "mitigations": "risk"}
 
 
@@ -111,45 +119,97 @@ def _options(configuration):
 
 
 def _labels(evaluation):
-    """Question and requirement labels from the packages the evaluation used."""
+    """Labels from the packages the evaluation used: questions, requirements,
+    classifications, assessment routes and package titles."""
     ids = [r.get("package_id") for r in evaluation["results"]]
     packages = list(RequirementPackage.objects.filter(pk__in=[i for i in ids if i]))
-    questions, requirements = {}, {}
+    labels = {"questions": {}, "requirements": {}, "classes": {}, "routes": {}, "titles": {}}
     for package in packages:
-        for q in package.content.get("questions", []):
-            questions.setdefault(q["id"], q.get("label") or q["id"])
-        for r in package.content.get("requirements", []):
-            requirements[(package.pk, r["id"])] = {
+        content = package.content
+        for q in content.get("questions", []):
+            labels["questions"].setdefault(q["id"], q.get("label") or q["id"])
+        for r in content.get("requirements", []):
+            labels["requirements"][(package.pk, r["id"])] = {
                 "label": r.get("label") or r["id"],
                 "ref": r.get("ref", ""),
             }
-    titles = {p.pk: p.content.get("title") or p.source for p in packages}
-    return questions, requirements, titles
+        for c in content.get("classifications", []):
+            labels["classes"][(package.pk, c["id"])] = c.get("label") or choice_label(c["id"])
+        for route in content.get("assessment_routes", []):
+            labels["routes"][(package.pk, route["id"])] = route.get("label") or choice_label(
+                route["id"]
+            )
+        labels["titles"][package.pk] = content.get("title") or package.source
+    return labels
 
 
-def _assessment(evaluation, approved):
-    questions, requirements, titles = _labels(evaluation)
+def _answer_text(value):
+    if value is True:
+        return "Yes"
+    if value is False:
+        return "No"
+    if value is None or value == "":
+        return "Not answered"
+    shown = display(value)
+    if isinstance(shown, list):
+        return ", ".join(str(v) for v in shown)
+    return str(shown)
+
+
+def _assessment(evaluation, approved, *, include_out_of_scope):
+    labels = _labels(evaluation)
+    questions = {qid: {"label": label} for qid, label in labels["questions"].items()}
     results = []
+    out_of_scope = 0
     for result in evaluation["results"]:
         pk = result.get("package_id")
+        if not result["in_scope"]:
+            out_of_scope += 1
+            if not include_out_of_scope:
+                continue
         results.append(
             {
-                "title": titles.get(pk, result["source"]),
+                "title": labels["titles"].get(pk, result["source"]),
                 "source": result["source"],
                 "version": result["version"],
                 "in_scope": result["in_scope"],
-                "classifications": result["classifications"],
-                "assessment_routes": result["assessment_routes"],
+                "classifications": [
+                    labels["classes"].get((pk, cid), choice_label(cid))
+                    for cid in result["classifications"]
+                ],
+                "assessment_routes": [
+                    labels["routes"].get((pk, rid), choice_label(rid))
+                    for rid in result["assessment_routes"]
+                ],
                 "requirements": [
-                    requirements.get((pk, rid), {"label": rid, "ref": ""})
+                    labels["requirements"].get((pk, rid), {"label": rid, "ref": ""})
                     for rid in result["requirements"]
                 ],
             }
         )
+    titles = {(r["source"], r["version"]): r["title"] for r in results}
+    for r in evaluation["results"]:
+        titles.setdefault((r["source"], r["version"]), labels["titles"].get(r.get("package_id")))
+    findings = [
+        {
+            "level": LEVEL_LABELS.get(f["level"], f["level"]),
+            "level_id": f["level"],
+            "message": f["message"],
+            "ref": f.get("ref") or "",
+            "package": titles.get((f["source"], f["version"])) or f["source"],
+            "out_of_scope": f["out_of_scope"],
+        }
+        for f in finding_details(
+            evaluation["findings"],
+            evaluation["resolved_answers"],
+            questions,
+            evaluation["results"],
+        )
+    ]
     answers = [
         {
-            "question": questions.get(qid, qid),
-            "value": a["value"],
+            "question": labels["questions"].get(qid, qid),
+            "value": _answer_text(a["value"]),
             "needs_confirmation": a["needs_confirmation"],
         }
         for qid, a in sorted(evaluation["resolved_answers"].items())
@@ -158,7 +218,9 @@ def _assessment(evaluation, approved):
         "frozen": approved,
         "as_of": evaluation["as_of"],
         "results": results,
-        "findings": evaluation["findings"],
+        "out_of_scope_count": out_of_scope,
+        "include_out_of_scope": include_out_of_scope,
+        "findings": findings,
         "answers": answers,
     }
 
@@ -232,16 +294,53 @@ def _evidence(product):
     return items
 
 
-def build_content(configuration, sections, *, title, generated_by, generated_at, approved):
+def document_type(sections) -> str:
+    """What the document is, from what it contains."""
+    assessed, risked = "assessment" in sections, bool({"risks", "mitigations"} & set(sections))
+    if assessed and risked:
+        return "Product Compliance and Risk Assessment Report"
+    if assessed:
+        return "Product Compliance Assessment Report"
+    if risked:
+        return "Product Risk Assessment Report"
+    return "Product Report"
+
+
+def generator_label(user, product) -> str:
+    """ "Firstname Lastname, Approver": the person's highest role on the product
+    (the user model has no job title)."""
+    name = _name(user)
+    if user.is_superuser:
+        return f"{name}, Administrator"
+    roles = roles_for_user(user, product=product)
+    for role in ROLE_ORDER:
+        if role in roles:
+            return f"{name}, {Role(role).label}"
+    return name
+
+
+def build_content(
+    configuration,
+    sections,
+    *,
+    title,
+    generated_by,
+    generated_at,
+    approved,
+    include_out_of_scope=False,
+):
     """The report as a dict. ``approved`` selects frozen snapshots; otherwise live data."""
     product = configuration.product
     content = {
         "title": title,
+        "document_type": document_type(sections),
         "status": "approved" if approved else "draft",
         "generated_at": generated_at.isoformat(),
-        "generated_by": generated_by.get_full_name() or generated_by.get_username(),
+        "generated_by": generator_label(generated_by, product),
+        "aavistin_version": aavistin_version(),
         "configuration": configuration.name,
         "sections": [s for s in SECTION_KEYS if s in sections],
+        "section_labels": [label for key, label in SECTIONS if key in sections],
         "sources": {},
     }
     if "product" in sections:
@@ -256,7 +355,9 @@ def build_content(configuration, sections, *, title, generated_by, generated_at,
     if "assessment" in sections:
         assessment = latest_approved_assessment(configuration) if approved else None
         evaluation = assessment.snapshot if assessment else evaluate_configuration(configuration)
-        content["assessment"] = _assessment(evaluation, bool(assessment))
+        content["assessment"] = _assessment(
+            evaluation, bool(assessment), include_out_of_scope=include_out_of_scope
+        )
         if assessment:
             content["sources"]["assessment"] = {
                 "id": assessment.pk,

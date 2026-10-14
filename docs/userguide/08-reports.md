@@ -13,7 +13,12 @@ configuration. Then:
 1. Tick the sections to include.
 2. Edit the title if you like. It defaults to "Product – Configuration"
    and appears in the header of every page.
-3. Choose **Download draft** or **Issue approved report**.
+3. Tick **List regulations that are out of scope** if the assessment
+   section should show them. By default it only says how many were left
+   out. Findings are always listed, even those of an out-of-scope
+   regulation (marked "package not in scope", not counted against
+   compliance), because a finding can matter if the scope changes.
+4. Choose **Download draft** or **Issue approved report**.
 
 The **Reports** link on the Compliance overview lists every approved
 report you can see.
@@ -41,7 +46,10 @@ later, issue a new one.
 
 - **Header:** the Aavistin logo and the report title.
 - **Footer:** "Page X of Y", the report ID and the status.
-- **Cover:** the configuration, who generated the report and when, the
+- **Cover:** what kind of document it is (for example "Product
+  Compliance and Risk Assessment Report"), the configuration, who
+  generated the report (name and role on the product) and when, the
+  Aavistin version used (a release tag, or the commit), the
   assessment and risk snapshot IDs with their approvers (and a
   separation-of-duties warning if the approver also edited an answer),
   and a hash of the report content.

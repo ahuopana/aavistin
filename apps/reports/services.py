@@ -34,7 +34,9 @@ def content_hash(content: dict) -> str:
     return hashlib.sha256(json.dumps(content, sort_keys=True).encode()).hexdigest()
 
 
-def generate_draft(configuration, sections, *, user, title="") -> bytes:
+def generate_draft(
+    configuration, sections, *, user, title="", include_out_of_scope=False
+) -> bytes:
     """A draft PDF built from live data; nothing is stored (ADR 0041)."""
     content = build_content(
         configuration,
@@ -43,11 +45,12 @@ def generate_draft(configuration, sections, *, user, title="") -> bytes:
         generated_by=user,
         generated_at=timezone.now(),
         approved=False,
+        include_out_of_scope=include_out_of_scope,
     )
     return render_pdf(content, report_id="", content_hash="")
 
 
-def issue_report(configuration, sections, *, user, title="") -> Report:
+def issue_report(configuration, sections, *, user, title="", include_out_of_scope=False) -> Report:
     """Store and return an approved, verifiable report."""
     sections = clean_sections(sections)
     blockers = issue_blockers(configuration, sections)
@@ -61,6 +64,7 @@ def issue_report(configuration, sections, *, user, title="") -> Report:
         generated_by=user,
         generated_at=generated_at,
         approved=True,
+        include_out_of_scope=include_out_of_scope,
     )
     needs_assessment = "assessment" in sections
     needs_risk = "risks" in sections or "mitigations" in sections
