@@ -23,3 +23,4 @@ The assessment page listed findings as a level, a message and a source. Users co
 
 - Package authors should write `guidance` for action-required findings first. The EU CRA and EU RED packages get it in their next versions.
 - The breakdown evaluates each configuration live, as the ratio already did; there is no extra caching.
+- When a product has no requirements to count, the Compliance bar says why instead of "no data yet": "Not in scope" (packages were evaluated and none applies), "None in force yet" (a package applies, but none of its requirements is in force yet). "No data yet" remains for products without configurations or active packages. The breakdown gives the reason per configuration.
