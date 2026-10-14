@@ -1445,6 +1445,11 @@ a.risk-stat:hover {
   line-height: 1;
 }
 
+/* Initials come from an attribute so they are not part of the page text. */
+.avatar-initials::before {
+  content: attr(data-initials);
+}
+
 .app-header-actions .app-user {
   display: inline-flex;
   align-items: center;
