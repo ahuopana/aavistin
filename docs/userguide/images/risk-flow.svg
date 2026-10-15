@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="diagram" viewBox="0 0 640 592" width="640" height="592" role="img" aria-labelledby="rk-title rk-desc">
+  <title id="rk-title">Risk assessment flow</title>
+  <desc id="rk-desc">Suggested entries from answers and findings, and entries added by hand, become register entries. Each is rated under each method, then controls are linked and a treatment chosen. If the residual rating is not acceptable you return to linking controls and choosing treatment; if it is, an approver approves the risk view.</desc>
+  <style>
+    svg { font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; }
+    .d-box { fill: var(--color-surface, #f3f7f7); stroke: var(--color-border, #d5dfe0); stroke-width: 1.5; }
+    .d-key { fill: var(--color-brand-tint, #e3f2ef); stroke: var(--color-accent, #1b6f6d); stroke-width: 1.5; }
+    .d-badge { fill: var(--color-accent-fill, #1b6f6d); }
+    .d-badge-text { fill: var(--color-on-accent-fill, #ffffff); font-weight: 600; }
+    .d-title { fill: var(--color-text, #0f1a1e); font-weight: 600; }
+    .d-sub { fill: var(--color-text-muted, #46585c); font-size: 12px; }
+    .d-line { fill: none; stroke: var(--color-text-muted, #46585c); stroke-width: 1.5; }
+    .d-line-attn { fill: none; stroke: var(--color-attention, #f2711c); stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .d-head { fill: var(--color-text-muted, #46585c); }
+    .d-head-attn { fill: var(--color-attention, #f2711c); }
+    .d-dot { fill: var(--color-text-muted, #46585c); stroke: none; }
+    .d-ring { fill: none; stroke: var(--color-text-muted, #46585c); stroke-width: 1.5; }
+    .d-label { fill: var(--color-text-muted, #46585c); font-size: 12px; paint-order: stroke; stroke: var(--color-bg, #ffffff); stroke-width: 4px; stroke-linejoin: round; }
+    .d-label-attn { fill: var(--color-warning, #b5540e); font-size: 12px; paint-order: stroke; stroke: var(--color-bg, #ffffff); stroke-width: 4px; stroke-linejoin: round; }
+    @media (prefers-color-scheme: dark) {
+      svg { --color-bg: #0b161a; --color-surface: #12222a; --color-border: #264048; --color-text: #e6f0ef; --color-text-muted: #9fb3b5; --color-brand-tint: #14323a; --color-accent: #7fd6c9; --color-accent-fill: #8fe0d3; --color-on-accent-fill: #06201f; --color-attention: #ff9a4d; --color-warning: #e08b3d; }
+    }
+  </style>
+  <defs><marker id="rk-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head" d="M0 1L10 5L0 9z"/></marker><marker id="rk-head-attn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head-attn" d="M0 1L10 5L0 9z"/></marker></defs>
+  <rect class="d-box" x="40" y="8" width="250" height="56" rx="8"/>
+  <text class="d-title" x="165.0" y="33.0" text-anchor="middle">Suggested entries</text>
+  <text class="d-sub" x="165.0" y="50.0" text-anchor="middle">from answers and findings</text>
+  <rect class="d-box" x="350" y="8" width="250" height="56" rx="8"/>
+  <text class="d-title" x="475.0" y="41.0" text-anchor="middle">Entries added by hand</text>
+  <rect class="d-box" x="215" y="116" width="210" height="46" rx="8"/>
+  <text class="d-title" x="320.0" y="144.0" text-anchor="middle">Register entries</text>
+  <rect class="d-box" x="215" y="214" width="210" height="46" rx="8"/>
+  <text class="d-title" x="320.0" y="242.0" text-anchor="middle">Rate under each method</text>
+  <rect class="d-box" x="190" y="312" width="260" height="46" rx="8"/>
+  <text class="d-title" x="320.0" y="340.0" text-anchor="middle">Link controls, choose treatment</text>
+  <path class="d-line" d="M165 64 V90 H300 V115" marker-end="url(#rk-head)"/>
+  <path class="d-line" d="M475 64 V90 H340 V115" marker-end="url(#rk-head)"/>
+  <path class="d-line" d="M320 162 V213" marker-end="url(#rk-head)"/>
+  <path class="d-line" d="M320 260 V311" marker-end="url(#rk-head)"/>
+  <path class="d-line" d="M320 358 V397" marker-end="url(#rk-head)"/>
+  <path class="d-box" d="M320 398 L440 446 L320 494 L200 446 Z" stroke-linejoin="round"/>
+  <text class="d-title" x="320" y="441" text-anchor="middle">Residual rating</text>
+  <text class="d-title" x="320" y="459" text-anchor="middle">acceptable?</text>
+  <path class="d-line-attn" d="M200 446 H110 V335 H189" marker-end="url(#rk-head-attn)"/>
+  <text class="d-label-attn" x="126" y="438" text-anchor="start">no</text>
+  <path class="d-line" d="M320 494 V537" marker-end="url(#rk-head)"/>
+  <text class="d-label" x="332" y="520" text-anchor="start">yes</text>
+  <rect class="d-key" x="190" y="538" width="260" height="42" rx="8"/>
+  <text class="d-title" x="320.0" y="564.0" text-anchor="middle">Approver approves the risk view</text>
+</svg>

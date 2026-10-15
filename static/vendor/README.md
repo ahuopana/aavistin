@@ -1,14 +1,13 @@
 # Vendored front-end libraries
 
 Served from our own origin so pages (and the end-to-end tests) do not
-depend on a public CDN. All are MIT licensed. No Node build is involved:
-files are the `dist` builds published on npm, copied unmodified.
+depend on a public CDN. No Node build is involved: files are the `dist`
+builds published on npm, copied unmodified.
 
-| File | Library | Version | Source |
-| --- | --- | --- | --- |
-| `alpine-3.17.4.min.js` | Alpine.js | 3.17.4 | `alpinejs/dist/cdn.min.js` |
-| `htmx-2.0.4.min.js` | htmx | 2.0.4 | `htmx.org/dist/htmx.min.js` |
-| `mermaid-11.12.0.min.js` | Mermaid | 11.12.0 | `mermaid/dist/mermaid.min.js` (loaded only on User Guide pages with diagrams) |
+The name, version and licence of each file are in `manifest.json`, which
+also feeds the User Guide's generated Licences page. Add every new file
+there (a test checks this).
 
-To upgrade: download the new `dist` file from npm, replace it here under a
-new versioned name, and update `templates/base.html`.
+To upgrade: download the new `dist` file from npm, add it here under a
+new versioned name, update `templates/base.html` and `manifest.json`, and
+delete the old file. See `docs/development.md`.

@@ -45,3 +45,5 @@ both, or neither on a given product.
   control.
 - [Reports](reports) — PDF reports of a configuration, drafts and
   verifiable approved reports.
+- [Licences](licences) — the licence Aavistin is released under and the licences
+  of everything it is built with. Generated, so always current.

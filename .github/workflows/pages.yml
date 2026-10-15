@@ -9,7 +9,11 @@ on:
       - "templates/userguide/**"
       - "static/css/**"
       - "static/img/**"
-      - "static/vendor/mermaid-*.js"
+      - "static/vendor/manifest.json"
+      # The Licences page is generated from these.
+      - "pyproject.toml"
+      - "uv.lock"
+      - "LICENSE"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 

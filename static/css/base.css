@@ -1551,3 +1551,97 @@ a.risk-stat:hover {
   vertical-align: super;
   cursor: help;
 }
+
+/* User Guide diagrams: the SVGs in docs/userguide/images/ are inlined into
+   the page, so these rules (not the <style> inside each file, which exists
+   only so the file looks right when opened on its own) colour them from the
+   theme tokens and follow the light/dark switch. */
+.userguide-page .diagram {
+  margin: var(--space-3) 0;
+  overflow-x: auto;
+}
+
+.userguide-page svg.diagram {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+
+svg.diagram .d-box {
+  fill: var(--color-surface);
+  stroke: var(--color-border);
+  stroke-width: 1.5;
+}
+
+svg.diagram .d-key {
+  fill: var(--color-brand-tint);
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+}
+
+svg.diagram .d-badge {
+  fill: var(--color-accent-fill);
+}
+
+svg.diagram .d-badge-text {
+  fill: var(--color-on-accent-fill);
+  font-weight: 600;
+}
+
+svg.diagram .d-title {
+  fill: var(--color-text);
+  font-weight: 600;
+}
+
+svg.diagram .d-sub {
+  fill: var(--color-text-muted);
+  font-size: 12px;
+}
+
+svg.diagram .d-line {
+  fill: none;
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+}
+
+svg.diagram .d-line-attn {
+  fill: none;
+  stroke: var(--color-attention);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+svg.diagram .d-head,
+svg.diagram .d-dot {
+  fill: var(--color-text-muted);
+  stroke: none;
+}
+
+svg.diagram .d-head-attn {
+  fill: var(--color-attention);
+}
+
+svg.diagram .d-ring {
+  fill: none;
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+}
+
+svg.diagram .d-label,
+svg.diagram .d-label-attn {
+  font-size: 12px;
+  paint-order: stroke;
+  stroke: var(--color-bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+svg.diagram .d-label {
+  fill: var(--color-text-muted);
+}
+
+svg.diagram .d-label-attn {
+  fill: var(--color-warning);
+}
