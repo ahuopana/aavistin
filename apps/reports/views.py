@@ -1,11 +1,13 @@
 import hashlib
 import io
 
+from django.conf import settings
 from django.contrib import messages as django_messages
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
+from apps.core import throttle
 from apps.core.navigation import breadcrumbs
 from apps.orgs.models import Role
 from apps.orgs.services import has_role, roles_for_user
@@ -14,6 +16,8 @@ from apps.products.models import Configuration
 from .content import SECTIONS, issue_blockers
 from .models import Report
 from .services import ReportError, default_title, generate_draft, issue_report
+
+VERIFY_SCOPE = "verify"
 
 DEFAULT_SECTIONS = [
     "product",
@@ -119,7 +123,11 @@ def _visible_report(request, report_id):
 @login_required
 def report_detail(request, report_id):
     report = _visible_report(request, report_id)
-    return render(request, "reports/detail.html", {"report": report})
+    return render(
+        request,
+        "reports/detail.html",
+        {"report": report, "verify_enabled": settings.REPORT_VERIFY_ENABLED},
+    )
 
 
 @login_required
@@ -135,15 +143,44 @@ def report_pdf(request, report_id):
 
 def verify(request, report_id):
     """Public check of an issued report. Drafts are never stored, so a draft
-    id and an unknown id are indistinguishable (ADR 0041)."""
+    id and an unknown id are indistinguishable (ADR 0041).
+
+    Unauthenticated, so it can be switched off (``REPORT_VERIFY_ENABLED``), is
+    rate limited per client address, and caps and streams the uploaded file
+    (ADR 0044)."""
+    if not settings.REPORT_VERIFY_ENABLED:
+        raise Http404("Report verification is disabled.")
+    ip = throttle.client_ip(request)
+    wait = throttle.retry_after(
+        VERIFY_SCOPE,
+        ip,
+        limit=settings.REPORT_VERIFY_RATE_LIMIT,
+        window=settings.REPORT_VERIFY_RATE_WINDOW_SECONDS,
+    )
+    if wait:
+        response = HttpResponse("Too many requests. Try again later.", status=429)
+        response["Retry-After"] = str(wait)
+        return response
+    throttle.record(VERIFY_SCOPE, ip)
+
     report = Report.objects.filter(report_id=report_id.upper()).first()
     result = None
-    if report is not None and request.method == "POST" and request.FILES.get("pdf"):
-        digest = hashlib.sha256(request.FILES["pdf"].read()).hexdigest()
-        result = "match" if digest == report.pdf_sha256 else "mismatch"
+    error = ""
+    upload = request.FILES.get("pdf") if request.method == "POST" else None
+    if report is not None and upload is not None:
+        if upload.size > settings.REPORT_VERIFY_MAX_BYTES:
+            error = (
+                f"The file is larger than the {settings.REPORT_VERIFY_MAX_BYTES // (1024 * 1024)}"
+                " MB limit."
+            )
+        else:
+            hasher = hashlib.sha256()
+            for chunk in upload.chunks():
+                hasher.update(chunk)
+            result = "match" if hasher.hexdigest() == report.pdf_sha256 else "mismatch"
     return render(
         request,
         "reports/verify.html",
-        {"report": report, "report_id": report_id, "result": result},
+        {"report": report, "report_id": report_id, "result": result, "error": error},
         status=200 if report else 404,
     )

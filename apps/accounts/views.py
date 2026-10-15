@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import PasswordChangeView
+from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -15,6 +15,7 @@ from . import avatars
 from .forms import ProfileForm
 from .models import AuthSource, Theme
 from .prefs import effective_time_zone, get_profile
+from .throttle import lockout_seconds
 
 User = get_user_model()
 
@@ -88,3 +89,17 @@ class ProfilePasswordChangeView(PasswordChangeView):
     def form_valid(self, form):
         messages.success(self.request, "Password changed.")
         return super().form_valid(form)
+
+
+class ThrottledLoginView(LoginView):
+    """The sign-in page; tells the user when failed attempts have locked sign-in."""
+
+    template_name = "registration/login.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.method == "POST":
+            wait = lockout_seconds(self.request, self.request.POST.get("username", ""))
+            if wait:
+                context["locked_minutes"] = max(1, -(-wait // 60))
+        return context

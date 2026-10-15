@@ -65,6 +65,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "apps.core.middleware.RequestSizeLimitMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -127,6 +128,7 @@ LOGOUT_REDIRECT_URL = "core:home"
 # See docs/architecture.md, "Authentication and authorization".
 
 AUTHENTICATION_BACKENDS = [
+    "apps.accounts.throttle.ThrottleBackend",
     "django.contrib.auth.backends.ModelBackend",
 ]
 
@@ -167,9 +169,22 @@ if LDAP_ENABLED:
     AUTH_LDAP_USER_FLAGS_BY_GROUP = {}
 
     AUTHENTICATION_BACKENDS = [
+        "apps.accounts.throttle.ThrottleBackend",
         "django_auth_ldap.backend.LDAPBackend",
         "django.contrib.auth.backends.ModelBackend",
     ]
+
+
+# Failed-login throttling (docs/adr/0044-throttling-and-upload-limits.md).
+# A username (existing or not) is locked after LOGIN_THROTTLE_MAX_FAILURES failures
+# within the window, and a client address after LOGIN_THROTTLE_MAX_FAILURES_PER_IP.
+# Behind a proxy set CLIENT_IP_HEADER (e.g. HTTP_X_FORWARDED_FOR) or every client
+# shares the proxy's address; only do so if the proxy overwrites that header.
+LOGIN_THROTTLE_ENABLED = env.bool("LOGIN_THROTTLE_ENABLED", default=True)
+LOGIN_THROTTLE_MAX_FAILURES = env.int("LOGIN_THROTTLE_MAX_FAILURES", default=5)
+LOGIN_THROTTLE_MAX_FAILURES_PER_IP = env.int("LOGIN_THROTTLE_MAX_FAILURES_PER_IP", default=30)
+LOGIN_THROTTLE_WINDOW_SECONDS = env.int("LOGIN_THROTTLE_WINDOW_SECONDS", default=15 * 60)
+CLIENT_IP_HEADER = env.str("CLIENT_IP_HEADER", default="")
 
 
 # Password validation
@@ -230,6 +245,46 @@ STORAGES = {
 # go through the authenticated evidence download view.
 MEDIA_ROOT = env.str("MEDIA_ROOT", default="")
 UPLOADS_ENABLED = bool(MEDIA_ROOT)
+
+# Upload and request size limits (docs/adr/0044-throttling-and-upload-limits.md).
+EVIDENCE_MAX_UPLOAD_BYTES = env.int("EVIDENCE_MAX_UPLOAD_BYTES", default=25 * 1024 * 1024)
+EVIDENCE_ALLOWED_EXTENSIONS = frozenset(
+    ext.strip().lower().lstrip(".")
+    for ext in env.list(
+        "EVIDENCE_ALLOWED_EXTENSIONS",
+        default=[
+            "pdf",
+            "txt",
+            "md",
+            "csv",
+            "json",
+            "xml",
+            "png",
+            "jpg",
+            "jpeg",
+            "gif",
+            "docx",
+            "xlsx",
+            "pptx",
+            "odt",
+            "ods",
+            "odp",
+            "zip",
+        ],  # fmt: skip
+    )
+    if ext.strip()
+)
+# Public report verification (/verify/<id>/): can be switched off entirely.
+REPORT_VERIFY_ENABLED = env.bool("REPORT_VERIFY_ENABLED", default=True)
+REPORT_VERIFY_MAX_BYTES = env.int("REPORT_VERIFY_MAX_BYTES", default=20 * 1024 * 1024)
+REPORT_VERIFY_RATE_LIMIT = env.int("REPORT_VERIFY_RATE_LIMIT", default=20)
+REPORT_VERIFY_RATE_WINDOW_SECONDS = env.int("REPORT_VERIFY_RATE_WINDOW_SECONDS", default=600)
+# Largest request body accepted at all (413 above this, before the body is read).
+MAX_REQUEST_BYTES = env.int(
+    "MAX_REQUEST_BYTES",
+    default=max(EVIDENCE_MAX_UPLOAD_BYTES, REPORT_VERIFY_MAX_BYTES) + 1024 * 1024,
+)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024  # non-file form data
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

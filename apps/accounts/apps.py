@@ -7,4 +7,4 @@ class AccountsConfig(AppConfig):
     label = "accounts"
 
     def ready(self):
-        from . import signals  # noqa: F401
+        from . import signals, throttle  # noqa: F401

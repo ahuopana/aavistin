@@ -183,12 +183,16 @@ def evidence_download(request, pk):
     if evidence.file is None or not settings.UPLOADS_ENABLED:
         raise Http404("No downloadable file.")
     stored = evidence.file
-    return FileResponse(
+    response = FileResponse(
         stored.file.open("rb"),
         as_attachment=True,
         filename=stored.file.name.rsplit("/", 1)[-1],
-        content_type=stored.content_type or None,
+        content_type=stored.content_type or "application/octet-stream",
     )
+    # Uploaded content is untrusted: never let a browser run or sniff it.
+    response["Content-Security-Policy"] = "sandbox; default-src 'none'"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @login_required
