@@ -22,7 +22,7 @@ from django.views.decorators.http import require_POST
 from apps.core.navigation import breadcrumbs, configuration_workflow, latest_risk_assessment
 from apps.core.readiness import register_readiness
 from apps.orgs.models import Role
-from apps.orgs.services import has_role
+from apps.orgs.services import has_role, require_product_view
 from apps.packages.models import PackageKind, PackageStatus, RequirementPackage
 from apps.products.models import Configuration, HardwareVariant, SoftwareOption, SoftwareRelease
 
@@ -106,7 +106,7 @@ def _entry_row(entry: RiskEntry, methods) -> dict:
 @login_required
 def register(request, pk):
     configuration = get_object_or_404(Configuration, pk=pk)
-    product = configuration.product
+    product = require_product_view(request.user, configuration.product)
     methods = _methods()
 
     entries = register_for_configuration(configuration)
@@ -180,6 +180,7 @@ def register(request, pk):
 @login_required
 def entry_detail(request, pk, entry_pk):
     configuration = get_object_or_404(Configuration, pk=pk)
+    require_product_view(request.user, configuration.product)
     entry = get_object_or_404(
         RiskEntry.objects.select_related(
             "asset",
@@ -1117,7 +1118,7 @@ def _suggestion_rows(configuration) -> list[dict]:
 @login_required
 def suggestions(request, pk):
     configuration = get_object_or_404(Configuration, pk=pk)
-    product = configuration.product
+    product = require_product_view(request.user, configuration.product)
     return render(
         request,
         "risk/suggestions.html",

@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST
 
 from apps.core.navigation import breadcrumbs
 from apps.orgs.models import Role
-from apps.orgs.services import has_role
+from apps.orgs.services import has_role, require_product_view
 from apps.products.models import Product
 from apps.risk.models import Control
 
@@ -72,7 +72,7 @@ def _link_target(evidence, target, actor):
 
 @login_required
 def product_evidence_list(request, product_pk):
-    product = get_object_or_404(Product, pk=product_pk)
+    product = require_product_view(request.user, get_object_or_404(Product, pk=product_pk))
     return render(
         request,
         "evidence/product_list.html",
@@ -153,6 +153,7 @@ def evidence_create(request, product_pk):
 @login_required
 def evidence_detail(request, pk):
     evidence = get_object_or_404(Evidence, pk=pk)
+    require_product_view(request.user, evidence.product)
     return render(
         request,
         "evidence/detail.html",
@@ -178,6 +179,7 @@ def evidence_detail(request, pk):
 @login_required
 def evidence_download(request, pk):
     evidence = get_object_or_404(Evidence, pk=pk)
+    require_product_view(request.user, evidence.product)
     if evidence.file is None or not settings.UPLOADS_ENABLED:
         raise Http404("No downloadable file.")
     stored = evidence.file

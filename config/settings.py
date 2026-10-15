@@ -8,6 +8,7 @@ read with django-environ. No secrets live in this repository.
 from pathlib import Path
 
 import environ
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -16,11 +17,25 @@ env = environ.Env(
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", default="insecure-dev-key-change-me")
-
 DEBUG = env.bool("DEBUG", default=False)
 
+_INSECURE_DEFAULT_KEY = "insecure-dev-key-change-me"
+SECRET_KEY = env("DJANGO_SECRET_KEY", default=_INSECURE_DEFAULT_KEY)
+if not DEBUG and (
+    not SECRET_KEY or SECRET_KEY in (_INSECURE_DEFAULT_KEY, "change-me-to-a-random-value")
+):
+    # Fail closed: sessions and signed cookies must never be signed with a
+    # published key. (docs/adr/0043-production-security-settings.md)
+    raise ImproperlyConfigured(
+        "DJANGO_SECRET_KEY is unset or a placeholder. Set it to a long random value "
+        "(e.g. python -c 'import secrets; print(secrets.token_urlsafe(64))')."
+    )
+
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
+
+# Origins allowed to POST when served behind a proxy on another scheme/host,
+# e.g. https://aavistin.example.org (scheme required).
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
 
 # Application definition
@@ -166,6 +181,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 12},
     },
     {
         "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
@@ -221,8 +237,33 @@ UPLOADS_ENABLED = bool(MEDIA_ROOT)
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-# Security: honour X-Forwarded-Proto from the reverse proxy in production.
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# Transport and cookie security (docs/adr/0043-production-security-settings.md).
+#
+# Behind a TLS-terminating reverse proxy, set TRUST_X_FORWARDED_PROTO=True so
+# Django sees the request as secure. It is off by default: if the app is ever
+# reachable without the proxy, a client could forge the header. Only enable
+# it when the proxy overwrites X-Forwarded-Proto and gunicorn is not exposed.
+if env.bool("TRUST_X_FORWARDED_PROTO", default=False):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Everything below is on outside DEBUG, each overridable by environment variable
+# for plain-HTTP evaluation setups. Local development (DEBUG=True) stays on HTTP.
+SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEBUG)
+CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=not DEBUG)
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_AGE = env.int("SESSION_COOKIE_AGE", default=12 * 60 * 60)
+SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=False)
+# HSTS is only sent on HTTPS responses. Start small; raise to a year once HTTPS
+# is confirmed working, and only then consider preload.
+SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=0 if DEBUG else 3600)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False)
+SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", default=False)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
 
 
 # Background jobs

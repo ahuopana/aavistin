@@ -58,6 +58,17 @@ jobs:
       - name: Django system checks
         run: uv run manage.py check
 
+      - name: Django deployment checks
+        env:
+          # A production-shaped key and settings, so --deploy audits what a real deployment sees.
+          DJANGO_SECRET_KEY: ci-only-0123456789-abcdefghijklmnopqrstuvwxyz-ABCDEFGHIJKLMNOPQRSTUVWXYZ
+          TRUST_X_FORWARDED_PROTO: "True"
+          SECURE_SSL_REDIRECT: "True"
+          SECURE_HSTS_SECONDS: "31536000"
+          SECURE_HSTS_INCLUDE_SUBDOMAINS: "True"
+          SECURE_HSTS_PRELOAD: "True"
+        run: uv run manage.py check --deploy --fail-level WARNING
+
       - name: Check for missing migrations
         run: uv run manage.py makemigrations --check --dry-run
 
