@@ -285,6 +285,13 @@ class DashboardViewTests(DashboardFixture):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "core/dashboard.html")
 
+    def test_risk_bar_links_to_the_products_risk_status(self):
+        self.client.force_login(self.editor)
+        response = self.client.get(reverse("core:home"))
+        self.assertContains(
+            response, reverse("products:product_detail", args=[self.product.pk]) + "?tab=risk"
+        )
+
     def test_outsider_sees_empty_state_cta(self):
         self.client.force_login(self.outsider)
         response = self.client.get(reverse("core:home"))
@@ -306,6 +313,13 @@ class ComplianceViewTests(DashboardFixture):
         self.assertContains(response, "Action required</th>")
         self.assertContains(
             response, reverse("products:product_compliance", args=[self.product.pk])
+        )
+
+    def test_risk_bar_links_to_the_products_risk_status(self):
+        self.client.force_login(self.viewer)
+        response = self.client.get(reverse("core:compliance"))
+        self.assertContains(
+            response, reverse("products:product_detail", args=[self.product.pk]) + "?tab=risk"
         )
 
     def test_outsider_sees_empty_state_cta(self):

@@ -621,6 +621,12 @@ def _editable_entry(request, pk, entry_pk):
     return configuration, entry
 
 
+def _touch(entry):
+    """Record that the entry changed: ratings and consequences have no
+    timestamp of their own, and the portfolio ageing reads the entry's."""
+    entry.save(update_fields=["updated_at"])
+
+
 def _back(configuration, entry, anchor=""):
     url = reverse("risk:entry_detail", args=[configuration.pk, entry.pk])
     return redirect(f"{url}#{anchor}" if anchor else url)
@@ -743,6 +749,7 @@ def rating_save(request, pk, entry_pk):
         if likelihood is None:
             Rating.objects.filter(entry=entry, method=method).delete()
             Treatment.objects.filter(entry=entry, method=method).delete()
+            _touch(entry)
             django_messages.success(request, f"Rating under {method.source} removed.")
             return _back(configuration, entry, "rating")
         rating = Rating.objects.filter(entry=entry, method=method).first() or Rating(
@@ -755,6 +762,7 @@ def rating_save(request, pk, entry_pk):
         _flash_errors(request, exc)
         return _back(configuration, entry, "rating")
     rating.save()
+    _touch(entry)
     django_messages.success(request, f"Rating under {method.source} saved.")
     return _back(configuration, entry, "rating")
 
@@ -799,6 +807,7 @@ def consequence_add(request, pk, entry_pk):
         _flash_errors(request, exc)
         return _back(configuration, entry, "consequences")
     consequence.save()
+    _touch(entry)
     django_messages.success(request, "Consequence added.")
     return _back(configuration, entry, "consequences")
 
@@ -810,6 +819,7 @@ def consequence_delete(request, pk, entry_pk, consequence_pk):
     if configuration is None:
         return entry
     get_object_or_404(ThreatConsequence, pk=consequence_pk, threat=entry).delete()
+    _touch(entry)
     django_messages.success(request, "Consequence removed.")
     return _back(configuration, entry, "consequences")
 

@@ -166,3 +166,13 @@ The top of the risk register shows where the risk stands right now. The same fig
 - **Risk assessment.** Whether the configuration has an approved risk assessment, whether it is stale, how old it is, and whether a method or catalog has a newer approved version than the one it used.
 
 On the product page, each threat or hazard counts once, even when it applies to several configurations, and the table below lists each configuration separately so you can see which one holds the open items.
+
+## Risk across products
+
+The **Risk** link in the main navigation shows risk across every product you have a role on.
+
+- **Exposure and matrices.** The same classes and matrices as a product's Risk status, with every product's threats and hazards together. There is one matrix per risk method, because severities from different methods are never added up. Hover or focus a number to see which entries, and which product, sit in a cell.
+- **How long risks have waited.** Two charts. The first shows how long ago each threat or hazard, or its treatment, last changed. The second shows how long the open ones have been open: still above *accept* after treatment, or unrated. Bars are coloured by class after treatment, and each chart has a table version. Because the register does not record when a risk was first left unmitigated, the age of an open risk counts from the day it was added to the register.
+- **Open the longest** lists the five oldest open entries; **By product** shows one row per product.
+
+The risk bar on the Portfolio, the dashboard, the Compliance Overview and a product's page links to that product's Risk status tab.

@@ -2,6 +2,9 @@ from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import render
 
+from apps.products.services import editable_products
+from apps.risk.portfolio import portfolio_metrics
+
 from .compare import KINDS, build_subject, choice_label, diff_subjects, visible_objects
 from .navigation import approval_items, is_approver_anywhere
 from .services import compliance_overview, dashboard_products, dashboard_tasks, product_tree
@@ -36,6 +39,16 @@ def home(request):
 def compliance(request):
     overview = compliance_overview(request.user)
     return render(request, "core/compliance.html", overview)
+
+
+@login_required
+def risk_overview(request):
+    """Risk across every product the user can see: exposure, risk matrices
+    per method, and how long risks have gone unchanged or open (ADR 0048)."""
+    products = editable_products(request.user, role=None).select_related(
+        "product_family", "product_family__organisation"
+    )
+    return render(request, "core/risk_overview.html", {"m": portfolio_metrics(products)})
 
 
 @login_required

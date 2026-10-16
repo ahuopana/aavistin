@@ -209,6 +209,22 @@ class OrganisationViewTests(TestCase):
         self.assertContains(response, visible_product.name)
         self.assertNotContains(response, deleted_product.name)
 
+    def test_portfolio_risk_bar_links_to_the_products_risk_status(self):
+        from apps.products.models import Product
+
+        family = ProductFamily.objects.create(
+            organisation=self.org, name="Sensors", slug="sensors"
+        )
+        product = Product.objects.create(product_family=family, name="TempSense", slug="tempsense")
+        RoleAssignment.objects.create(role=Role.VIEWER, user=self.user, organisation=self.org)
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("orgs:portfolio"))
+
+        self.assertContains(
+            response, reverse("products:product_detail", args=[product.pk]) + "?tab=risk"
+        )
+
 
 class LdapOffByDefaultTests(TestCase):
     def test_ldap_disabled_by_default(self):
