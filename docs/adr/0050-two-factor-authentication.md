@@ -1,4 +1,4 @@
-# 45. Two-factor authentication
+# 50. Two-factor authentication
 
 ## Status
 
@@ -10,12 +10,12 @@ The security review flagged that the admin site and local accounts (including th
 
 ## Decision
 
-- **django-otp** with TOTP (RFC 6238) and single-use static recovery codes. Chosen over `django-two-factor-auth` because it does not replace the sign-in flow (`ThrottledLoginView`, ADR 0044) and over WebAuthn because TOTP works with every authenticator app (Microsoft Authenticator, Google Authenticator, Authy, 1Password and others) with no hardware. Passkeys (WebAuthn) are a planned later addition on the same foundation.
+- **django-otp** with TOTP (RFC 6238) and single-use static recovery codes. Chosen over `django-two-factor-auth` because it does not replace the sign-in flow (`ThrottledLoginView`, ADR 0049) and over WebAuthn because TOTP works with every authenticator app (Microsoft Authenticator, Google Authenticator, Authy, 1Password and others) with no hardware. Passkeys (WebAuthn) are a planned later addition on the same foundation.
 - **Who:** administrators (`is_staff` or `is_superuser`, whatever their `auth_source`) and every local account. LDAP and SSO users without admin rights are expected to be protected by their directory or identity provider. `MFA_ENFORCE=False` switches the policy off (local development, browser tests); it defaults to on.
 - **When:** `MFAEnforcementMiddleware` redirects any signed-in user who needs a second factor and has not given it in this session. With no device, they go to enrolment at their next sign-in; with a device, to verification. Only enrolment, verification, sign-in and sign-out stay reachable. HTMX requests get an `HX-Redirect`. This covers `/admin/` and every other page.
 - **Enrolment** (`/accounts/mfa/setup/`) shows a QR code and the key for manual entry, confirms with one valid code, and then shows ten recovery codes once. It is refused once a confirmed device exists, so knowing the password alone never lets anyone add a second factor to an enrolled account.
 - **Recovery:** a recovery code works once. Users can generate a new set from their profile (the old set stops working). A user who lost both phone and codes asks an administrator to run `manage.py reset_mfa <username>`, which removes their devices so they enrol again at next sign-in. There is deliberately no self-service reset.
-- **Guessing:** failed second-factor attempts are counted with the ADR 0044 throttle (same limit and window as sign-in), on top of django-otp's own per-device throttling.
+- **Guessing:** failed second-factor attempts are counted with the ADR 0049 throttle (same limit and window as sign-in), on top of django-otp's own per-device throttling.
 - **Session:** the verified state lives in the session and ends at sign-out or session expiry (12 hours).
 
 ## Consequences

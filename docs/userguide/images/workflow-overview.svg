@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="diagram" viewBox="0 0 820 594" width="820" height="594" role="img" aria-labelledby="wf-title wf-desc">
+  <title id="wf-title">The whole flow, step by step</title>
+  <desc id="wf-desc">Eight steps in order: setup, describe the product, answer the questionnaire, assess compliance, risk assessment, evidence, report, keep it current. From assess compliance, findings or gaps send you back to the questionnaire; from keep it current, any change makes approvals stale and sends you back to assess compliance.</desc>
+  <style>
+    svg { font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; }
+    .d-box { fill: var(--color-surface, #f3f7f7); stroke: var(--color-border, #d5dfe0); stroke-width: 1.5; }
+    .d-key { fill: var(--color-brand-tint, #e3f2ef); stroke: var(--color-accent, #1b6f6d); stroke-width: 1.5; }
+    .d-badge { fill: var(--color-accent-fill, #1b6f6d); }
+    .d-badge-text { fill: var(--color-on-accent-fill, #ffffff); font-weight: 600; }
+    .d-title { fill: var(--color-text, #0f1a1e); font-weight: 600; }
+    .d-sub { fill: var(--color-text-muted, #46585c); font-size: 12px; }
+    .d-line { fill: none; stroke: var(--color-text-muted, #46585c); stroke-width: 1.5; }
+    .d-line-attn { fill: none; stroke: var(--color-attention, #f2711c); stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .d-head { fill: var(--color-text-muted, #46585c); }
+    .d-head-attn { fill: var(--color-attention, #f2711c); }
+    .d-dot { fill: var(--color-text-muted, #46585c); stroke: none; }
+    .d-ring { fill: none; stroke: var(--color-text-muted, #46585c); stroke-width: 1.5; }
+    .d-label { fill: var(--color-text-muted, #46585c); font-size: 12px; paint-order: stroke; stroke: var(--color-bg, #ffffff); stroke-width: 4px; stroke-linejoin: round; }
+    .d-label-attn { fill: var(--color-warning, #b5540e); font-size: 12px; paint-order: stroke; stroke: var(--color-bg, #ffffff); stroke-width: 4px; stroke-linejoin: round; }
+    @media (prefers-color-scheme: dark) {
+      svg { --color-bg: #0b161a; --color-surface: #12222a; --color-border: #264048; --color-text: #e6f0ef; --color-text-muted: #9fb3b5; --color-brand-tint: #14323a; --color-accent: #7fd6c9; --color-accent-fill: #8fe0d3; --color-on-accent-fill: #06201f; --color-attention: #ff9a4d; --color-warning: #e08b3d; }
+    }
+  </style>
+  <defs><marker id="wf-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head" d="M0 1L10 5L0 9z"/></marker><marker id="wf-head-attn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head-attn" d="M0 1L10 5L0 9z"/></marker></defs>
+  <rect class="d-box" x="8" y="4" width="520" height="54" rx="8"/>
+  <circle class="d-badge" cx="38" cy="31.0" r="14"/>
+  <text class="d-badge-text" x="38" y="35.5" text-anchor="middle">1</text>
+  <text class="d-title" x="68" y="27">Setup</text>
+  <text class="d-sub" x="68" y="45">Administrator, maintainer</text>
+  <path class="d-line" d="M268.0 58 V79" marker-end="url(#wf-head)"/>
+  <rect class="d-box" x="8" y="80" width="520" height="54" rx="8"/>
+  <circle class="d-badge" cx="38" cy="107.0" r="14"/>
+  <text class="d-badge-text" x="38" y="111.5" text-anchor="middle">2</text>
+  <text class="d-title" x="68" y="103">Describe the product</text>
+  <text class="d-sub" x="68" y="121">Editor</text>
+  <path class="d-line" d="M268.0 134 V155" marker-end="url(#wf-head)"/>
+  <rect class="d-box" x="8" y="156" width="520" height="54" rx="8"/>
+  <circle class="d-badge" cx="38" cy="183.0" r="14"/>
+  <text class="d-badge-text" x="38" y="187.5" text-anchor="middle">3</text>
+  <text class="d-title" x="68" y="179">Answer the questionnaire</text>
+  <text class="d-sub" x="68" y="197">Editor</text>
+  <path class="d-line" d="M268.0 210 V231" marker-end="url(#wf-head)"/>
+  <rect class="d-box" x="8" y="232" width="520" height="54" rx="8"/>
+  <circle class="d-badge" cx="38" cy="259.0" r="14"/>
+  <text class="d-badge-text" x="38" y="263.5" text-anchor="middle">4</text>
+  <text class="d-title" x="68" y="255">Assess compliance</text>
+  <text class="d-sub" x="68" y="273">Editor starts, Approver approves</text>
+  <path class="d-line" d="M268.0 286 V307" marker-end="url(#wf-head)"/>
+  <rect class="d-box" x="8" y="308" width="520" height="54" rx="8"/>
+  <circle class="d-badge" cx="38" cy="335.0" r="14"/>
+  <text class="d-badge-text" x="38" y="339.5" text-anchor="middle">5</text>
+  <text class="d-title" x="68" y="331">Risk assessment</text>
+  <text class="d-sub" x="68" y="349">Editor, then Approver</text>
+  <path class="d-line" d="M268.0 362 V383" marker-end="url(#wf-head)"/>
+  <rect class="d-box" x="8" y="384" width="520" height="54" rx="8"/>
+  <circle class="d-badge" cx="38" cy="411.0" r="14"/>
+  <text class="d-badge-text" x="38" y="415.5" text-anchor="middle">6</text>
+  <text class="d-title" x="68" y="407">Evidence</text>
+  <text class="d-sub" x="68" y="425">Editor</text>
+  <path class="d-line" d="M268.0 438 V459" marker-end="url(#wf-head)"/>
+  <rect class="d-box" x="8" y="460" width="520" height="54" rx="8"/>
+  <circle class="d-badge" cx="38" cy="487.0" r="14"/>
+  <text class="d-badge-text" x="38" y="491.5" text-anchor="middle">7</text>
+  <text class="d-title" x="68" y="483">Report</text>
+  <text class="d-sub" x="68" y="501">Anyone for a draft, Approver to issue</text>
+  <path class="d-line" d="M268.0 514 V535" marker-end="url(#wf-head)"/>
+  <rect class="d-box" x="8" y="536" width="520" height="54" rx="8"/>
+  <circle class="d-badge" cx="38" cy="563.0" r="14"/>
+  <text class="d-badge-text" x="38" y="567.5" text-anchor="middle">8</text>
+  <text class="d-title" x="68" y="559">Keep it current</text>
+  <text class="d-sub" x="68" y="577">Everyone</text>
+  <path class="d-line-attn" d="M528 249.0 H564 V183.0 H529" marker-end="url(#wf-head-attn)"/>
+  <text class="d-label-attn" x="576" y="202.0" text-anchor="start">Findings or gaps:</text>
+  <text class="d-label-attn" x="576" y="217.0" text-anchor="start">fix the answers</text>
+  <path class="d-line-attn" d="M528 563.0 H638 V269.0 H529" marker-end="url(#wf-head-attn)"/>
+  <text class="d-label-attn" x="650" y="405.0" text-anchor="start">Anything changes:</text>
+  <text class="d-label-attn" x="650" y="420.0" text-anchor="start">stale, re-review</text>
+</svg>

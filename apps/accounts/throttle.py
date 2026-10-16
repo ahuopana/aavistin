@@ -1,4 +1,4 @@
-"""Failed-login throttling (docs/adr/0044).
+"""Failed-login throttling (docs/adr/0049).
 
 Enforced in an authentication backend, so the sign-in page, the admin login and
 anything else that calls ``authenticate`` are all covered, whichever backend would

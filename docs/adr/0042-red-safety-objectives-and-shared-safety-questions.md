@@ -4,7 +4,7 @@ Status: Accepted (content is not legally reviewed).
 
 ## Context
 
-`eu-lvd` excludes radio equipment, because RED Art. 3(1)(a) applies the LVD safety objectives to it without the voltage limits (ADR 0041). Both packages use the same radio test, so exactly one of them covers a product's electrical safety. But `eu-red` 1.0.0 had a single Art. 3(1)(a) requirement that only pointed to the LVD, and none of the LVD's safety and marking questions. A mains-powered Wi-Fi device lost those checks when it moved from LVD to RED, although the legal duty is the same. This came up while debugging why a demo product with a radio and a 220 V input was out of LVD scope.
+`eu-lvd` excludes radio equipment, because RED Art. 3(1)(a) applies the LVD safety objectives to it without the voltage limits (ADR 0045). Both packages use the same radio test, so exactly one of them covers a product's electrical safety. But `eu-red` 1.0.0 had a single Art. 3(1)(a) requirement that only pointed to the LVD, and none of the LVD's safety and marking questions. A mains-powered Wi-Fi device lost those checks when it moved from LVD to RED, although the legal duty is the same. This came up while debugging why a demo product with a radio and a 220 V input was out of LVD scope.
 
 ## Decisions
 

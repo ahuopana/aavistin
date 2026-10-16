@@ -1,0 +1,5 @@
+{% load risk_tags %}
+<td class="heatmap-cell class-{{ cell.acceptance }}" title="{{ cell.level }}: S{{ cell.severity }} × L{{ cell.likelihood }}{% if entries %} — {{ entries|labels }}{% endif %}">
+  <span class="heatmap-glyph" aria-hidden="true">{% if cell.acceptance == "must_treat" %}&#10005;{% elif cell.acceptance == "justify" %}!{% else %}&#10003;{% endif %}</span>
+  {% if entries %}<span class="heatmap-count" tabindex="0" aria-label="{{ entries|length }} entries at {{ cell.level }}: {{ entries|labels }}">{{ entries|length }}</span>{% endif %}
+</td>

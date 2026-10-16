@@ -5,7 +5,7 @@ class ThrottleEvent(models.Model):
     """One countable event (a failed login, a verify request) for rate limiting.
 
     Kept in PostgreSQL rather than a cache so limits hold across gunicorn
-    workers and restarts without adding a Redis dependency (ADR 0044). Rows
+    workers and restarts without adding a Redis dependency (ADR 0049). Rows
     are pruned on write by ``apps.core.throttle.record``.
     """
 

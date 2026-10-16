@@ -4,7 +4,7 @@ from django.http import HttpResponse
 
 class RequestSizeLimitMiddleware:
     """Reject requests whose declared body exceeds ``MAX_REQUEST_BYTES`` with 413,
-    before Django reads or spools the body (docs/adr/0044). Reverse proxies should
+    before Django reads or spools the body (docs/adr/0049). Reverse proxies should
     enforce the same cap (nginx ``client_max_body_size``)."""
 
     def __init__(self, get_response):

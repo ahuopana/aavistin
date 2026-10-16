@@ -1,0 +1,21 @@
+<figure class="heatmap-figure">
+  <figcaption>{{ caption }}</figcaption>
+  <table class="heatmap">
+    <thead>
+      <tr>
+        <td></td>
+        {% for lik in grid.likelihoods %}<th scope="col" title="{{ lik.label }}">L{{ lik.value }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in grid.rows %}
+        <tr>
+          <th scope="row" title="{{ row.label }}">S{{ row.severity }}</th>
+          {% for cell in row.cells %}
+            {% if phase == "inherent" %}{% with entries=cell.inherent %}{% include "risk/_heatmap_cell.html" %}{% endwith %}{% else %}{% with entries=cell.residual %}{% include "risk/_heatmap_cell.html" %}{% endwith %}{% endif %}
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</figure>

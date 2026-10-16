@@ -1,4 +1,4 @@
-"""Two-factor authentication policy (docs/adr/0045-two-factor-authentication.md).
+"""Two-factor authentication policy (docs/adr/0050-two-factor-authentication.md).
 
 TOTP via django-otp (works with Microsoft Authenticator, Google Authenticator and
 any RFC 6238 app) plus single-use recovery codes. Required for administrators

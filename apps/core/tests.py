@@ -105,7 +105,14 @@ class ComplianceOverviewTests(DashboardFixture):
         overview = compliance_overview(self.outsider)
         self.assertEqual(overview["rows"], [])
         self.assertEqual(
-            overview["totals"], {"questions": (0, 0), "compliance": (0, 0), "risk": (0, 0)}
+            overview["totals"],
+            {
+                "questions": (0, 0),
+                "compliance": (0, 0),
+                "risk": (0, 0),
+                "must_treat": 0,
+                "unrated": 0,
+            },
         )
 
     def test_viewer_sees_product_with_ratios_and_totals(self):

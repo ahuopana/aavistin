@@ -147,7 +147,7 @@ def verify(request, report_id):
 
     Unauthenticated, so it can be switched off (``REPORT_VERIFY_ENABLED``), is
     rate limited per client address, and caps and streams the uploaded file
-    (ADR 0044)."""
+    (ADR 0049)."""
     if not settings.REPORT_VERIFY_ENABLED:
         raise Http404("Report verification is disabled.")
     ip = throttle.client_ip(request)

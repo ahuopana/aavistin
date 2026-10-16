@@ -25,17 +25,13 @@ if not DEBUG and (
     not SECRET_KEY or SECRET_KEY in (_INSECURE_DEFAULT_KEY, "change-me-to-a-random-value")
 ):
     # Fail closed: sessions and signed cookies must never be signed with a
-    # published key. (docs/adr/0043-production-security-settings.md)
+    # published key. (docs/adr/0048-production-security-settings.md)
     raise ImproperlyConfigured(
         "DJANGO_SECRET_KEY is unset or a placeholder. Set it to a long random value "
         "(e.g. python -c 'import secrets; print(secrets.token_urlsafe(64))')."
     )
 
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
-
-# Origins allowed to POST when served behind a proxy on another scheme/host,
-# e.g. https://aavistin.example.org (scheme required).
-CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
 
 # Application definition
@@ -180,7 +176,7 @@ if LDAP_ENABLED:
     ]
 
 
-# Failed-login throttling (docs/adr/0044-throttling-and-upload-limits.md).
+# Failed-login throttling (docs/adr/0049-throttling-and-upload-limits.md).
 # A username (existing or not) is locked after LOGIN_THROTTLE_MAX_FAILURES failures
 # within the window, and a client address after LOGIN_THROTTLE_MAX_FAILURES_PER_IP.
 # Behind a proxy set CLIENT_IP_HEADER (e.g. HTTP_X_FORWARDED_FOR) or every client
@@ -192,7 +188,7 @@ LOGIN_THROTTLE_WINDOW_SECONDS = env.int("LOGIN_THROTTLE_WINDOW_SECONDS", default
 CLIENT_IP_HEADER = env.str("CLIENT_IP_HEADER", default="")
 
 
-# Two-factor authentication (docs/adr/0045-two-factor-authentication.md). Required for
+# Two-factor authentication (docs/adr/0050-two-factor-authentication.md). Required for
 # administrators and every local account; enrolment is forced at the next sign-in.
 # Turn off only for local development or automated browser tests.
 MFA_ENFORCE = env.bool("MFA_ENFORCE", default=True)
@@ -258,7 +254,7 @@ STORAGES = {
 MEDIA_ROOT = env.str("MEDIA_ROOT", default="")
 UPLOADS_ENABLED = bool(MEDIA_ROOT)
 
-# Upload and request size limits (docs/adr/0044-throttling-and-upload-limits.md).
+# Upload and request size limits (docs/adr/0049-throttling-and-upload-limits.md).
 EVIDENCE_MAX_UPLOAD_BYTES = env.int("EVIDENCE_MAX_UPLOAD_BYTES", default=25 * 1024 * 1024)
 EVIDENCE_ALLOWED_EXTENSIONS = frozenset(
     ext.strip().lower().lstrip(".")
@@ -304,29 +300,34 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024  # non-file form data
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-# Transport and cookie security (docs/adr/0043-production-security-settings.md).
-#
-# Behind a TLS-terminating reverse proxy, set TRUST_X_FORWARDED_PROTO=True so
-# Django sees the request as secure. It is off by default: if the app is ever
-# reachable without the proxy, a client could forge the header. Only enable
-# it when the proxy overwrites X-Forwarded-Proto and gunicorn is not exposed.
-if env.bool("TRUST_X_FORWARDED_PROTO", default=False):
+# Hardening for a deployment served over HTTPS (docs/adr/0044-https-hardening-settings.md,
+# extended by docs/adr/0048-production-security-settings.md).
+# Everything defaults to off so plain-HTTP local use and CI keep working;
+# `manage.py check --deploy` lists what is still off.
+# HTTPS_ONLY redirects HTTP to HTTPS and marks the session and CSRF cookies secure.
+HTTPS_ONLY = env.bool("HTTPS_ONLY", default=False)
+SECURE_SSL_REDIRECT = HTTPS_ONLY
+SESSION_COOKIE_SECURE = HTTPS_ONLY
+CSRF_COOKIE_SECURE = HTTPS_ONLY
+# HSTS is sticky in browsers, so it is a separate, explicit choice (seconds).
+SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=0)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False)
+SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", default=False)
+# Needed when the site is served from a name the proxy rewrites, e.g. https://aavistin.example.org
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
+# X-Forwarded-Proto is only believed when the operator says a proxy sets it. Setting
+# HTTPS_ONLY implies that (the README requires the proxy to send it); otherwise a client
+# that can reach the app port directly could forge the header. Set TRUST_X_FORWARDED_PROTO
+# explicitly to override either way.
+TRUST_X_FORWARDED_PROTO = env.bool("TRUST_X_FORWARDED_PROTO", default=HTTPS_ONLY)
+if TRUST_X_FORWARDED_PROTO:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# Everything below is on outside DEBUG, each overridable by environment variable
-# for plain-HTTP evaluation setups. Local development (DEBUG=True) stays on HTTP.
-SESSION_COOKIE_SECURE = env.bool("SESSION_COOKIE_SECURE", default=not DEBUG)
-CSRF_COOKIE_SECURE = env.bool("CSRF_COOKIE_SECURE", default=not DEBUG)
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_AGE = env.int("SESSION_COOKIE_AGE", default=12 * 60 * 60)
-SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=False)
-# HSTS is only sent on HTTPS responses. Start small; raise to a year once HTTPS
-# is confirmed working, and only then consider preload.
-SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=0 if DEBUG else 3600)
-SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False)
-SECURE_HSTS_PRELOAD = env.bool("SECURE_HSTS_PRELOAD", default=False)
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"

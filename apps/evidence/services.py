@@ -45,7 +45,7 @@ _SIGNATURES = {
 
 def validate_evidence_upload(django_file) -> str:
     """Check an upload against the size cap, the extension allowlist and, where the
-    type has one, its magic bytes (docs/adr/0044). Returns the lower-case extension.
+    type has one, its magic bytes (docs/adr/0049). Returns the lower-case extension.
     The client-supplied content type is never trusted; see ``stored_content_type``."""
     size = django_file.size or 0
     if size <= 0:

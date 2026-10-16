@@ -1,4 +1,4 @@
-# 44. Login throttling, upload limits and optional public verification
+# 49. Login throttling, upload limits and optional public verification
 
 ## Status
 
@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-The security review (ADR 0043 follow-up) found three abuse paths: unlimited password guessing against local accounts (including the break-glass `ModelBackend` that stays on beside LDAP), evidence uploads with no size, type or content checks, and the unauthenticated `/verify/<id>/` page, which read the whole uploaded file into memory and could be hit without limit.
+The security review (ADR 0048 follow-up) found three abuse paths: unlimited password guessing against local accounts (including the break-glass `ModelBackend` that stays on beside LDAP), evidence uploads with no size, type or content checks, and the unauthenticated `/verify/<id>/` page, which read the whole uploaded file into memory and could be hit without limit.
 
 ## Decision
 

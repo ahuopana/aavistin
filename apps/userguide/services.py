@@ -19,8 +19,23 @@ import nh3
 from django.conf import settings
 from mistune.util import escape as escape_html
 
+from . import licenses
+
 USERGUIDE_DIR = Path(settings.BASE_DIR) / "docs" / "userguide"
 _FILENAME_RE = re.compile(r"^\d+-(?P<slug>[a-z0-9-]+)\.md$")
+
+# Pages with no Markdown file: slug -> (title, function returning Markdown).
+# They follow the file pages in reading order and go through the same
+# rendering and sanitising.
+GENERATED_PAGES = {
+    "licences": ("Licences", licenses.licenses_markdown),
+}
+
+# ``![alt](images/name.svg)`` inlines docs/userguide/images/name.svg, so the
+# diagram takes its colours and fonts from the page's CSS variables and follows
+# the light/dark switch. A plain <img> could not.
+_DIAGRAM_URL_RE = re.compile(r"^images/(?P<name>[a-z0-9-]+)\.svg$")
+_DIAGRAM_TOKEN_RE = re.compile(r"(?:<p>)?@@diagram:(?P<name>[a-z0-9-]+)@@(?:</p>)?")
 
 ALLOWED_TAGS = {
     "p",
@@ -50,9 +65,39 @@ ALLOWED_TAGS = {
 }
 ALLOWED_ATTRIBUTES = {
     "a": {"href", "title"},
-    # Only mermaid diagram blocks carry a class (see block_code below).
-    "pre": {"class"},
     "input": {"type", "checked", "disabled"},
+}
+
+# What a diagram SVG may contain. No scripts, links, images, styles or
+# external references: shapes, text, and arrowhead markers only.
+SVG_TAGS = {
+    "svg",
+    "title",
+    "desc",
+    "defs",
+    "marker",
+    "g",
+    "rect",
+    "circle",
+    "path",
+    "text",
+    "tspan",
+}
+_SVG_COMMON = {"class", "id"}
+SVG_ATTRIBUTES = {
+    "svg": _SVG_COMMON
+    | {"xmlns", "viewBox", "width", "height", "role", "aria-labelledby", "aria-hidden"},
+    "title": _SVG_COMMON,
+    "desc": _SVG_COMMON,
+    "defs": set(),
+    "g": _SVG_COMMON,
+    "marker": _SVG_COMMON
+    | {"viewBox", "refX", "refY", "markerWidth", "markerHeight", "markerUnits", "orient"},
+    "rect": _SVG_COMMON | {"x", "y", "width", "height", "rx", "ry"},
+    "circle": _SVG_COMMON | {"cx", "cy", "r"},
+    "path": _SVG_COMMON | {"d", "marker-end", "stroke-linejoin"},
+    "text": _SVG_COMMON | {"x", "y", "text-anchor"},
+    "tspan": _SVG_COMMON | {"x", "y", "dy"},
 }
 
 
@@ -61,10 +106,6 @@ class Page:
     slug: str
     title: str
     html: str
-
-    @property
-    def has_diagrams(self) -> bool:
-        return 'class="mermaid"' in self.html
 
 
 class _InternalLinkRenderer(mistune.HTMLRenderer):
@@ -78,18 +119,35 @@ class _InternalLinkRenderer(mistune.HTMLRenderer):
         self._known_slugs = known_slugs
         self._link_for = link_for
 
-    def block_code(self, code: str, info: str | None = None) -> str:
-        """```mermaid fences become <pre class="mermaid"> with the source
-        escaped, so it stays readable without JavaScript; the vendored
-        mermaid library draws the diagram in the browser."""
-        if info and info.split()[0] == "mermaid":
-            return f'<pre class="mermaid">{escape_html(code)}</pre>\n'
-        return super().block_code(code, info)
+    def image(self, text: str, url: str, title: str | None = None) -> str:
+        """A guide diagram becomes a placeholder that ``_inline_diagrams``
+        swaps for the sanitised SVG once the page HTML has been cleaned;
+        any other image is not supported and renders as its alt text."""
+        match = _DIAGRAM_URL_RE.match(url)
+        if match and _diagram_path(match["name"]).is_file():
+            return f"@@diagram:{match['name']}@@"
+        return escape_html(text)
 
     def link(self, text: str, url: str, title: str | None = None) -> str:
         if url in self._known_slugs:
             url = self._link_for(url)
         return super().link(text, url, title)
+
+
+def _diagram_path(name: str) -> Path:
+    return USERGUIDE_DIR / "images" / f"{name}.svg"
+
+
+def _inline_diagrams(html: str) -> str:
+    def replace(match: re.Match) -> str:
+        svg = nh3.clean(
+            _diagram_path(match["name"]).read_text(),
+            tags=SVG_TAGS,
+            attributes=SVG_ATTRIBUTES,
+        )
+        return f'<div class="diagram">{svg}</div>\n'
+
+    return _DIAGRAM_TOKEN_RE.sub(replace, html)
 
 
 def _page_files() -> list[Path]:
@@ -99,7 +157,7 @@ def _page_files() -> list[Path]:
 
 @lru_cache
 def _known_slugs() -> frozenset[str]:
-    return frozenset(_FILENAME_RE.match(p.name)["slug"] for p in _page_files())
+    return frozenset(_ordered_slugs())
 
 
 def _extract_title(body: str, *, fallback: str) -> tuple[str, str]:
@@ -115,7 +173,8 @@ def _extract_title(body: str, *, fallback: str) -> tuple[str, str]:
 
 
 def _ordered_slugs() -> list[str]:
-    return [_FILENAME_RE.match(p.name)["slug"] for p in _page_files()]
+    file_slugs = [_FILENAME_RE.match(p.name)["slug"] for p in _page_files()]
+    return file_slugs + [slug for slug in GENERATED_PAGES if slug not in file_slugs]
 
 
 def list_pages() -> list[dict]:
@@ -136,15 +195,19 @@ def render_page(slug: str, *, link_for=None) -> Page:
     caller anyway, which would defeat an lru_cache here.
     """
     matches = [p for p in _page_files() if _FILENAME_RE.match(p.name)["slug"] == slug]
-    if not matches:
+    if matches:
+        title, body = _extract_title(matches[0].read_text(), fallback=slug)
+    elif slug in GENERATED_PAGES:
+        title, make_markdown = GENERATED_PAGES[slug]
+        body = make_markdown()
+    else:
         raise KeyError(slug)
 
     link_for = link_for or (lambda s: s)
-    title, body = _extract_title(matches[0].read_text(), fallback=slug)
     renderer = _InternalLinkRenderer(known_slugs=_known_slugs(), link_for=link_for)
     md = mistune.create_markdown(
         renderer=renderer, plugins=["table", "task_lists", "strikethrough"]
     )
     raw_html = md(body)
     clean_html = nh3.clean(raw_html, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRIBUTES)
-    return Page(slug=slug, title=title, html=clean_html)
+    return Page(slug=slug, title=title, html=_inline_diagrams(clean_html))

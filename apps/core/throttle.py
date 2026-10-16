@@ -1,4 +1,4 @@
-"""Sliding-window rate limiting backed by the database (docs/adr/0044)."""
+"""Sliding-window rate limiting backed by the database (docs/adr/0049)."""
 
 from datetime import timedelta
 

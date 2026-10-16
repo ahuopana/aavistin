@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-{% load static %}
 
 {% block title %}{{ page.title }} · User Guide · Aavistin{% endblock %}
 
@@ -13,17 +12,4 @@
   <article class="userguide-page">
     {{ page.html|safe }}
   </article>
-{% endblock %}
-
-{% block extra_scripts %}
-  {% if page.has_diagrams %}
-    <script src="{% static 'vendor/mermaid-11.12.0.min.js' %}"></script>
-    <script>
-      (function () {
-        const theme = document.documentElement.getAttribute("data-theme");
-        const dark = theme === "dark" || (theme !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-        mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "default" });
-      })();
-    </script>
-  {% endif %}
 {% endblock %}
