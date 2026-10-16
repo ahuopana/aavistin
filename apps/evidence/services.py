@@ -5,6 +5,8 @@ reuse-over-re-upload, and delete protection tied to approval.
 """
 
 import hashlib
+import mimetypes
+import os
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
@@ -21,6 +23,53 @@ class EvidenceError(Exception):
 
 class EvidenceInUseError(EvidenceError):
     pass
+
+
+# Leading bytes a file of this type must start with. Types not listed (text, Office
+# containers, ...) are accepted on extension alone.
+_SIGNATURES = {
+    "pdf": (b"%PDF-",),
+    "png": (b"\x89PNG\r\n\x1a\n",),
+    "jpg": (b"\xff\xd8\xff",),
+    "jpeg": (b"\xff\xd8\xff",),
+    "gif": (b"GIF87a", b"GIF89a"),
+    "zip": (b"PK\x03\x04", b"PK\x05\x06"),
+    "docx": (b"PK\x03\x04",),
+    "xlsx": (b"PK\x03\x04",),
+    "pptx": (b"PK\x03\x04",),
+    "odt": (b"PK\x03\x04",),
+    "ods": (b"PK\x03\x04",),
+    "odp": (b"PK\x03\x04",),
+}
+
+
+def validate_evidence_upload(django_file) -> str:
+    """Check an upload against the size cap, the extension allowlist and, where the
+    type has one, its magic bytes (docs/adr/0049). Returns the lower-case extension.
+    The client-supplied content type is never trusted; see ``stored_content_type``."""
+    size = django_file.size or 0
+    if size <= 0:
+        raise EvidenceError("The file is empty.")
+    limit = settings.EVIDENCE_MAX_UPLOAD_BYTES
+    if limit and size > limit:
+        raise EvidenceError(f"The file is larger than the {limit // (1024 * 1024)} MB limit.")
+    extension = os.path.splitext(django_file.name or "")[1].lower().lstrip(".")
+    if extension not in settings.EVIDENCE_ALLOWED_EXTENSIONS:
+        allowed = ", ".join(sorted(settings.EVIDENCE_ALLOWED_EXTENSIONS))
+        raise EvidenceError(f"Files of this type are not accepted. Allowed types: {allowed}.")
+    signatures = _SIGNATURES.get(extension)
+    if signatures:
+        django_file.seek(0)
+        head = django_file.read(16)
+        django_file.seek(0)
+        if not head.startswith(signatures):
+            raise EvidenceError(f"The file content does not look like a .{extension} file.")
+    return extension
+
+
+def stored_content_type(name: str) -> str:
+    """Content type derived from the validated file name, not from the client."""
+    return mimetypes.guess_type(name)[0] or "application/octet-stream"
 
 
 def _checksum(django_file) -> str:
@@ -44,6 +93,7 @@ def store_evidence_file(django_file, *, actor=None) -> EvidenceFile:
             "File uploads are not enabled on this server (MEDIA_ROOT is not configured). "
             "Add a link or reference note instead."
         )
+    validate_evidence_upload(django_file)
     checksum = _checksum(django_file)
     existing = EvidenceFile.objects.filter(checksum=checksum).first()
     if existing is not None:
@@ -51,7 +101,7 @@ def store_evidence_file(django_file, *, actor=None) -> EvidenceFile:
 
     evidence_file = EvidenceFile(
         checksum=checksum,
-        content_type=getattr(django_file, "content_type", "") or "",
+        content_type=stored_content_type(django_file.name),
         size=django_file.size,
         uploaded_by=actor,
     )

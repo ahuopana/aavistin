@@ -217,5 +217,8 @@ class LdapOffByDefaultTests(TestCase):
         self.assertFalse(settings.LDAP_ENABLED)
         self.assertEqual(
             settings.AUTHENTICATION_BACKENDS,
-            ["django.contrib.auth.backends.ModelBackend"],
+            [
+                "apps.accounts.throttle.ThrottleBackend",
+                "django.contrib.auth.backends.ModelBackend",
+            ],
         )

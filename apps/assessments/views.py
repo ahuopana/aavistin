@@ -12,7 +12,7 @@ from django.views.decorators.http import require_POST
 from apps.core.navigation import breadcrumbs, configuration_workflow
 from apps.core.readiness import assessment_readiness
 from apps.orgs.models import Role
-from apps.orgs.services import has_role
+from apps.orgs.services import has_role, require_product_view
 from apps.packages.models import PackageKind, RequirementPackage
 from apps.products.models import Configuration
 
@@ -127,7 +127,7 @@ def _next_open_question(configuration, saved_question_id: str) -> str:
 @login_required
 def configuration_detail(request, pk):
     configuration = get_object_or_404(Configuration, pk=pk)
-    product = _product(configuration)
+    product = require_product_view(request.user, _product(configuration))
     resolved, packages = resolve_answers(configuration)
 
     product = configuration.product
@@ -310,7 +310,7 @@ def assessment_create(request, pk):
 @login_required
 def assessment_detail(request, pk):
     assessment = get_object_or_404(Assessment, pk=pk)
-    product = _product(assessment.configuration)
+    product = require_product_view(request.user, _product(assessment.configuration))
     if assessment.status == AssessmentStatus.APPROVED:
         evaluation = assessment.snapshot
     else:

@@ -68,7 +68,7 @@
   {% if draft %}
     <div class="banner">DRAFT. Generated from live data. Not an approved record and not verifiable.</div>
   {% else %}
-    <div class="approved">Approved report {{ report_id }}. Verify it at <span class="mono">/verify/{{ report_id }}/</span></div>
+    <div class="approved">Approved report {{ report_id }}.{% if verify_enabled %} Verify it at <span class="mono">/verify/{{ report_id }}/</span>{% endif %}</div>
   {% endif %}
   <dl>
     <dt>Configuration</dt><dd>{{ c.configuration }}</dd>

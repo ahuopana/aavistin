@@ -121,6 +121,9 @@ laptop:
 | `SECURE_HSTS_SECONDS` | Once HTTPS works, `31536000`. Start with `3600`: browsers remember this setting. |
 | `DATABASE_URL` | Your production database, with its own credentials. |
 | `AUTH_LDAP_*` | Use `ldaps://`, not `ldap://`, if you enable LDAP. |
+| `MFA_ENFORCE` | `True` (the default). Administrators and local accounts must set up an authenticator app at their next sign-in; enrol your first administrator immediately. See [ADR 0050](docs/adr/0050-two-factor-authentication.md). |
+| `CLIENT_IP_HEADER` | Behind a proxy, the header it sets with the client address (for example `HTTP_X_FORWARDED_FOR`), so sign-in throttling tells clients apart. Only if the proxy overwrites it. |
+| `REPORT_VERIFY_ENABLED` | `False` turns the public `/verify/` page off. Upload size, rate and sign-in throttling limits are listed in `.env.example` ([ADR 0049](docs/adr/0049-throttling-and-upload-limits.md)). |
 
 Then run the Django deployment check and resolve what it reports:
 

@@ -23,3 +23,9 @@ def _plain_static_storage(settings):
         **settings.STORAGES,
         "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
     }
+
+
+@pytest.fixture(autouse=True)
+def _no_mfa_enforcement(settings):
+    """Most tests sign in with force_login; MFA tests turn enforcement back on."""
+    settings.MFA_ENFORCE = False

@@ -13,6 +13,14 @@
     </div>
   </div>
 
+  {% if mfa_required %}
+    <h4>Two-factor authentication</h4>
+    <p class="field-hint">On, using an authenticator app. Recovery codes are single-use.</p>
+    <form method="post" action="{% url 'accounts:mfa_recovery_codes' %}">{% csrf_token %}
+      <button type="submit">Generate new recovery codes</button>
+    </form>
+  {% endif %}
+
   {% if form.non_field_errors %}<p class="message message-error">{{ form.non_field_errors }}</p>{% endif %}
   <form method="post" enctype="multipart/form-data" class="form-vertical profile-form">
     {% csrf_token %}

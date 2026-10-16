@@ -58,6 +58,16 @@ jobs:
       - name: Django system checks
         run: uv run manage.py check
 
+      - name: Django deployment checks
+        env:
+          # A production-shaped key and settings, so --deploy audits what a real deployment sees.
+          DJANGO_SECRET_KEY: ci-only-0123456789-abcdefghijklmnopqrstuvwxyz-ABCDEFGHIJKLMNOPQRSTUVWXYZ
+          HTTPS_ONLY: "True"
+          SECURE_HSTS_SECONDS: "31536000"
+          SECURE_HSTS_INCLUDE_SUBDOMAINS: "True"
+          SECURE_HSTS_PRELOAD: "True"
+        run: uv run manage.py check --deploy --fail-level WARNING
+
       - name: Check for missing migrations
         run: uv run manage.py makemigrations --check --dry-run
 
@@ -85,6 +95,7 @@ jobs:
     env:
       DJANGO_SECRET_KEY: ci-secret-key
       DEBUG: "False"
+      MFA_ENFORCE: "False"  # browser tests sign in with a password only
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
       DATABASE_URL: postgres://aavistin:aavistin@localhost:5432/aavistin
 

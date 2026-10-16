@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from apps.assessments.progress import questionnaire_progress
 from apps.core.navigation import breadcrumbs, configuration_workflow
 from apps.orgs.models import ProductFamily, Role
-from apps.orgs.services import has_role, roles_for_user
+from apps.orgs.services import has_role, require_product_view, roles_for_user
 from apps.risk.metrics import product_metrics
 
 from .models import (
@@ -131,6 +131,7 @@ def product_detail(request, pk):
     product = get_object_or_404(
         Product.objects.select_related("product_family__organisation"), pk=pk
     )
+    require_product_view(request.user, product)
     configurations = Configuration.objects.filter(
         software_release__product=product
     ).prefetch_related("software_options")
