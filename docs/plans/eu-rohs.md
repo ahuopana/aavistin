@@ -61,13 +61,55 @@ Reused from `common` 1.4.0: `product_form`, `economic_operator_role`, `places_un
 
 `eu-lvd` 1.2.0 (supersedes 1.1.0): `uses` the two ratings from `common` instead of declaring them. Behaviour unchanged. Also update its limitation text: RoHS interplay is now modelled as a sibling package, not as LVD logic.
 
-## 4. Decisions to confirm before building
+## 4. Decisions (confirmed by the user)
 
-1. **Move the voltage ratings to `common`?** Recommended: yes. The alternative (RoHS declares its own `max_ac_voltage` / `max_dc_voltage`) makes users answer the same thing twice and risks diverging answers. Cost: a `common` bump and an `eu-lvd` re-version.
-2. **Exemptions: generic or listed?** Recommended: generic (`rohs_relies_on_exemption` plus earliest expiry date). Annex III/IV change by delegated acts every year or two, and a list would go stale and carry legal text. A later package version can add a catalog if wanted.
-3. **Category granularity.** Recommended: model `rohs_category` as a choice of the 11 Annex I categories only to drive transition dates and Annex IV, not to restrict scope (open scope).
-4. **Cross-package behaviour.** Unlike LVD and RED, RoHS, LVD and RED can all apply at once (no mutual exclusion), as a declaration of conformity usually covers them together. No fallback rules like ADR 0047. Confirm.
-5. **Related-regime scope.** Out of scope for the first version: REACH Art. 33 (SVHC), WEEE, batteries regulation, ecodesign, and the Chinese/UK equivalents. Mention in the README's limitations.
+1. **Voltage ratings move to `common` 1.5.0**; `eu-lvd` 1.2.0 uses them from there.
+2. **Exemptions are generic questions, not a catalog**, but the package ships sample questions (section 4a) so the shape is concrete.
+3. **LVD and RED stay mutually exclusive** (ADR 0045, 0047). **RoHS can apply alongside either**, so there are no fallback rules between RoHS and the other two.
+4. **REACH and WEEE are their own regulations**, each with its own package. They are out of scope here; we stay focused on RoHS.
+
+### 4a. Sample exemption questions
+
+Package-local, hardware level. Exemption numbers are examples of the Annex III/IV style and must be checked against the current annexes.
+
+```json
+{
+  "id": "rohs_relies_on_exemption",
+  "type": "boolean",
+  "level": "hardware",
+  "label": "Does any homogeneous material in this hardware exceed a RoHS limit and rely on an exemption in Annex III or Annex IV?",
+  "guidance": "Typical cases are lead in solder for some high-melting or server applications, lead in glass of electronic components, and cadmium in certain contacts. If you are unsure, ask the supplier of the component which exemption their declaration relies on.",
+  "guidance_url": "https://environment.ec.europa.eu/topics/waste-and-recycling/rohs-directive_en"
+},
+{
+  "id": "rohs_exemption_annex",
+  "type": "choice",
+  "level": "hardware",
+  "label": "Which annex lists the exemption you rely on?",
+  "choices": ["annex_iii", "annex_iv", "both"],
+  "condition": {"==": [{"var": "rohs_relies_on_exemption"}, true]},
+  "guidance": "Annex IV applies only to medical devices and monitoring and control instruments."
+},
+{
+  "id": "rohs_exemption_reference",
+  "type": "choice",
+  "level": "hardware",
+  "label": "Which exemption do you rely on most heavily? (sample list)",
+  "choices": ["lead_in_high_melting_solder", "lead_in_glass_or_ceramic", "cadmium_in_contacts", "mercury_in_lamps", "other"],
+  "condition": {"==": [{"var": "rohs_relies_on_exemption"}, true]},
+  "guidance": "A short sample list; 'other' means an exemption not listed here. The package does not hold the full annexes."
+},
+{
+  "id": "rohs_exemption_expiry",
+  "type": "date",
+  "level": "hardware",
+  "label": "When does the earliest-expiring exemption you rely on end?",
+  "condition": {"==": [{"var": "rohs_relies_on_exemption"}, true]},
+  "guidance": "Look up the validity date in the current annex. Exemptions are renewed or allowed to lapse by delegated directive. After the date, the product must comply without the exemption."
+}
+```
+
+Finding rules over these: `rohs_exemption_expiry` earlier than the assessment date gives an action-required finding; an empty expiry gives a caution.
 
 ## 5. Work breakdown
 
