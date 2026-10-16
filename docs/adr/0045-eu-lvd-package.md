@@ -21,5 +21,6 @@ Status: Accepted (content is a first pass, not legally reviewed).
 
 - `eu-cra`, `eu-red` and `eu-lvd` all pass with `common` 1.3.0; the `common` and `eu-lvd` READMEs import it.
 - Addendum (ADR 0042): the documentation and marking questions moved to `common` 1.4.0 under neutral ids, and `eu-red` 1.1.0 breaks Art. 3(1)(a) down into the same safety objectives, so a radio product keeps the LVD-equivalent checks.
-- Machinery Regulation and RoHS interplay is not modelled; harmonised standards are not listed. Addendum (ADR 0047): EMC is now the separate `eu-emc` package, which reuses the shared process questions, so a product in both packages gets the documentation and marking findings from each.
+- Addendum (ADR 0047): `eu-lvd` 1.1.0 excludes radio equipment only while RED covers it; radio equipment that RED excludes for defence or security falls back to LVD.
+- Machinery Regulation and RoHS interplay is not modelled; harmonised standards are not listed. Addendum (ADR 0048): EMC is now the separate `eu-emc` package, which reuses the shared process questions, so a product in both packages gets the documentation and marking findings from each.
 - The legal-review list for this package: the `ref` citations, the Annex II category wording, the two interpretive exclusions, and the requirement summaries against the Official Journal text.

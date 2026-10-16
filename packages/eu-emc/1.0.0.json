@@ -24,6 +24,8 @@
     "common:is_in_vitro_diagnostic",
     "common:is_civil_aviation_product",
     "common:is_marine_equipment",
+    "common:is_exclusively_defence_product",
+    "common:is_exclusively_national_security_product",
     "common:wireless_interface_capability",
     "common:wireless_enablement",
     "common:hardware_still_placed_on_market",
@@ -55,7 +57,9 @@
         "is_civil_aviation_product",
         "is_marine_equipment",
         "is_medical_device",
-        "is_in_vitro_diagnostic"
+        "is_in_vitro_diagnostic",
+        "is_exclusively_defence_product",
+        "is_exclusively_national_security_product"
       ]
     },
     {
@@ -152,20 +156,46 @@
                 "!": {
                   "and": [
                     {
-                      "==": [
+                      "and": [
                         {
-                          "var": "wireless_interface_capability"
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
                         },
-                        "present"
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
                       ]
                     },
                     {
-                      "!=": [
-                        {
-                          "var": "wireless_enablement"
-                        },
-                        "disabled_manufacturer_update_only"
-                      ]
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
                     }
                   ]
                 }
@@ -325,20 +355,46 @@
                 "!": {
                   "and": [
                     {
-                      "==": [
+                      "and": [
                         {
-                          "var": "wireless_interface_capability"
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
                         },
-                        "present"
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
                       ]
                     },
                     {
-                      "!=": [
-                        {
-                          "var": "wireless_enablement"
-                        },
-                        "disabled_manufacturer_update_only"
-                      ]
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
                     }
                   ]
                 }
@@ -493,20 +549,46 @@
                 "!": {
                   "and": [
                     {
-                      "==": [
+                      "and": [
                         {
-                          "var": "wireless_interface_capability"
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
                         },
-                        "present"
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
                       ]
                     },
                     {
-                      "!=": [
-                        {
-                          "var": "wireless_enablement"
-                        },
-                        "disabled_manufacturer_update_only"
-                      ]
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
                     }
                   ]
                 }
@@ -631,20 +713,46 @@
         "when": {
           "and": [
             {
-              "==": [
+              "and": [
                 {
-                  "var": "wireless_interface_capability"
+                  "==": [
+                    {
+                      "var": "wireless_interface_capability"
+                    },
+                    "present"
+                  ]
                 },
-                "present"
+                {
+                  "!=": [
+                    {
+                      "var": "wireless_enablement"
+                    },
+                    "disabled_manufacturer_update_only"
+                  ]
+                }
               ]
             },
             {
-              "!=": [
-                {
-                  "var": "wireless_enablement"
-                },
-                "disabled_manufacturer_update_only"
-              ]
+              "!": {
+                "or": [
+                  {
+                    "==": [
+                      {
+                        "var": "is_exclusively_defence_product"
+                      },
+                      true
+                    ]
+                  },
+                  {
+                    "==": [
+                      {
+                        "var": "is_exclusively_national_security_product"
+                      },
+                      true
+                    ]
+                  }
+                ]
+              }
             }
           ]
         },
@@ -1293,20 +1401,46 @@
       "when": {
         "and": [
           {
-            "==": [
+            "and": [
               {
-                "var": "wireless_interface_capability"
+                "==": [
+                  {
+                    "var": "wireless_interface_capability"
+                  },
+                  "present"
+                ]
               },
-              "present"
+              {
+                "!=": [
+                  {
+                    "var": "wireless_enablement"
+                  },
+                  "disabled_manufacturer_update_only"
+                ]
+              }
             ]
           },
           {
-            "!=": [
-              {
-                "var": "wireless_enablement"
-              },
-              "disabled_manufacturer_update_only"
-            ]
+            "!": {
+              "or": [
+                {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                },
+                {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              ]
+            }
           }
         ]
       },
@@ -1350,6 +1484,207 @@
       },
       "message": "Radio hardware present but disabled (physically, or until a manufacturer update): the product is under the EMC Directive, not RED, while the radio stays disabled. Enabling it makes the product radio equipment and requires re-assessment under RED.",
       "ref": "Directive 2014/53/EU, Art. 2(1)(1)"
+    },
+    {
+      "id": "radio_outside_red_security",
+      "level": "caution",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "!": {
+                  "in": [
+                    {
+                      "var": "product_form"
+                    },
+                    [
+                      "standalone_software",
+                      "software_component"
+                    ]
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "component_for_incorporation"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "inherently_benign"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "radio_amateur_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "==": [
+                      {
+                        "var": "wireless_interface_capability"
+                      },
+                      "present"
+                    ]
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "or": [
+                  {
+                    "==": [
+                      {
+                        "var": "is_exclusively_defence_product"
+                      },
+                      true
+                    ]
+                  },
+                  {
+                    "==": [
+                      {
+                        "var": "is_exclusively_national_security_product"
+                      },
+                      true
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "message": "Radio equipment used exclusively for defence or public or State security is outside RED, so its EMC falls back to the EMC Directive. A Member State may set EU product rules aside for its essential security interests (Art. 346 TFEU): check the national rules and the procurement terms.",
+      "ref": "Directive 2014/53/EU, Art. 1(4); TFEU Art. 346"
     },
     {
       "id": "excluded_equipment_is_interpretation",
@@ -1403,20 +1738,46 @@
                 "!": {
                   "and": [
                     {
-                      "==": [
+                      "and": [
                         {
-                          "var": "wireless_interface_capability"
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
                         },
-                        "present"
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
                       ]
                     },
                     {
-                      "!=": [
-                        {
-                          "var": "wireless_enablement"
-                        },
-                        "disabled_manufacturer_update_only"
-                      ]
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
                     }
                   ]
                 }
@@ -1544,20 +1905,46 @@
                     "!": {
                       "and": [
                         {
-                          "==": [
+                          "and": [
                             {
-                              "var": "wireless_interface_capability"
+                              "==": [
+                                {
+                                  "var": "wireless_interface_capability"
+                                },
+                                "present"
+                              ]
                             },
-                            "present"
+                            {
+                              "!=": [
+                                {
+                                  "var": "wireless_enablement"
+                                },
+                                "disabled_manufacturer_update_only"
+                              ]
+                            }
                           ]
                         },
                         {
-                          "!=": [
-                            {
-                              "var": "wireless_enablement"
-                            },
-                            "disabled_manufacturer_update_only"
-                          ]
+                          "!": {
+                            "or": [
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_defence_product"
+                                  },
+                                  true
+                                ]
+                              },
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_national_security_product"
+                                  },
+                                  true
+                                ]
+                              }
+                            ]
+                          }
                         }
                       ]
                     }
@@ -1695,20 +2082,46 @@
                     "!": {
                       "and": [
                         {
-                          "==": [
+                          "and": [
                             {
-                              "var": "wireless_interface_capability"
+                              "==": [
+                                {
+                                  "var": "wireless_interface_capability"
+                                },
+                                "present"
+                              ]
                             },
-                            "present"
+                            {
+                              "!=": [
+                                {
+                                  "var": "wireless_enablement"
+                                },
+                                "disabled_manufacturer_update_only"
+                              ]
+                            }
                           ]
                         },
                         {
-                          "!=": [
-                            {
-                              "var": "wireless_enablement"
-                            },
-                            "disabled_manufacturer_update_only"
-                          ]
+                          "!": {
+                            "or": [
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_defence_product"
+                                  },
+                                  true
+                                ]
+                              },
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_national_security_product"
+                                  },
+                                  true
+                                ]
+                              }
+                            ]
+                          }
                         }
                       ]
                     }
@@ -1849,20 +2262,46 @@
                     "!": {
                       "and": [
                         {
-                          "==": [
+                          "and": [
                             {
-                              "var": "wireless_interface_capability"
+                              "==": [
+                                {
+                                  "var": "wireless_interface_capability"
+                                },
+                                "present"
+                              ]
                             },
-                            "present"
+                            {
+                              "!=": [
+                                {
+                                  "var": "wireless_enablement"
+                                },
+                                "disabled_manufacturer_update_only"
+                              ]
+                            }
                           ]
                         },
                         {
-                          "!=": [
-                            {
-                              "var": "wireless_enablement"
-                            },
-                            "disabled_manufacturer_update_only"
-                          ]
+                          "!": {
+                            "or": [
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_defence_product"
+                                  },
+                                  true
+                                ]
+                              },
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_national_security_product"
+                                  },
+                                  true
+                                ]
+                              }
+                            ]
+                          }
                         }
                       ]
                     }
@@ -2000,20 +2439,46 @@
                     "!": {
                       "and": [
                         {
-                          "==": [
+                          "and": [
                             {
-                              "var": "wireless_interface_capability"
+                              "==": [
+                                {
+                                  "var": "wireless_interface_capability"
+                                },
+                                "present"
+                              ]
                             },
-                            "present"
+                            {
+                              "!=": [
+                                {
+                                  "var": "wireless_enablement"
+                                },
+                                "disabled_manufacturer_update_only"
+                              ]
+                            }
                           ]
                         },
                         {
-                          "!=": [
-                            {
-                              "var": "wireless_enablement"
-                            },
-                            "disabled_manufacturer_update_only"
-                          ]
+                          "!": {
+                            "or": [
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_defence_product"
+                                  },
+                                  true
+                                ]
+                              },
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_national_security_product"
+                                  },
+                                  true
+                                ]
+                              }
+                            ]
+                          }
                         }
                       ]
                     }
@@ -2151,20 +2616,46 @@
                     "!": {
                       "and": [
                         {
-                          "==": [
+                          "and": [
                             {
-                              "var": "wireless_interface_capability"
+                              "==": [
+                                {
+                                  "var": "wireless_interface_capability"
+                                },
+                                "present"
+                              ]
                             },
-                            "present"
+                            {
+                              "!=": [
+                                {
+                                  "var": "wireless_enablement"
+                                },
+                                "disabled_manufacturer_update_only"
+                              ]
+                            }
                           ]
                         },
                         {
-                          "!=": [
-                            {
-                              "var": "wireless_enablement"
-                            },
-                            "disabled_manufacturer_update_only"
-                          ]
+                          "!": {
+                            "or": [
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_defence_product"
+                                  },
+                                  true
+                                ]
+                              },
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_national_security_product"
+                                  },
+                                  true
+                                ]
+                              }
+                            ]
+                          }
                         }
                       ]
                     }
@@ -2302,20 +2793,46 @@
                     "!": {
                       "and": [
                         {
-                          "==": [
+                          "and": [
                             {
-                              "var": "wireless_interface_capability"
+                              "==": [
+                                {
+                                  "var": "wireless_interface_capability"
+                                },
+                                "present"
+                              ]
                             },
-                            "present"
+                            {
+                              "!=": [
+                                {
+                                  "var": "wireless_enablement"
+                                },
+                                "disabled_manufacturer_update_only"
+                              ]
+                            }
                           ]
                         },
                         {
-                          "!=": [
-                            {
-                              "var": "wireless_enablement"
-                            },
-                            "disabled_manufacturer_update_only"
-                          ]
+                          "!": {
+                            "or": [
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_defence_product"
+                                  },
+                                  true
+                                ]
+                              },
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_national_security_product"
+                                  },
+                                  true
+                                ]
+                              }
+                            ]
+                          }
                         }
                       ]
                     }
@@ -2453,20 +2970,46 @@
                     "!": {
                       "and": [
                         {
-                          "==": [
+                          "and": [
                             {
-                              "var": "wireless_interface_capability"
+                              "==": [
+                                {
+                                  "var": "wireless_interface_capability"
+                                },
+                                "present"
+                              ]
                             },
-                            "present"
+                            {
+                              "!=": [
+                                {
+                                  "var": "wireless_enablement"
+                                },
+                                "disabled_manufacturer_update_only"
+                              ]
+                            }
                           ]
                         },
                         {
-                          "!=": [
-                            {
-                              "var": "wireless_enablement"
-                            },
-                            "disabled_manufacturer_update_only"
-                          ]
+                          "!": {
+                            "or": [
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_defence_product"
+                                  },
+                                  true
+                                ]
+                              },
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_national_security_product"
+                                  },
+                                  true
+                                ]
+                              }
+                            ]
+                          }
                         }
                       ]
                     }
@@ -2604,20 +3147,46 @@
                     "!": {
                       "and": [
                         {
-                          "==": [
+                          "and": [
                             {
-                              "var": "wireless_interface_capability"
+                              "==": [
+                                {
+                                  "var": "wireless_interface_capability"
+                                },
+                                "present"
+                              ]
                             },
-                            "present"
+                            {
+                              "!=": [
+                                {
+                                  "var": "wireless_enablement"
+                                },
+                                "disabled_manufacturer_update_only"
+                              ]
+                            }
                           ]
                         },
                         {
-                          "!=": [
-                            {
-                              "var": "wireless_enablement"
-                            },
-                            "disabled_manufacturer_update_only"
-                          ]
+                          "!": {
+                            "or": [
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_defence_product"
+                                  },
+                                  true
+                                ]
+                              },
+                              {
+                                "==": [
+                                  {
+                                    "var": "is_exclusively_national_security_product"
+                                  },
+                                  true
+                                ]
+                              }
+                            ]
+                          }
                         }
                       ]
                     }
@@ -2934,6 +3503,60 @@
         "findings": [
           "radio_equipment_under_red"
         ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "national-security-radio-falls-back-to-emc",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "emc_equipment_type": "apparatus",
+        "wireless_enablement": "enabled",
+        "is_exclusively_national_security_product": true
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "radio_outside_red_security"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "defence-radio-falls-back-to-emc",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "emc_equipment_type": "apparatus",
+        "wireless_enablement": "enabled",
+        "is_exclusively_defence_product": true
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "radio_outside_red_security"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "national-security-without-radio-stays-under-emc",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus",
+        "is_exclusively_national_security_product": true
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": []
       },
       "as_of": "2026-10-01"
     },

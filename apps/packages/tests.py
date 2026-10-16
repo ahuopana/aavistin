@@ -369,10 +369,14 @@ class ImportPipelineTests(TestCase):
                 load_package("common", "1.4.0"), kind=PackageKind.QUESTION_SET, is_official=True
             )
         )
-        package = import_package(load_package("eu-lvd", "1.0.0"), is_official=True)
-        self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
-        self.assertEqual(package.lint_report, [])
-        self.assertTrue(all(r["passed"] for r in package.fixture_report), package.fixture_report)
+        for version in ("1.0.0", "1.1.0"):
+            with self.subTest(version=version):
+                package = import_package(load_package("eu-lvd", version), is_official=True)
+                self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+                self.assertEqual(package.lint_report, [])
+                self.assertTrue(
+                    all(r["passed"] for r in package.fixture_report), package.fixture_report
+                )
 
     def test_import_eu_emc_package_reaches_fixtures_passed(self):
         approve_package(
@@ -401,9 +405,10 @@ class ImportPipelineTests(TestCase):
     def test_eu_red_1_1_0_and_eu_lvd_never_both_carry_electrical_safety(self):
         """RED Art. 3(1)(a) applies the LVD safety objectives to radio equipment,
         and LVD excludes radio equipment: for each product exactly one package
-        lists the safety objectives (ADR 0042)."""
+        lists the safety objectives (ADR 0042). Radio equipment that RED excludes
+        for defence or national security falls back to LVD (ADR 0047)."""
         red = load_package("eu-red", "1.1.0")
-        lvd = load_package("eu-lvd", "1.0.0")
+        lvd = load_package("eu-lvd", "1.1.0")
         mains = {
             "product_form": "hardware_with_software",
             "ac_voltage_rating": 230,
@@ -425,6 +430,22 @@ class ImportPipelineTests(TestCase):
                 {
                     "wireless_interface_capability": "present",
                     "wireless_enablement": "disabled_manufacturer_update_only",
+                },
+                "eu-lvd",
+            ),
+            "national security radio": (
+                {
+                    "wireless_interface_capability": "present",
+                    "wireless_enablement": "enabled",
+                    "is_exclusively_national_security_product": True,
+                },
+                "eu-lvd",
+            ),
+            "defence radio": (
+                {
+                    "wireless_interface_capability": "present",
+                    "wireless_enablement": "enabled",
+                    "is_exclusively_defence_product": True,
                 },
                 "eu-lvd",
             ),
@@ -450,9 +471,9 @@ class ImportPipelineTests(TestCase):
         """RED Art. 3(1)(b) covers EMC for radio equipment, so the EMC package
         excludes it with the same radio test as LVD and RED. A mains device
         without a radio is in both LVD and EMC; a battery device only in EMC
-        (ADR 0047)."""
+        (ADR 0048)."""
         red = load_package("eu-red", "1.1.0")
-        lvd = load_package("eu-lvd", "1.0.0")
+        lvd = load_package("eu-lvd", "1.1.0")
         emc = load_package("eu-emc", "1.0.0")
         base = {
             "product_form": "hardware_with_software",
@@ -489,6 +510,16 @@ class ImportPipelineTests(TestCase):
                 },
                 ["eu-lvd", "eu-emc"],
             ),
+            "defence radio, outside RED": (
+                {
+                    "ac_voltage_rating": 230,
+                    "dc_voltage_rating": 0,
+                    "wireless_interface_capability": "present",
+                    "wireless_enablement": "enabled",
+                    "is_exclusively_defence_product": True,
+                },
+                ["eu-lvd", "eu-emc"],
+            ),
         }
         as_of = date(2026, 10, 1)
         for name, (extra, expected) in products.items():
@@ -502,7 +533,7 @@ class ImportPipelineTests(TestCase):
                 self.assertEqual([s for s, r in results.items() if r["in_scope"]], expected)
 
     def test_eu_emc_and_lvd_both_raise_the_shared_ce_marking_finding(self):
-        """Accepted duplication (ADR 0047): the shared answer is gated by each
+        """Accepted duplication (ADR 0048): the shared answer is gated by each
         package's own scope, so a product in both gets one finding from each."""
         answers = {
             "product_form": "hardware_without_software",
@@ -515,9 +546,9 @@ class ImportPipelineTests(TestCase):
             "wireless_interface_capability": "not_present",
             "ce_marking_affixed": False,
         }
-        for source in ("eu-lvd", "eu-emc"):
+        for source, version in (("eu-lvd", "1.1.0"), ("eu-emc", "1.0.0")):
             with self.subTest(source=source):
-                result = evaluate_package(load_package(source, "1.0.0"), answers)
+                result = evaluate_package(load_package(source, version), answers)
                 self.assertIn("no_ce_marking", [f["id"] for f in result["findings"]])
 
 
@@ -1228,6 +1259,7 @@ class QuestionGroupLintTests(TestCase):
             ("eu-red", "1.0.0"),
             ("eu-red", "1.1.0"),
             ("eu-lvd", "1.0.0"),
+            ("eu-lvd", "1.1.0"),
             ("eu-emc", "1.0.0"),
         ):
             with self.subTest(source=source, version=version):
