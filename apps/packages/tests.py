@@ -369,10 +369,14 @@ class ImportPipelineTests(TestCase):
                 load_package("common", "1.4.0"), kind=PackageKind.QUESTION_SET, is_official=True
             )
         )
-        package = import_package(load_package("eu-lvd", "1.0.0"), is_official=True)
-        self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
-        self.assertEqual(package.lint_report, [])
-        self.assertTrue(all(r["passed"] for r in package.fixture_report), package.fixture_report)
+        for version in ("1.0.0", "1.1.0"):
+            with self.subTest(version=version):
+                package = import_package(load_package("eu-lvd", version), is_official=True)
+                self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+                self.assertEqual(package.lint_report, [])
+                self.assertTrue(
+                    all(r["passed"] for r in package.fixture_report), package.fixture_report
+                )
 
     def test_real_packages_pass_with_common_1_4_0(self):
         approve_package(
@@ -390,9 +394,10 @@ class ImportPipelineTests(TestCase):
     def test_eu_red_1_1_0_and_eu_lvd_never_both_carry_electrical_safety(self):
         """RED Art. 3(1)(a) applies the LVD safety objectives to radio equipment,
         and LVD excludes radio equipment: for each product exactly one package
-        lists the safety objectives (ADR 0042)."""
+        lists the safety objectives (ADR 0042). Radio equipment that RED excludes
+        for defence or national security falls back to LVD (ADR 0047)."""
         red = load_package("eu-red", "1.1.0")
-        lvd = load_package("eu-lvd", "1.0.0")
+        lvd = load_package("eu-lvd", "1.1.0")
         mains = {
             "product_form": "hardware_with_software",
             "ac_voltage_rating": 230,
@@ -414,6 +419,22 @@ class ImportPipelineTests(TestCase):
                 {
                     "wireless_interface_capability": "present",
                     "wireless_enablement": "disabled_manufacturer_update_only",
+                },
+                "eu-lvd",
+            ),
+            "national security radio": (
+                {
+                    "wireless_interface_capability": "present",
+                    "wireless_enablement": "enabled",
+                    "is_exclusively_national_security_product": True,
+                },
+                "eu-lvd",
+            ),
+            "defence radio": (
+                {
+                    "wireless_interface_capability": "present",
+                    "wireless_enablement": "enabled",
+                    "is_exclusively_defence_product": True,
                 },
                 "eu-lvd",
             ),
@@ -1143,6 +1164,7 @@ class QuestionGroupLintTests(TestCase):
             ("eu-red", "1.0.0"),
             ("eu-red", "1.1.0"),
             ("eu-lvd", "1.0.0"),
+            ("eu-lvd", "1.1.0"),
         ):
             with self.subTest(source=source, version=version):
                 content = load_package(source, version)
