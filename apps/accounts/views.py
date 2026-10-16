@@ -11,7 +11,7 @@ from django.views.decorators.http import require_POST
 
 from apps.orgs.services import role_grants_for_user
 
-from . import avatars
+from . import avatars, mfa
 from .forms import ProfileForm
 from .models import AuthSource, Theme
 from .prefs import effective_time_zone, get_profile
@@ -40,6 +40,7 @@ def profile(request):
             "time_zone": effective_time_zone(profile),
             "grants": role_grants_for_user(request.user),
             "can_change_password": request.user.auth_source == AuthSource.LOCAL,
+            "mfa_required": mfa.requires_mfa(request.user),
         },
     )
 

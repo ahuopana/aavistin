@@ -96,6 +96,7 @@ jobs:
     env:
       DJANGO_SECRET_KEY: ci-secret-key
       DEBUG: "False"
+      MFA_ENFORCE: "False"  # browser tests sign in with a password only
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
       DATABASE_URL: postgres://aavistin:aavistin@localhost:5432/aavistin
 

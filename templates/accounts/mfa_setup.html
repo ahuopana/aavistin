@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Set up two-factor authentication · Aavistin{% endblock %}
+
+{% block content %}
+  <h1>Set up two-factor authentication</h1>
+  <p>Your account needs a second sign-in step. Use an authenticator app such as Microsoft Authenticator, Google Authenticator, Authy or 1Password.</p>
+  <ol>
+    <li>In the app, add an account and scan this code.</li>
+    <li>Enter the 6-digit code the app shows to confirm.</li>
+  </ol>
+  <div class="mfa-qr" style="max-width: 16rem; background: #fff; padding: .5rem;">{{ qr }}</div>
+  <details>
+    <summary>Can't scan? Enter the key by hand</summary>
+    <p><code>{{ secret }}</code> (time-based, 6 digits, 30 seconds)</p>
+  </details>
+  {% if error %}<p class="message message-error">{{ error }}</p>{% endif %}
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <p>
+      <label for="id_token">Code from the app</label><br>
+      <input type="text" name="token" id="id_token" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" maxlength="8" autofocus required>
+    </p>
+    <button type="submit">Confirm and continue</button>
+  </form>
+  <p class="field-hint">You will get recovery codes next. Keep them somewhere safe: they are the only way back in if you lose your phone.</p>
+  <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="link-button">Sign out</button></form>
+{% endblock %}

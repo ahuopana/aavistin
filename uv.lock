@@ -15,6 +15,7 @@ dependencies = [
     { name = "django-auth-ldap" },
     { name = "django-environ" },
     { name = "django-ninja" },
+    { name = "django-otp" },
     { name = "django-simple-history" },
     { name = "django-tasks" },
     { name = "django-tasks-db" },
@@ -24,6 +25,7 @@ dependencies = [
     { name = "nh3" },
     { name = "pillow" },
     { name = "psycopg", extra = ["binary"] },
+    { name = "qrcode" },
     { name = "weasyprint" },
     { name = "whitenoise" },
 ]
@@ -43,6 +45,7 @@ requires-dist = [
     { name = "django-auth-ldap", specifier = ">=5.3.0" },
     { name = "django-environ", specifier = ">=0.14.0" },
     { name = "django-ninja", specifier = ">=1.7.1" },
+    { name = "django-otp", specifier = ">=1.7.5" },
     { name = "django-simple-history", specifier = ">=3.13.0" },
     { name = "django-tasks", specifier = ">=0.12.0" },
     { name = "django-tasks-db", specifier = ">=0.13.0" },
@@ -52,6 +55,7 @@ requires-dist = [
     { name = "nh3", specifier = ">=0.3.7" },
     { name = "pillow", specifier = ">=11.0.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.6" },
+    { name = "qrcode", specifier = ">=8.2" },
     { name = "weasyprint", specifier = ">=63" },
     { name = "whitenoise", specifier = ">=6.7.0" },
 ]
@@ -445,6 +449,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/55/0f/5c6811706676be4c5faf5a3fd0d3ad56293db7ce8f0cc62c3e2f8e23b26d/django_ninja-1.7.1.tar.gz", hash = "sha256:2183ee5426a8c95bfabae1b7f60c471a56c48022296eaaf1cc54b00010b07ee6", size = 2341814, upload-time = "2026-09-19T05:35:56.437Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a8/05/7bf91a79ac69632b15b878ad658371dcae58a4e2545da3709cfc55916da3/django_ninja-1.7.1-py3-none-any.whl", hash = "sha256:61137e9fbb97ca15a92cdbfdcf9f6a738464b328c6cb11090faf17042035ec69", size = 2376240, upload-time = "2026-09-19T05:35:54.89Z" },
+]
+
+[[package]]
+name = "django-otp"
+version = "1.7.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d0/e9/db4349d7a866e6d5153b31fa740b17f5893723715edf7d1673615d9f462c/django_otp-1.7.5.tar.gz", hash = "sha256:7f554d21dcd035550c3b8e3f154b1f422fee71fdc75c8a3bf96e42a2ea6dafcc", size = 79637, upload-time = "2026-10-16T14:48:48.98Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a3/bc/bda771669006e7e112bed31a330636ff0b3c3407b053c10c492368c35f6f/django_otp-1.7.5-py3-none-any.whl", hash = "sha256:475d4111e07d61616996f098d08d29884da6397273a11f53c1b8e8c75d27e1dc", size = 73805, upload-time = "2026-10-16T14:48:47.793Z" },
 ]
 
 [[package]]
@@ -1149,6 +1165,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/87/c7/5e1547c44e31da50a460df93af11a535ace568ef89d7a811069ead340c4a/python-slugify-8.0.4.tar.gz", hash = "sha256:59202371d1d05b54a9e7720c5e038f928f45daaffe41dd10822f3907b937c856", size = 10921, upload-time = "2024-02-08T18:32:45.488Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a4/62/02da182e544a51a5c3ccf4b03ab79df279f9c60c5e82d5e8bec7ca26ac11/python_slugify-8.0.4-py2.py3-none-any.whl", hash = "sha256:276540b79961052b66b7d116620b36518847f52d5fd9e3a70164fc8c50faa6b8", size = 10051, upload-time = "2024-02-08T18:32:43.911Z" },
+]
+
+[[package]]
+name = "qrcode"
+version = "8.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8f/b2/7fc2931bfae0af02d5f53b174e9cf701adbb35f39d69c2af63d4a39f81a9/qrcode-8.2.tar.gz", hash = "sha256:35c3f2a4172b33136ab9f6b3ef1c00260dd2f66f858f24d88418a015f446506c", size = 43317, upload-time = "2025-05-01T15:44:24.726Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dd/b8/d2d6d731733f51684bbf76bf34dab3b70a9148e8f2cef2bb544fccec681a/qrcode-8.2-py3-none-any.whl", hash = "sha256:16e64e0716c14960108e85d853062c9e8bba5ca8252c0b4d0231b9df4060ff4f", size = 45986, upload-time = "2025-05-01T15:44:22.781Z" },
 ]
 
 [[package]]

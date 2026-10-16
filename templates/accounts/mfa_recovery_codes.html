@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Recovery codes · Aavistin{% endblock %}
+
+{% block content %}
+  <h1>{% if first_time %}Two-factor authentication is on{% else %}New recovery codes{% endif %}</h1>
+  <p>Save these recovery codes now. Each works once if you cannot use your authenticator app. They will not be shown again.</p>
+  <ul class="recovery-codes mono">
+    {% for code in codes %}<li><code>{{ code }}</code></li>{% endfor %}
+  </ul>
+  <p><a href="{{ next|default:'/' }}" class="button">I have saved them, continue</a></p>
+{% endblock %}

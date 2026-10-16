@@ -48,6 +48,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "simple_history",
+    "django_otp",
+    "django_otp.plugins.otp_totp",
+    "django_otp.plugins.otp_static",
     "ninja",
     "django_tasks",
     "django_tasks_db",
@@ -71,6 +74,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_otp.middleware.OTPMiddleware",
+    "apps.accounts.mfa.MFAEnforcementMiddleware",
     "apps.accounts.middleware.ProfileMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -185,6 +190,13 @@ LOGIN_THROTTLE_MAX_FAILURES = env.int("LOGIN_THROTTLE_MAX_FAILURES", default=5)
 LOGIN_THROTTLE_MAX_FAILURES_PER_IP = env.int("LOGIN_THROTTLE_MAX_FAILURES_PER_IP", default=30)
 LOGIN_THROTTLE_WINDOW_SECONDS = env.int("LOGIN_THROTTLE_WINDOW_SECONDS", default=15 * 60)
 CLIENT_IP_HEADER = env.str("CLIENT_IP_HEADER", default="")
+
+
+# Two-factor authentication (docs/adr/0045-two-factor-authentication.md). Required for
+# administrators and every local account; enrolment is forced at the next sign-in.
+# Turn off only for local development or automated browser tests.
+MFA_ENFORCE = env.bool("MFA_ENFORCE", default=True)
+OTP_TOTP_ISSUER = env.str("OTP_TOTP_ISSUER", default="Aavistin")
 
 
 # Password validation
