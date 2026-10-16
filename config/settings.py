@@ -224,6 +224,20 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Security: honour X-Forwarded-Proto from the reverse proxy in production.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# Hardening for a deployment served over HTTPS (docs/adr/0044-https-hardening-settings.md).
+# Everything defaults to off so plain-HTTP local use and CI keep working;
+# `manage.py check --deploy` lists what is still off.
+# HTTPS_ONLY redirects HTTP to HTTPS and marks the session and CSRF cookies secure.
+HTTPS_ONLY = env.bool("HTTPS_ONLY", default=False)
+SECURE_SSL_REDIRECT = HTTPS_ONLY
+SESSION_COOKIE_SECURE = HTTPS_ONLY
+CSRF_COOKIE_SECURE = HTTPS_ONLY
+# HSTS is sticky in browsers, so it is a separate, explicit choice (seconds).
+SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=0)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool("SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False)
+# Needed when the site is served from a name the proxy rewrites, e.g. https://aavistin.example.org
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
 
 # Background jobs
 # https://docs.djangoproject.com/en/5.2/topics/tasks/ (docs/adr/0007-background-job-backend.md)

@@ -7,20 +7,7 @@ anything.
 
 ## The whole flow
 
-```mermaid
-flowchart TD
-    S1["<b>1. Setup</b><br/>Administrator, maintainer"]
-    S2["<b>2. Describe the product</b><br/>Editor"]
-    S3["<b>3. Answer the questionnaire</b><br/>Editor"]
-    S4["<b>4. Assess compliance</b><br/>Editor starts, Approver approves"]
-    S5["<b>5. Risk assessment</b><br/>Editor, then Approver"]
-    S6["<b>6. Evidence</b><br/>Editor"]
-    S7["<b>7. Report</b><br/>Anyone for a draft, Approver to issue"]
-    S8["<b>8. Keep it current</b><br/>Everyone"]
-    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8
-    S4 -- "findings or gaps: fix the answers" --> S3
-    S8 -. "anything changes: stale, re-review" .-> S4
-```
+![The eight steps in order, with two loops back: findings or gaps return to the questionnaire, and any change returns to the assessment.](images/workflow-overview.svg)
 
 ## 1. Setup
 
@@ -56,15 +43,7 @@ Every question belongs to one level, and you answer it **once** at that
 level. More specific levels inherit the answer and only override it when
 they genuinely differ.
 
-```mermaid
-flowchart LR
-    P["Product<br/>intended use, markets served"] --> H["Hardware revision<br/>radios, supply voltage"]
-    P --> S["Software release<br/>network services, personal data"]
-    S --> O["Software option<br/>features an option enables"]
-    H --> C(("Configuration:<br/>resolved answers"))
-    S --> C
-    O --> C
-```
+![The product's answers pass down to the hardware revision and software release, the release's to the software option, and together they resolve into the configuration's answers.](images/answer-levels.svg)
 
 - Questions that several regulations ask in different words are shared:
   you answer the question once and every package that uses it reads the
@@ -82,15 +61,7 @@ See [requirement packages and assessments](requirement-packages-and-assessments)
 
 ## 4. Assess compliance
 
-```mermaid
-stateDiagram-v2
-    [*] --> Draft: Start new assessment
-    Draft --> Draft: Editor changes answers
-    Draft --> Approved: Approver approves
-    Approved --> Stale: Answers, package or evidence change
-    Stale --> Draft: Start a new assessment
-    Approved --> [*]
-```
+![An assessment is a draft, then approved, then stale when something it relied on changes; a stale one is replaced by a new draft.](images/assessment-states.svg)
 
 1. An **Editor** starts an assessment from the configuration page.
 2. Read the results: which packages are in scope, the classification,
@@ -106,16 +77,7 @@ stateDiagram-v2
 The risk register belongs to the product and is viewed per
 configuration (baseline entries plus the deltas that apply).
 
-```mermaid
-flowchart TD
-    S["Suggested entries<br/>from answers and findings"] --> R["Register entries"]
-    M["Entries added by hand"] --> R
-    R --> T["Rate under each method"]
-    T --> C["Link controls, choose treatment"]
-    C --> Q{"Residual rating<br/>acceptable?"}
-    Q -- "no" --> C
-    Q -- "yes" --> A["Approver approves the risk view"]
-```
+![Suggested and hand-added entries are rated, controls are linked and a treatment chosen, and the view is approved once the residual rating is acceptable.](images/risk-flow.svg)
 
 1. Start from the **suggested** entries triggered by your answers and
    findings; accept them or dismiss them with a reason. Add anything

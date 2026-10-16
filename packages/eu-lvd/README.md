@@ -2,7 +2,7 @@
 
 The EU Low Voltage Directive, Directive 2014/35/EU (CELEX `32014L0035`), as a requirement package. It applies from 20 April 2016 and replaced Directive 2006/95/EC. Further reading: the Commission's [LVD page and guidelines](https://single-market-economy.ec.europa.eu/sectors/electrical-and-electronic-engineering-industries-eei/low-voltage-directive-lvd_en).
 
-**Not legal advice, and not yet legally reviewed.** The article references in `ref` fields, the requirement summaries and the interpretations marked below were written from the directive's structure and the Commission guidelines, and must be checked against the Official Journal text before the package backs a real compliance decision. Design decisions: `docs/adr/0041-eu-lvd-package.md`.
+**Not legal advice, and not yet legally reviewed.** The article references in `ref` fields, the requirement summaries and the interpretations marked below were written from the directive's structure and the Commission guidelines, and must be checked against the Official Journal text before the package backs a real compliance decision. Design decisions: `docs/adr/0045-eu-lvd-package.md`.
 
 ## What it covers
 

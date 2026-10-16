@@ -12,8 +12,9 @@ a generic scoring framework we wrote, not derived from any standard.
 
 ## Importing
 
-Run inside the `web` container (see the main `README.md`'s "Packages"
-section for why), then review and approve in Django admin:
+The easiest way is the admin's **Import package** page (see "Installing
+requirement packages" in the main `README.md`). From the command line, run
+inside the `web` container, then review and approve in Django admin:
 
 ```bash
 docker compose exec web python manage.py import_package packages/default-cia-5x5/1.1.0.json --kind method --official

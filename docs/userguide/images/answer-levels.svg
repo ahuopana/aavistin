@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="diagram" viewBox="0 0 800 280" width="800" height="280" role="img" aria-labelledby="lv-title lv-desc">
+  <title id="lv-title">Answer levels and the resolved configuration</title>
+  <desc id="lv-desc">The product passes its answers down to the hardware revision and the software release; the software release passes them to the software option. The hardware revision, software release and software option together resolve into the configuration&#x27;s answers.</desc>
+  <style>
+    svg { font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; }
+    .d-box { fill: var(--color-surface, #f3f7f7); stroke: var(--color-border, #d5dfe0); stroke-width: 1.5; }
+    .d-key { fill: var(--color-brand-tint, #e3f2ef); stroke: var(--color-accent, #1b6f6d); stroke-width: 1.5; }
+    .d-badge { fill: var(--color-accent-fill, #1b6f6d); }
+    .d-badge-text { fill: var(--color-on-accent-fill, #ffffff); font-weight: 600; }
+    .d-title { fill: var(--color-text, #0f1a1e); font-weight: 600; }
+    .d-sub { fill: var(--color-text-muted, #46585c); font-size: 12px; }
+    .d-line { fill: none; stroke: var(--color-text-muted, #46585c); stroke-width: 1.5; }
+    .d-line-attn { fill: none; stroke: var(--color-attention, #f2711c); stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .d-head { fill: var(--color-text-muted, #46585c); }
+    .d-head-attn { fill: var(--color-attention, #f2711c); }
+    .d-dot { fill: var(--color-text-muted, #46585c); stroke: none; }
+    .d-ring { fill: none; stroke: var(--color-text-muted, #46585c); stroke-width: 1.5; }
+    .d-label { fill: var(--color-text-muted, #46585c); font-size: 12px; paint-order: stroke; stroke: var(--color-bg, #ffffff); stroke-width: 4px; stroke-linejoin: round; }
+    .d-label-attn { fill: var(--color-warning, #b5540e); font-size: 12px; paint-order: stroke; stroke: var(--color-bg, #ffffff); stroke-width: 4px; stroke-linejoin: round; }
+    @media (prefers-color-scheme: dark) {
+      svg { --color-bg: #0b161a; --color-surface: #12222a; --color-border: #264048; --color-text: #e6f0ef; --color-text-muted: #9fb3b5; --color-brand-tint: #14323a; --color-accent: #7fd6c9; --color-accent-fill: #8fe0d3; --color-on-accent-fill: #06201f; --color-attention: #ff9a4d; --color-warning: #e08b3d; }
+    }
+  </style>
+  <defs><marker id="lv-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head" d="M0 1L10 5L0 9z"/></marker><marker id="lv-head-attn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head-attn" d="M0 1L10 5L0 9z"/></marker></defs>
+  <rect class="d-box" x="8" y="110" width="212" height="60" rx="8"/>
+  <text class="d-title" x="114.0" y="137.0" text-anchor="middle">Product</text>
+  <text class="d-sub" x="114.0" y="154.0" text-anchor="middle">intended use, markets served</text>
+  <rect class="d-box" x="300" y="10" width="240" height="60" rx="8"/>
+  <text class="d-title" x="420.0" y="37.0" text-anchor="middle">Hardware revision</text>
+  <text class="d-sub" x="420.0" y="54.0" text-anchor="middle">radios, supply voltage</text>
+  <rect class="d-box" x="300" y="110" width="240" height="60" rx="8"/>
+  <text class="d-title" x="420.0" y="137.0" text-anchor="middle">Software release</text>
+  <text class="d-sub" x="420.0" y="154.0" text-anchor="middle">network services, personal data</text>
+  <rect class="d-box" x="300" y="210" width="240" height="60" rx="8"/>
+  <text class="d-title" x="420.0" y="237.0" text-anchor="middle">Software option</text>
+  <text class="d-sub" x="420.0" y="254.0" text-anchor="middle">features an option enables</text>
+  <rect class="d-key" x="620" y="110" width="172" height="60" rx="8"/>
+  <text class="d-title" x="706.0" y="137.0" text-anchor="middle">Configuration</text>
+  <text class="d-sub" x="706.0" y="154.0" text-anchor="middle">resolved answers</text>
+  <path class="d-line" d="M220 140 H260 V40 H299" marker-end="url(#lv-head)"/>
+  <path class="d-line" d="M220 140 H299" marker-end="url(#lv-head)"/>
+  <path class="d-line" d="M420 170 V209" marker-end="url(#lv-head)"/>
+  <path class="d-line" d="M540 40 H580 V140"/>
+  <path class="d-line" d="M540 140 H619" marker-end="url(#lv-head)"/>
+  <path class="d-line" d="M540 240 H580 V140"/>
+</svg>

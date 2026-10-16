@@ -1,0 +1,38 @@
+{
+  "libraries": [
+    {
+      "file": "alpine-3.17.4.min.js",
+      "name": "Alpine.js",
+      "version": "3.17.4",
+      "license": "MIT",
+      "url": "https://alpinejs.dev/"
+    },
+    {
+      "file": "htmx-2.0.4.min.js",
+      "name": "htmx",
+      "version": "2.0.4",
+      "license": "0BSD",
+      "url": "https://htmx.org/"
+    }
+  ],
+  "fonts_and_artwork": [
+    {
+      "name": "Outfit",
+      "used_for": "Headings, and the outlined wordmark in the logo files",
+      "license": "SIL Open Font License 1.1",
+      "url": "https://fonts.google.com/specimen/Outfit"
+    },
+    {
+      "name": "IBM Plex Sans",
+      "used_for": "Body text",
+      "license": "SIL Open Font License 1.1",
+      "url": "https://fonts.google.com/specimen/IBM+Plex+Sans"
+    },
+    {
+      "name": "IBM Plex Mono",
+      "used_for": "Code",
+      "license": "SIL Open Font License 1.1",
+      "url": "https://fonts.google.com/specimen/IBM+Plex+Mono"
+    }
+  ]
+}

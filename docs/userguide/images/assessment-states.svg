@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="diagram" viewBox="0 0 840 214" width="840" height="214" role="img" aria-labelledby="st-title st-desc">
+  <title id="st-title">Assessment states</title>
+  <desc id="st-desc">A new assessment starts as a draft. An editor changing answers keeps it a draft. An approver approves it. An approved assessment becomes stale when answers, the package or evidence change, and a stale one is replaced by starting a new assessment, which is a draft. An approved assessment stays on record.</desc>
+  <style>
+    svg { font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; }
+    .d-box { fill: var(--color-surface, #f3f7f7); stroke: var(--color-border, #d5dfe0); stroke-width: 1.5; }
+    .d-key { fill: var(--color-brand-tint, #e3f2ef); stroke: var(--color-accent, #1b6f6d); stroke-width: 1.5; }
+    .d-badge { fill: var(--color-accent-fill, #1b6f6d); }
+    .d-badge-text { fill: var(--color-on-accent-fill, #ffffff); font-weight: 600; }
+    .d-title { fill: var(--color-text, #0f1a1e); font-weight: 600; }
+    .d-sub { fill: var(--color-text-muted, #46585c); font-size: 12px; }
+    .d-line { fill: none; stroke: var(--color-text-muted, #46585c); stroke-width: 1.5; }
+    .d-line-attn { fill: none; stroke: var(--color-attention, #f2711c); stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .d-head { fill: var(--color-text-muted, #46585c); }
+    .d-head-attn { fill: var(--color-attention, #f2711c); }
+    .d-dot { fill: var(--color-text-muted, #46585c); stroke: none; }
+    .d-ring { fill: none; stroke: var(--color-text-muted, #46585c); stroke-width: 1.5; }
+    .d-label { fill: var(--color-text-muted, #46585c); font-size: 12px; paint-order: stroke; stroke: var(--color-bg, #ffffff); stroke-width: 4px; stroke-linejoin: round; }
+    .d-label-attn { fill: var(--color-warning, #b5540e); font-size: 12px; paint-order: stroke; stroke: var(--color-bg, #ffffff); stroke-width: 4px; stroke-linejoin: round; }
+    @media (prefers-color-scheme: dark) {
+      svg { --color-bg: #0b161a; --color-surface: #12222a; --color-border: #264048; --color-text: #e6f0ef; --color-text-muted: #9fb3b5; --color-brand-tint: #14323a; --color-accent: #7fd6c9; --color-accent-fill: #8fe0d3; --color-on-accent-fill: #06201f; --color-attention: #ff9a4d; --color-warning: #e08b3d; }
+    }
+  </style>
+  <defs><marker id="st-head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head" d="M0 1L10 5L0 9z"/></marker><marker id="st-head-attn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path class="d-head-attn" d="M0 1L10 5L0 9z"/></marker></defs>
+  <circle class="d-dot" cx="40" cy="100" r="7"/>
+  <path class="d-line" d="M47 100 H149" marker-end="url(#st-head)"/>
+  <text class="d-label" x="98" y="86" text-anchor="middle">Start new</text>
+  <text class="d-label" x="98" y="101" text-anchor="middle">assessment</text>
+  <rect class="d-box" x="150" y="70" width="110" height="60" rx="8"/>
+  <text class="d-title" x="205.0" y="105.0" text-anchor="middle">Draft</text>
+  <rect class="d-key" x="430" y="70" width="110" height="60" rx="8"/>
+  <text class="d-title" x="485.0" y="105.0" text-anchor="middle">Approved</text>
+  <rect class="d-box" x="690" y="70" width="110" height="60" rx="8"/>
+  <text class="d-title" x="745.0" y="105.0" text-anchor="middle">Stale</text>
+  <path class="d-line" d="M260 100 H429" marker-end="url(#st-head)"/>
+  <text class="d-label" x="345" y="92" text-anchor="middle">Approver approves</text>
+  <path class="d-line" d="M540 100 H689" marker-end="url(#st-head)"/>
+  <text class="d-label" x="615" y="76" text-anchor="middle">Answers, package or</text>
+  <text class="d-label" x="615" y="91" text-anchor="middle">evidence change</text>
+  <path class="d-line" d="M205 130 C190 176 270 176 235 131" marker-end="url(#st-head)"/>
+  <text class="d-label" x="220" y="195" text-anchor="middle">Editor changes answers</text>
+  <path class="d-line" d="M745 70 V38 H232 V69" marker-end="url(#st-head)"/>
+  <text class="d-label" x="490" y="32" text-anchor="middle">Start a new assessment</text>
+  <path class="d-line" d="M485 130 V172" marker-end="url(#st-head)"/>
+  <circle class="d-ring" cx="485" cy="185" r="10"/><circle class="d-dot" cx="485" cy="185" r="5.5"/>
+</svg>

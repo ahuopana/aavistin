@@ -1,123 +1,143 @@
 # Aavistin
 
 Open-source compliance and risk-assessment tool for product manufacturers.
-See `docs/architecture.md` for the full design and `CLAUDE.md` for the
-project's working agreements and milestones.
+Describe a product, answer one questionnaire, and see which regulations
+apply (EU CRA, RED, LVD and others), what they require, and how the product's
+risks are rated and treated. Approvals are frozen, audited records that go
+stale when anything they relied on changes.
 
-## Starting the system (local development)
+- **Using Aavistin:** the [User Guide](docs/userguide/01-getting-started.md),
+  also in the app under `/guide/`.
+- **Design:** [`docs/architecture.md`](docs/architecture.md), with decisions
+  recorded in [`docs/adr/`](docs/adr/).
+- **Working on Aavistin:** [`docs/development.md`](docs/development.md).
+- **Licence:** [GNU AGPL v3](LICENSE).
+
+## Try it
 
 Requires Docker or Podman with Compose support.
 
 ```bash
 docker compose up --build
-# or
-podman compose up --build
 ```
 
-This starts four services: `db` (PostgreSQL), `web` (Django dev server on
-`localhost:8000`), `worker` and `scheduler` (background jobs — see
-`docs/adr/0007-background-job-backend.md`). Each of `web`, `worker` and
-`scheduler` first bootstraps a local `.env` from `.env.example` with a
-random `DJANGO_SECRET_KEY`, if one doesn't already exist (see
-`scripts/generate_env.sh`; a no-op once `.env` exists). `web` runs
-migrations and seeds the default dev accounts below on every startup,
-before starting the dev server.
+Open <http://localhost:8000/> (or <http://localhost:8080/> once the first
+start has written `.env`; see `WEB_PORT`) and sign in as `admin` / `admin`.
+This starts a development stack with throwaway accounts. It is not for
+real use; see [Running in production](#running-in-production). Ports,
+accounts and the rest of the development setup are in
+[`docs/development.md`](docs/development.md).
 
-Once it's up:
+## Installing requirement packages
 
-- App: http://localhost:8000/
-- Django admin: http://localhost:8000/admin/
-- Login: http://localhost:8000/accounts/login/
+Regulation and other requirement content lives outside the application code
+as versioned, schema-validated **packages** (see `docs/architecture.md`,
+"Requirement sources"). Adding or changing a regulation means installing a
+package, never changing Python code. The same mechanism carries risk-assessment
+methods and catalogs.
 
-## Default dev accounts
+Nothing is installed automatically, so a new system has no packages. Install
+them from the Django admin; no command line is needed.
 
-| Username   | Password   | Role                    |
-|------------|------------|-------------------------|
-| `admin`    | `admin`    | Superuser (admin site)  |
-| `aavistin` | `aavistin` | Regular (non-staff) user|
+1. Get the package files. They are in [`packages/`](packages/) in this
+   repository (one folder per package, one JSON file per version); download
+   the ones you need to your computer.
+2. Sign in to the admin (`/admin/`) as a user who may manage packages, open
+   **Requirement packages** and choose **Import package**.
+3. Choose the file, then the **kind** from the table below. Tick **Official**
+   for the packages from this repository.
+4. Read the result page. Aavistin has validated the file against its schema,
+   linted it and run the package's own test examples. Check that there are no
+   lint errors and that the examples passed, and look at the diff against the
+   previous version, if there is one. Importing never switches a package on.
+5. Back in the list, tick the package and choose **Approve selected packages**
+   from the action menu. Only approved packages affect assessments. Approving
+   a new version replaces the previous one; assessments that used the old one
+   are marked stale so they get reviewed.
 
-These are seeded by `python manage.py seed_dev_users`
-(`apps/accounts/management/commands/seed_dev_users.py`), which the `web`
-service runs automatically on startup. They are for local development
-only — the command is idempotent (safe to re-run, resets the passwords
-each time). With `DEBUG` off it refuses to use the default passwords: set
-`SEED_ADMIN_PASSWORD` and `SEED_AAVISTIN_PASSWORD` (both required) to seed
-a hosted test instance with passwords of your own. Nothing seeds these
-accounts outside of `docker-compose.yml`'s dev commands.
+Import in this order, because a package can only be imported once what it
+refers to is approved. Take the highest version of each package; older
+versions are kept for history.
 
-## Default groups, organisation and roles
+| Order | Package | Kind | What it is |
+| --- | --- | --- | --- |
+| 1 | `common` | Shared question set | Questions several regulations ask, answered once |
+| 2 | `default-cia-5x5` | Risk method | The default risk scoring (severity × likelihood) |
+| 3 | `eu-cra`, `eu-lvd`, `eu-red` | Requirement (applicability) | The EU Cyber Resilience Act, Low Voltage Directive and Radio Equipment Directive |
 
-`python manage.py seed_dev_roles`
-(`apps/orgs/management/commands/seed_dev_roles.py`), also run automatically
-by the `web` service on startup right after `seed_dev_users`, seeds:
+To explore with invented data instead, import `demo-widget-safety`
+(requirement), `demo-safety-5x5` (risk method) and `demo-widget-risks` (risk
+catalog). They are not real regulations. Each package folder has a `README.md`
+saying what it covers, its dependencies and its versions.
 
-- One `django.contrib.auth.Group` per role in `apps.orgs.models.Role`
-  (Viewer, Editor, Approver, Content curator, Organisation admin) —
-  scaffolding for granting roles in bulk via Django admin, whatever the
-  organisation.
-- A **Default Organisation** / **Default Family** (`apps.orgs.models`),
-  so there's somewhere to actually create a product.
-- The `aavistin` dev user is added to the Editor and Approver groups,
-  both granted at Default Organisation scope — enough to add, edit,
-  approve and (while unapproved) delete a product and everything beneath
-  it (hardware variants/revisions, software releases/options,
-  configurations) from `/products/`, without needing Django admin at
-  all. See `docs/adr/0008-product-level-authoring-and-approval-deferred.md`.
+The EU packages are not legal advice and have not yet been legally reviewed;
+their own READMEs list what to verify before relying on them.
 
-Same caveats as `seed_dev_users`: local development only, idempotent,
-never run against a non-dev database.
+<details>
+<summary>Command line instead</summary>
 
-## Packages
-
-Regulation and other requirement content (EU CRA, RED, LVD, GDPR, and
-non-legal sources like internal QMS procedures) lives outside application
-code as versioned, schema-validated JSON **packages** under `packages/`
-(see `docs/architecture.md`, "Requirement sources") — adding or changing a
-regulation means writing a package, never changing Python code. The same
-mechanism also covers risk-assessment method and catalog packages
-(`docs/architecture.md`, "Risk assessment: methods and catalogs").
-
-Nothing imports a package automatically — not even the demo ones — so a
-fresh dev database has none installed. To add one, run these *inside* the
-`web` container (not your host — it needs the app's dependencies and the
-`db` container's `DATABASE_URL`; use `exec` if the stack is already up
-via `docker compose up`, or `run --rm` otherwise):
+Run these inside the `web` container, which has the app's dependencies and the
+database connection (`exec` if the stack is up, `run --rm` otherwise):
 
 ```bash
-docker compose exec web python manage.py import_package packages/eu-cra/1.0.0.json --kind requirement --official
+docker compose exec web python manage.py import_package packages/common/1.4.0.json --kind question_set --official
+docker compose exec web python manage.py approve_package common 1.4.0
+docker compose exec web python manage.py package_status
 ```
 
-This validates the file against the package JSON Schema, runs the
-semantic linter, and runs the package's own test fixtures — it does
-**not** activate it. Review the resulting lint/fixture report and diff
-against the previous version in Django admin
-(`/admin/packages/requirementpackage/`), then publish it with the
-"Approve selected packages" admin action (or
-`docker compose exec web python manage.py approve_package <source> <version>`).
-Only approved packages affect real assessments.
+`import_package` does the same checks as the admin page and does not approve.
+</details>
 
-## Running tests and lint
+## Running in production
+
+The `docker-compose.yml` in this repository is for development: it runs with
+`DEBUG` on, mounts the source into the container, publishes the database port
+and seeds accounts with known passwords. For anything other than your own
+laptop:
+
+**Run it properly**
+
+- Build the image from the `Dockerfile` (it runs gunicorn, serves static files
+  with WhiteNoise and runs `collectstatic`) and put it behind a reverse proxy
+  that terminates TLS. Run three processes from that image: the web server
+  (the default command), `python manage.py db_worker` and
+  `python manage.py scheduler`. Run `python manage.py migrate` on each release.
+- Use a PostgreSQL server of your own with a strong password, not reachable
+  from the internet, and back it up. If you enable evidence file uploads,
+  mount persistent storage at `MEDIA_ROOT` and back that up too.
+- Create your first administrator with `python manage.py createsuperuser`.
+  Never run `seed_dev_users` or `seed_dev_roles`: they create accounts with
+  known passwords.
+
+**Configure it securely** (environment variables; see `.env.example`)
+
+| Setting | Production value |
+| --- | --- |
+| `DEBUG` | `False` (the default). With it on, errors expose settings and code. |
+| `DJANGO_SECRET_KEY` | A long random value that only this deployment knows, for example `python -c "import secrets; print(secrets.token_urlsafe(64))"`. Keep it out of the repository and out of images. |
+| `DJANGO_ALLOWED_HOSTS` | Your real host names only, for example `aavistin.example.org`. |
+| `CSRF_TRUSTED_ORIGINS` | Your site's origin, for example `https://aavistin.example.org`. |
+| `HTTPS_ONLY` | `True`: redirects HTTP to HTTPS and marks the session and CSRF cookies secure. Your proxy must send `X-Forwarded-Proto`, or you get a redirect loop. |
+| `SECURE_HSTS_SECONDS` | Once HTTPS works, `31536000`. Start with `3600`: browsers remember this setting. |
+| `DATABASE_URL` | Your production database, with its own credentials. |
+| `AUTH_LDAP_*` | Use `ldaps://`, not `ldap://`, if you enable LDAP. |
+
+Then run the Django deployment check and resolve what it reports:
 
 ```bash
-uv sync
-uv run pytest
-uv run ruff check .
-uv run ruff format --check .
+python manage.py check --deploy
 ```
 
-Tests require a running PostgreSQL instance (see `DATABASE_URL` in `.env`
-or `docker-compose.yml`) — this project never relies on SQLite.
+With the settings above, only two optional HSTS items remain (subdomains and
+preload); the rest of the report should be empty.
 
-### End-to-end (browser) tests
+**Operate it carefully**
 
-The tests under `e2e/` drive the real UI in Chromium via Playwright. They
-are marked `e2e` and skipped by the default `pytest` run:
-
-```bash
-uv run playwright install chromium   # once
-uv run pytest -m e2e
-```
-
-On failure, add `--screenshot only-on-failure --tracing retain-on-failure`
-to keep artefacts under `test-results/`. If a Chromium is already installed,
-point `PLAYWRIGHT_CHROMIUM_EXECUTABLE` at it instead of running the install.
+- Set each organisation's separation-of-duties policy to `warn` or `enforce`
+  (in the admin), so the person who edited the answers is not the one who
+  approves them.
+- Give people the lowest role they need (Viewer, Editor, Approver) and prefer
+  granting roles on a product family or product over the whole organisation.
+- Keep dependencies current: rebuild the image regularly and watch for
+  security releases of Django and the other packages listed on the
+  User Guide's Licences page.
