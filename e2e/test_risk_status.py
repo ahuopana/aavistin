@@ -3,6 +3,7 @@ Compliance Overview. The register is seeded through the ORM; everything the
 user does goes through the real pages."""
 
 import json
+import os
 from pathlib import Path
 
 from django.conf import settings
@@ -89,5 +90,16 @@ def test_risk_status_journey(page, live_server, world):
     page.goto(f"{live_server.url}{reverse('core:compliance')}")
     expect(page.get_by_role("columnheader", name="Still must treat")).to_be_visible()
     expect(page.locator("tr", has_text="Gateway")).to_contain_text("2")
+
+    # --- Portfolio Risk page: matrices and ageing --------------------------------------
+    page.get_by_role("link", name="Risk", exact=True).click()
+    expect(page.get_by_role("heading", name="Risk", exact=True)).to_be_visible()
+    expect(page.locator(".heatmap-cell.class-must_treat").first).to_be_visible()
+    expect(page.get_by_role("heading", name="How long risks have waited")).to_be_visible()
+    expect(page.locator(".age-row", has_text="30 days or less").first).to_contain_text("2")
+    expect(page.locator("tr", has_text="Gateway").first).to_be_visible()
+    shot = os.environ.get("AAVISTIN_SHOT")
+    if shot:
+        page.screenshot(path=shot, full_page=True)
 
     assert page_errors == []

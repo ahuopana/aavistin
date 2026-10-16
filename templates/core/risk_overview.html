@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load risk_tags %}
+
+{% block title %}Risk · Aavistin{% endblock %}
+
+{% block content %}
+  <h1>Risk</h1>
+  <p class="field-hint">
+    Threats and hazards across the {{ m.product_count }} product{{ m.product_count|pluralize }} you can see. Each counts once, in its worst class after treatment.
+    Matrices are drawn per risk method; severities from different methods are never added up.
+  </p>
+
+  {% if m.rateable %}
+    <div class="risk-summary">
+      <div class="risk-stat"><span class="risk-stat-value">{{ m.rateable }}</span> threats and hazards</div>
+      <div class="risk-stat {% if m.exposure.open_must_treat %}risk-stat-alert{% endif %}"><span class="risk-stat-value">{{ m.exposure.open_must_treat }}</span> still must treat</div>
+      <div class="risk-stat"><span class="risk-stat-value">{{ m.exposure.residual.unrated }}</span> unrated</div>
+      <div class="risk-stat"><span class="risk-stat-value">{{ m.open_total }}</span> open (above accept or unrated)</div>
+    </div>
+
+    <section class="status-card" aria-label="Exposure">
+      <h3>Exposure</h3>
+      {% include "risk/_class_bar.html" with label="Before treatment" segments=m.exposure.inherent_segments %}
+      {% include "risk/_class_bar.html" with label="After treatment" segments=m.exposure.residual_segments %}
+    </section>
+
+    <section aria-label="Risk matrices">
+      <h2>Risk matrices</h2>
+      {% include "risk/_heatmap.html" with grids=m.heatmaps %}
+    </section>
+
+    <section aria-label="Ageing">
+      <h2>How long risks have waited</h2>
+      <div class="status-grid">
+        <div class="status-card">
+          {% include "risk/_age_chart.html" with caption="Time since the last change to the entry or its treatment" rows=m.changed_chart %}
+          <p class="field-hint">A long time without a change on a risk that is still open is a sign nobody is looking at it. Colour is the class after treatment.</p>
+        </div>
+        <div class="status-card">
+          {% include "risk/_age_chart.html" with caption="Open risks by time since they were added" rows=m.open_chart %}
+          <p class="field-hint">Open means still above accept after treatment, or unrated. The register does not record when a risk was first left unmitigated, so the age counts from the day the entry was added.</p>
+        </div>
+      </div>
+
+      <ul class="class-legend">
+        <li><span class="class-swatch class-must_treat" aria-hidden="true"></span><span aria-hidden="true">&#10005;</span> must treat</li>
+        <li><span class="class-swatch class-justify" aria-hidden="true"></span><span aria-hidden="true">!</span> justify</li>
+        <li><span class="class-swatch class-accept" aria-hidden="true"></span><span aria-hidden="true">&#10003;</span> accept</li>
+        <li><span class="class-swatch class-unrated" aria-hidden="true"></span><span aria-hidden="true">&ndash;</span> unrated</li>
+      </ul>
+
+      {% if m.oldest %}
+        <h3>Open the longest</h3>
+        <table class="risk-table top-open">
+          <thead><tr><th>Entry</th><th>Product</th><th>Class</th><th>Open for</th></tr></thead>
+          <tbody>
+            {% for item in m.oldest %}
+              <tr>
+                <td>{% if item.configuration %}<a href="{% url 'risk:entry_detail' item.configuration.pk item.entry.pk %}">{{ item.entry.label }}</a>{% else %}{{ item.entry.label }}{% endif %}</td>
+                <td><a href="{% url 'products:product_detail' item.product.pk %}?tab=risk">{{ item.product.name }}</a></td>
+                <td><span class="class-chip class-{{ item.class }}">{% if item.class == "must_treat" %}&#10005; must treat{% elif item.class == "justify" %}! justify{% else %}&ndash; unrated{% endif %}</span></td>
+                <td>{{ item.days }} day{{ item.days|pluralize }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </section>
+
+    <section aria-label="Products">
+      <h2>By product</h2>
+      <table class="risk-table risk-overview-table">
+        <thead>
+          <tr><th>Product</th><th>Threats and hazards</th><th>Still must treat</th><th>Unrated</th><th>Without treatment</th><th>Open</th><th>Oldest open</th><th>Last change</th></tr>
+        </thead>
+        <tbody>
+          {% for row in m.products %}
+            <tr>
+              <td><a href="{% url 'products:product_detail' row.product.pk %}?tab=risk">{{ row.product.name }}</a></td>
+              <td>{{ row.rateable }}</td>
+              <td>{{ row.must_treat }}</td>
+              <td>{{ row.unrated }}</td>
+              <td>{{ row.untreated }}</td>
+              <td>{{ row.open }}</td>
+              <td>{% if row.oldest_open is None %}&mdash;{% else %}{{ row.oldest_open }} d{% endif %}</td>
+              <td>{% if row.latest_change is None %}&mdash;{% else %}{{ row.latest_change }} d ago{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  {% else %}
+    <p>No threats or hazards in the products you can see yet. Add them from a configuration's risk register.</p>
+  {% endif %}
+{% endblock %}

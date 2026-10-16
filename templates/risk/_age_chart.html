@@ -1,0 +1,39 @@
+{# One horizontal stacked bar per age bucket, split by acceptance class. Context: caption, rows (apps.risk.portfolio.age_chart), noun (what is counted). #}
+<figure class="age-chart">
+  <figcaption>{{ caption }}</figcaption>
+  {% for row in rows %}
+    <div class="age-row">
+      <span class="age-label">{{ row.label }}</span>
+      <div class="age-track">
+        {% if row.total %}
+          <div class="age-bar" style="width: {{ row.width }}%" role="img" aria-label="{{ row.label }}: {% for s in row.segments %}{{ s.count }} {{ s.label }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+            {% for s in row.segments %}
+              <span class="class-bar-segment class-{{ s.key }}" style="flex-grow: {{ s.count }}" title="{{ s.count }} {{ s.label }}"></span>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+      <span class="age-count">{{ row.total }}</span>
+    </div>
+  {% endfor %}
+  <details class="status-details">
+    <summary>Show as a table</summary>
+    <table class="risk-table risk-overview-table">
+      <thead>
+        <tr><th>Age</th><th>Must treat</th><th>Justify</th><th>Accept</th><th>Unrated</th><th>Total</th></tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <th scope="row">{{ row.label }}</th>
+            <td>{{ row.counts.must_treat }}</td>
+            <td>{{ row.counts.justify }}</td>
+            <td>{{ row.counts.accept }}</td>
+            <td>{{ row.counts.unrated }}</td>
+            <td>{{ row.total }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </details>
+</figure>
