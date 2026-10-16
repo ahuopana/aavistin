@@ -19,7 +19,7 @@ Shared facts (product form, role, commercial activity, medical devices, radio ca
 ## Known limitations
 
 - No harmonised standards are listed; the question about them stays generic.
-- Interplay with the Machinery Regulation (electrical hazards of machinery) and with the EMC and RoHS directives is not modelled; a declaration of conformity usually covers them together.
+- Interplay with the Machinery Regulation (electrical hazards of machinery) and with the RoHS directive is not modelled. EMC is a separate package, `eu-emc` (ADR 0047); a mains product without a radio is in both, and the shared documentation and marking gaps raise a finding from each.
 - Requirements apply to every unit regardless of placement date; the transition from 2006/95/EC shows only as an info finding.
 
 ## Importing

@@ -1,0 +1,3429 @@
+{
+  "source": "eu-emc",
+  "type": "legislation",
+  "jurisdiction": "EU",
+  "version": "2014-30@2026-10",
+  "title": "EU Electromagnetic Compatibility Directive",
+  "legal_sources": [
+    {
+      "celex": "32014L0030",
+      "eli": "http://data.europa.eu/eli/dir/2014/30/oj",
+      "citation": "Directive 2014/30/EU"
+    }
+  ],
+  "dates_of_application": {
+    "from": "2016-04-20"
+  },
+  "redistributable": true,
+  "uses": [
+    "common:product_form",
+    "common:economic_operator_role",
+    "common:places_under_own_name_or_modifies",
+    "common:is_commercial_activity",
+    "common:is_medical_device",
+    "common:is_in_vitro_diagnostic",
+    "common:is_civil_aviation_product",
+    "common:is_marine_equipment",
+    "common:wireless_interface_capability",
+    "common:wireless_enablement",
+    "common:hardware_still_placed_on_market",
+    "common:hardware_last_placed_on_market",
+    "common:technical_documentation_complete",
+    "common:eu_declaration_of_conformity_drawn_up",
+    "common:ce_marking_affixed",
+    "common:product_identification_marked",
+    "common:supplier_conformity_checked"
+  ],
+  "question_groups": [
+    {
+      "id": "product_and_role",
+      "title": "Product and your role",
+      "questions": [
+        "product_form",
+        "economic_operator_role",
+        "places_under_own_name_or_modifies",
+        "is_commercial_activity"
+      ]
+    },
+    {
+      "id": "equipment_and_exclusions",
+      "title": "Equipment and exclusions (Art. 2)",
+      "questions": [
+        "emc_equipment_type",
+        "wireless_interface_capability",
+        "wireless_enablement",
+        "is_civil_aviation_product",
+        "is_marine_equipment",
+        "is_medical_device",
+        "is_in_vitro_diagnostic"
+      ]
+    },
+    {
+      "id": "emc_assessment",
+      "title": "EMC assessment and technical documentation (Annex I, Annex II)",
+      "questions": [
+        "emc_conformity_basis",
+        "technical_documentation_complete",
+        "emc_use_information_provided",
+        "emc_fixed_installation_documented"
+      ]
+    },
+    {
+      "id": "marking_and_documents",
+      "title": "Declaration, CE marking and identification",
+      "questions": [
+        "eu_declaration_of_conformity_drawn_up",
+        "ce_marking_affixed",
+        "product_identification_marked",
+        "supplier_conformity_checked"
+      ]
+    },
+    {
+      "id": "placing_on_market",
+      "title": "Placing on the market",
+      "questions": [
+        "hardware_still_placed_on_market",
+        "hardware_last_placed_on_market"
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "emc_equipment_type",
+      "type": "choice",
+      "level": "product",
+      "label": "What kind of equipment is the product under the EMC Directive?",
+      "condition": {
+        "!": {
+          "in": [
+            {
+              "var": "product_form"
+            },
+            [
+              "standalone_software",
+              "software_component"
+            ]
+          ]
+        }
+      },
+      "choices": [
+        "apparatus",
+        "fixed_installation",
+        "component_for_incorporation",
+        "inherently_benign",
+        "radio_amateur_kit"
+      ],
+      "guidance": "Apparatus is a finished appliance, or a combination of them, made available as a single functional unit to end users, that can generate electromagnetic disturbance or whose operation can be affected by it. A fixed installation is a particular combination of apparatus and other devices assembled and intended to be used permanently at a predefined location. A component or sub-assembly that is only built into other equipment by its maker, and has no direct function for an end user, is not apparatus. Equipment that by its nature cannot cause disturbance and is not affected by it (for example passive items such as simple cables or resistive heaters) is outside the directive. Kits for radio amateurs that are not sold commercially are also outside it.",
+      "guidance_url": "https://single-market-economy.ec.europa.eu/sectors/electrical-and-electronic-engineering-industries-eei/electromagnetic-compatibility-emc-directive_en"
+    },
+    {
+      "id": "emc_conformity_basis",
+      "type": "choice",
+      "level": "product",
+      "label": "How do you show that the apparatus meets the EMC protection requirements?",
+      "condition": {
+        "and": [
+          {
+            "and": [
+              {
+                "!": {
+                  "in": [
+                    {
+                      "var": "product_form"
+                    },
+                    [
+                      "standalone_software",
+                      "software_component"
+                    ]
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "==": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        "present"
+                      ]
+                    },
+                    {
+                      "!=": [
+                        {
+                          "var": "wireless_enablement"
+                        },
+                        "disabled_manufacturer_update_only"
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "component_for_incorporation"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "inherently_benign"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "radio_amateur_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "!=": [
+              {
+                "var": "emc_equipment_type"
+              },
+              "fixed_installation"
+            ]
+          },
+          {
+            "or": [
+              {
+                "!": {
+                  "in": [
+                    {
+                      "var": "economic_operator_role"
+                    },
+                    [
+                      "importer",
+                      "distributor",
+                      "authorised_representative",
+                      "steward"
+                    ]
+                  ]
+                }
+              },
+              {
+                "==": [
+                  {
+                    "var": "places_under_own_name_or_modifies"
+                  },
+                  true
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "choices": [
+        "harmonised_standards_full",
+        "harmonised_standards_partial",
+        "no_standards_applied"
+      ],
+      "guidance": "Harmonised standards cited in the Official Journal give a presumption of conformity for the phenomena they cover. Where none is applied, or only part of it, your EMC assessment and technical documentation must show how the protection requirements are met.",
+      "guidance_url": "https://single-market-economy.ec.europa.eu/sectors/electrical-and-electronic-engineering-industries-eei/electromagnetic-compatibility-emc-directive_en"
+    },
+    {
+      "id": "emc_use_information_provided",
+      "type": "boolean",
+      "level": "product",
+      "label": "Do the instructions give the information needed to use the apparatus as intended, including any precautions when assembling, installing, maintaining or using it and any restriction on use in residential environments?",
+      "condition": {
+        "and": [
+          {
+            "and": [
+              {
+                "!": {
+                  "in": [
+                    {
+                      "var": "product_form"
+                    },
+                    [
+                      "standalone_software",
+                      "software_component"
+                    ]
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "==": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        "present"
+                      ]
+                    },
+                    {
+                      "!=": [
+                        {
+                          "var": "wireless_enablement"
+                        },
+                        "disabled_manufacturer_update_only"
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "component_for_incorporation"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "inherently_benign"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "radio_amateur_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "!=": [
+              {
+                "var": "emc_equipment_type"
+              },
+              "fixed_installation"
+            ]
+          },
+          {
+            "or": [
+              {
+                "!": {
+                  "in": [
+                    {
+                      "var": "economic_operator_role"
+                    },
+                    [
+                      "importer",
+                      "distributor",
+                      "authorised_representative",
+                      "steward"
+                    ]
+                  ]
+                }
+              },
+              {
+                "==": [
+                  {
+                    "var": "places_under_own_name_or_modifies"
+                  },
+                  true
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "guidance": "Answer no if the instructions are silent on EMC-related precautions or on restrictions such as use only in industrial environments.",
+      "guidance_url": "https://single-market-economy.ec.europa.eu/sectors/electrical-and-electronic-engineering-industries-eei/electromagnetic-compatibility-emc-directive_en"
+    },
+    {
+      "id": "emc_fixed_installation_documented",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the fixed installation's compliance with the protection requirements documented, with a responsible person identified?",
+      "condition": {
+        "and": [
+          {
+            "and": [
+              {
+                "!": {
+                  "in": [
+                    {
+                      "var": "product_form"
+                    },
+                    [
+                      "standalone_software",
+                      "software_component"
+                    ]
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "==": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        "present"
+                      ]
+                    },
+                    {
+                      "!=": [
+                        {
+                          "var": "wireless_enablement"
+                        },
+                        "disabled_manufacturer_update_only"
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "component_for_incorporation"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "inherently_benign"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "radio_amateur_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "emc_equipment_type"
+              },
+              "fixed_installation"
+            ]
+          }
+        ]
+      },
+      "guidance": "A fixed installation is not CE marked and has no declaration of conformity. It must be installed to good engineering practice, respecting the information on the intended use of its components, and the documentation must be kept available to the authorities for as long as it operates.",
+      "guidance_url": "https://single-market-economy.ec.europa.eu/sectors/electrical-and-electronic-engineering-industries-eei/electromagnetic-compatibility-emc-directive_en"
+    }
+  ],
+  "scope": {
+    "include": {
+      "!": {
+        "in": [
+          {
+            "var": "product_form"
+          },
+          [
+            "standalone_software",
+            "software_component"
+          ]
+        ]
+      }
+    },
+    "exclude": [
+      {
+        "id": "not_commercial_activity",
+        "when": {
+          "==": [
+            {
+              "var": "is_commercial_activity"
+            },
+            false
+          ]
+        },
+        "ref": "Art. 4 (making available on the market)"
+      },
+      {
+        "id": "radio_equipment",
+        "when": {
+          "and": [
+            {
+              "==": [
+                {
+                  "var": "wireless_interface_capability"
+                },
+                "present"
+              ]
+            },
+            {
+              "!=": [
+                {
+                  "var": "wireless_enablement"
+                },
+                "disabled_manufacturer_update_only"
+              ]
+            }
+          ]
+        },
+        "ref": "Directive 2014/53/EU, Art. 3(1)(b)"
+      },
+      {
+        "id": "civil_aviation_products",
+        "when": {
+          "==": [
+            {
+              "var": "is_civil_aviation_product"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 2 (Regulation (EU) 2018/1139 applies)"
+      },
+      {
+        "id": "marine_equipment",
+        "when": {
+          "==": [
+            {
+              "var": "is_marine_equipment"
+            },
+            true
+          ]
+        },
+        "ref": "Interpretation: Directive 2014/90/EU covers EMC for marine equipment"
+      },
+      {
+        "id": "medical_devices",
+        "when": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "is_medical_device"
+                },
+                true
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "is_in_vitro_diagnostic"
+                },
+                true
+              ]
+            }
+          ]
+        },
+        "ref": "Interpretation: Regulations (EU) 2017/745 and 2017/746 cover EMC in their Annex I"
+      },
+      {
+        "id": "component_for_incorporation",
+        "when": {
+          "==": [
+            {
+              "var": "emc_equipment_type"
+            },
+            "component_for_incorporation"
+          ]
+        },
+        "ref": "Art. 3 (definition of apparatus; Commission EMC Guide, components)"
+      },
+      {
+        "id": "inherently_benign_equipment",
+        "when": {
+          "==": [
+            {
+              "var": "emc_equipment_type"
+            },
+            "inherently_benign"
+          ]
+        },
+        "ref": "Art. 2 (equipment inherently benign; Commission EMC Guide)"
+      },
+      {
+        "id": "radio_amateur_kit",
+        "when": {
+          "==": [
+            {
+              "var": "emc_equipment_type"
+            },
+            "radio_amateur_kit"
+          ]
+        },
+        "ref": "Art. 2 (radio amateur kits not available commercially)"
+      }
+    ]
+  },
+  "role": {
+    "if": [
+      {
+        "and": [
+          {
+            "in": [
+              {
+                "var": "economic_operator_role"
+              },
+              [
+                "importer",
+                "distributor"
+              ]
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "places_under_own_name_or_modifies"
+              },
+              true
+            ]
+          }
+        ]
+      },
+      "manufacturer",
+      {
+        "var": "economic_operator_role"
+      }
+    ]
+  },
+  "classifications": [],
+  "requirements": [
+    {
+      "id": "annex_i_1_a_emissions",
+      "label": "Design and manufacture the apparatus so that the electromagnetic disturbance it generates does not exceed the level above which radio and telecommunications equipment, or other equipment, cannot operate as intended",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I(1)(a)",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "annex_i_1_b_immunity",
+      "label": "Design and manufacture the apparatus with a level of immunity to the electromagnetic disturbance expected in its intended use, so that it operates without unacceptable degradation",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I(1)(b)",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_14_emc_assessment_and_documentation",
+      "label": "Carry out the EMC assessment of the apparatus, covering normal intended operation and reasonably foreseeable conditions, draw up the technical documentation and carry out internal production control",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 14, Annex II",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_15_declaration_of_conformity",
+      "label": "Draw up the EU declaration of conformity and keep it up to date",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 15, Annex IV",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_16_17_ce_marking",
+      "label": "Affix the CE marking",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 16, Art. 17",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_7_retain_documentation",
+      "label": "Keep the technical documentation and the declaration of conformity for 10 years after the apparatus is placed on the market",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 7",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_7_series_production",
+      "label": "Keep series production in conformity, taking changes in design or in harmonised standards into account",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 7",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_7_type_batch_serial",
+      "label": "Mark a type, batch or serial number or other identification",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 7",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_7_manufacturer_contact",
+      "label": "Indicate the manufacturer's name, registered trade name or trademark and postal address",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 7",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_7_use_information",
+      "label": "Supply the information needed to use the apparatus as intended, including precautions for assembly, installation, maintenance and use and any restriction on use in residential environments",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 7",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_7_corrective_action",
+      "label": "Take corrective action for non-conforming apparatus and inform the authorities of risks",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 7",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_7_cooperate_with_authorities",
+      "label": "Give the authorities information and documentation on request and cooperate on eliminating risks",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 7",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_8_authorised_representative_tasks",
+      "label": "Keep the declaration of conformity and technical documentation available for 10 years, provide them on request, and cooperate with the authorities under the mandate",
+      "roles": [
+        "authorised_representative"
+      ],
+      "ref": "Art. 8",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_9_place_only_compliant",
+      "label": "Place only compliant apparatus on the market",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 9",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_9_verify_manufacturer",
+      "label": "Check that the manufacturer has carried out the conformity assessment, drawn up the technical documentation, affixed the CE marking, supplied the documents and identified the apparatus",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 9",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_9_importer_contact",
+      "label": "Indicate the importer's name, registered trade name or trademark and postal address",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 9",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_9_storage_transport",
+      "label": "Ensure storage and transport conditions do not jeopardise conformity",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 9",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_9_corrective_action",
+      "label": "Where the risks call for it, sample-test and investigate complaints; take corrective action for non-conforming apparatus and inform the authorities of risks",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 9",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_9_retain_declaration",
+      "label": "Keep a copy of the declaration of conformity for 10 years and ensure the technical documentation can be made available",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 9",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_9_cooperate_with_authorities",
+      "label": "Give the authorities information and documentation on request and cooperate on eliminating risks",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 9",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_10_due_care",
+      "label": "Act with due care in relation to the requirements of the directive",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 10",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_10_verify_before_supply",
+      "label": "Check the CE marking, the documents and instructions, and the manufacturer's and importer's identification",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 10",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_10_storage_transport",
+      "label": "Ensure storage and transport conditions do not jeopardise conformity",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 10",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_10_corrective_action",
+      "label": "Make sure corrective action is taken for non-conforming apparatus and inform the authorities of risks",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 10",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_10_cooperate_with_authorities",
+      "label": "Give the authorities information and documentation on request and cooperate on eliminating risks",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 10",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "art_12_identify_economic_operators",
+      "label": "On request, identify for 10 years the economic operators who supplied you and to whom you supplied the apparatus",
+      "roles": [
+        "manufacturer",
+        "importer",
+        "distributor"
+      ],
+      "ref": "Art. 12",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2_fixed_installation_good_practice",
+      "label": "Install the fixed installation to good engineering practice, respecting the information on the intended use of its components, so that the protection requirements are met",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I(2)",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "or": [
+          {
+            "==": [
+              {
+                "var": "emc_equipment_type"
+              },
+              "fixed_installation"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "emc_equipment_type"
+              },
+              null
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "annex_i_2_fixed_installation_documentation",
+      "label": "Document the good engineering practice applied, identify a responsible person, and keep the documentation available to the authorities while the installation operates",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I(2)",
+      "applies_from": "2016-04-20",
+      "applies_when": {
+        "or": [
+          {
+            "==": [
+              {
+                "var": "emc_equipment_type"
+              },
+              "fixed_installation"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "emc_equipment_type"
+              },
+              null
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "assessment_routes": [
+    {
+      "id": "module_a_internal_production_control",
+      "label": "Internal production control (module A)",
+      "allowed_when": {
+        "!=": [
+          {
+            "var": "emc_equipment_type"
+          },
+          "fixed_installation"
+        ]
+      }
+    }
+  ],
+  "finding_rules": [
+    {
+      "id": "radio_equipment_under_red",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "==": [
+              {
+                "var": "wireless_interface_capability"
+              },
+              "present"
+            ]
+          },
+          {
+            "!=": [
+              {
+                "var": "wireless_enablement"
+              },
+              "disabled_manufacturer_update_only"
+            ]
+          }
+        ]
+      },
+      "message": "Radio equipment: electromagnetic compatibility is assessed under RED Art. 3(1)(b), not the EMC Directive. Use the RED package.",
+      "ref": "Directive 2014/53/EU, Art. 3(1)(b)"
+    },
+    {
+      "id": "disabled_radio_check_red",
+      "level": "caution",
+      "when": {
+        "or": [
+          {
+            "==": [
+              {
+                "var": "wireless_interface_capability"
+              },
+              "present_physically_disabled"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "wireless_interface_capability"
+                  },
+                  "present"
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "wireless_enablement"
+                  },
+                  "disabled_manufacturer_update_only"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "message": "Radio hardware present but disabled (physically, or until a manufacturer update): the product is under the EMC Directive, not RED, while the radio stays disabled. Enabling it makes the product radio equipment and requires re-assessment under RED.",
+      "ref": "Directive 2014/53/EU, Art. 2(1)(1)"
+    },
+    {
+      "id": "excluded_equipment_is_interpretation",
+      "level": "info",
+      "when": {
+        "in": [
+          {
+            "var": "emc_equipment_type"
+          },
+          [
+            "component_for_incorporation",
+            "inherently_benign",
+            "radio_amateur_kit"
+          ]
+        ]
+      },
+      "message": "Excluded on the strength of the Commission's EMC Guide. Keep the reasoning (for example why the equipment cannot cause or suffer disturbance) on record, because the authorities can ask for it.",
+      "ref": "Art. 2, Art. 3"
+    },
+    {
+      "id": "fixed_installation_no_ce_marking",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "!": {
+                  "in": [
+                    {
+                      "var": "product_form"
+                    },
+                    [
+                      "standalone_software",
+                      "software_component"
+                    ]
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "==": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        "present"
+                      ]
+                    },
+                    {
+                      "!=": [
+                        {
+                          "var": "wireless_enablement"
+                        },
+                        "disabled_manufacturer_update_only"
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "component_for_incorporation"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "inherently_benign"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "emc_equipment_type"
+                    },
+                    "radio_amateur_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "emc_equipment_type"
+              },
+              "fixed_installation"
+            ]
+          }
+        ]
+      },
+      "message": "Fixed installation: no CE marking or EU declaration of conformity. The apparatus built into it must meet the directive on its own, and the installation must follow good engineering practice.",
+      "ref": "Annex I(2)"
+    },
+    {
+      "id": "fixed_installation_undocumented",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_commercial_activity"
+                        },
+                        false
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_civil_aviation_product"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_marine_equipment"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "or": [
+                        {
+                          "==": [
+                            {
+                              "var": "is_medical_device"
+                            },
+                            true
+                          ]
+                        },
+                        {
+                          "==": [
+                            {
+                              "var": "is_in_vitro_diagnostic"
+                            },
+                            true
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "component_for_incorporation"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "inherently_benign"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "radio_amateur_kit"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "emc_equipment_type"
+                  },
+                  "fixed_installation"
+                ]
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "emc_fixed_installation_documented"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Document how the fixed installation meets the protection requirements and identify a responsible person; keep the documentation available to the authorities.",
+      "ref": "Annex I(2)"
+    },
+    {
+      "id": "partial_standards_coverage",
+      "level": "caution",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_commercial_activity"
+                        },
+                        false
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_civil_aviation_product"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_marine_equipment"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "or": [
+                        {
+                          "==": [
+                            {
+                              "var": "is_medical_device"
+                            },
+                            true
+                          ]
+                        },
+                        {
+                          "==": [
+                            {
+                              "var": "is_in_vitro_diagnostic"
+                            },
+                            true
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "component_for_incorporation"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "inherently_benign"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "radio_amateur_kit"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "!=": [
+                  {
+                    "var": "emc_equipment_type"
+                  },
+                  "fixed_installation"
+                ]
+              }
+            ]
+          },
+          {
+            "in": [
+              {
+                "var": "emc_conformity_basis"
+              },
+              [
+                "harmonised_standards_partial",
+                "no_standards_applied"
+              ]
+            ]
+          }
+        ]
+      },
+      "message": "No presumption of conformity for the phenomena not covered by harmonised standards: the EMC assessment and technical documentation must show how the protection requirements are met for them.",
+      "ref": "Art. 13, Art. 14, Annex II"
+    },
+    {
+      "id": "technical_documentation_incomplete",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_commercial_activity"
+                        },
+                        false
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_civil_aviation_product"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_marine_equipment"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "or": [
+                        {
+                          "==": [
+                            {
+                              "var": "is_medical_device"
+                            },
+                            true
+                          ]
+                        },
+                        {
+                          "==": [
+                            {
+                              "var": "is_in_vitro_diagnostic"
+                            },
+                            true
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "component_for_incorporation"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "inherently_benign"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "radio_amateur_kit"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "!=": [
+                  {
+                    "var": "emc_equipment_type"
+                  },
+                  "fixed_installation"
+                ]
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "technical_documentation_complete"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Complete the technical documentation, including the EMC assessment, before placing the apparatus on the market.",
+      "ref": "Art. 14, Annex II"
+    },
+    {
+      "id": "no_declaration_of_conformity",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_commercial_activity"
+                        },
+                        false
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_civil_aviation_product"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_marine_equipment"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "or": [
+                        {
+                          "==": [
+                            {
+                              "var": "is_medical_device"
+                            },
+                            true
+                          ]
+                        },
+                        {
+                          "==": [
+                            {
+                              "var": "is_in_vitro_diagnostic"
+                            },
+                            true
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "component_for_incorporation"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "inherently_benign"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "radio_amateur_kit"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "!=": [
+                  {
+                    "var": "emc_equipment_type"
+                  },
+                  "fixed_installation"
+                ]
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "eu_declaration_of_conformity_drawn_up"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Draw up the EU declaration of conformity before placing the apparatus on the market.",
+      "ref": "Art. 15, Annex IV"
+    },
+    {
+      "id": "no_ce_marking",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_commercial_activity"
+                        },
+                        false
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_civil_aviation_product"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_marine_equipment"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "or": [
+                        {
+                          "==": [
+                            {
+                              "var": "is_medical_device"
+                            },
+                            true
+                          ]
+                        },
+                        {
+                          "==": [
+                            {
+                              "var": "is_in_vitro_diagnostic"
+                            },
+                            true
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "component_for_incorporation"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "inherently_benign"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "radio_amateur_kit"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "!=": [
+                  {
+                    "var": "emc_equipment_type"
+                  },
+                  "fixed_installation"
+                ]
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "ce_marking_affixed"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Affix the CE marking before placing the apparatus on the market.",
+      "ref": "Art. 16, Art. 17"
+    },
+    {
+      "id": "identification_missing",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_commercial_activity"
+                        },
+                        false
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_civil_aviation_product"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_marine_equipment"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "or": [
+                        {
+                          "==": [
+                            {
+                              "var": "is_medical_device"
+                            },
+                            true
+                          ]
+                        },
+                        {
+                          "==": [
+                            {
+                              "var": "is_in_vitro_diagnostic"
+                            },
+                            true
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "component_for_incorporation"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "inherently_benign"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "radio_amateur_kit"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "!=": [
+                  {
+                    "var": "emc_equipment_type"
+                  },
+                  "fixed_installation"
+                ]
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "product_identification_marked"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Mark a type, batch or serial number and the manufacturer's name and postal address on the units, or on the packaging or documents where that is not possible.",
+      "ref": "Art. 7"
+    },
+    {
+      "id": "use_information_missing",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_commercial_activity"
+                        },
+                        false
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_civil_aviation_product"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_marine_equipment"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "or": [
+                        {
+                          "==": [
+                            {
+                              "var": "is_medical_device"
+                            },
+                            true
+                          ]
+                        },
+                        {
+                          "==": [
+                            {
+                              "var": "is_in_vitro_diagnostic"
+                            },
+                            true
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "component_for_incorporation"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "inherently_benign"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "radio_amateur_kit"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "!=": [
+                  {
+                    "var": "emc_equipment_type"
+                  },
+                  "fixed_installation"
+                ]
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "emc_use_information_provided"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Supply the information needed to use the apparatus as intended, including EMC precautions and any restriction on use in residential environments.",
+      "ref": "Art. 7"
+    },
+    {
+      "id": "supplier_documents_not_verified",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_commercial_activity"
+                        },
+                        false
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_civil_aviation_product"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "is_marine_equipment"
+                        },
+                        true
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "or": [
+                        {
+                          "==": [
+                            {
+                              "var": "is_medical_device"
+                            },
+                            true
+                          ]
+                        },
+                        {
+                          "==": [
+                            {
+                              "var": "is_in_vitro_diagnostic"
+                            },
+                            true
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "component_for_incorporation"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "inherently_benign"
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "==": [
+                        {
+                          "var": "emc_equipment_type"
+                        },
+                        "radio_amateur_kit"
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "!=": [
+                  {
+                    "var": "emc_equipment_type"
+                  },
+                  "fixed_installation"
+                ]
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "supplier_conformity_checked"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Check the CE marking, the documents and instructions and the identification of the manufacturer and importer before supplying the apparatus.",
+      "ref": "Art. 9, Art. 10"
+    },
+    {
+      "id": "importer_or_distributor_becomes_manufacturer",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "in": [
+              {
+                "var": "economic_operator_role"
+              },
+              [
+                "importer",
+                "distributor"
+              ]
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "places_under_own_name_or_modifies"
+              },
+              true
+            ]
+          }
+        ]
+      },
+      "message": "Placing the apparatus under your own name or modifying it makes you the manufacturer: the manufacturer's obligations apply to you.",
+      "ref": "Art. 11"
+    },
+    {
+      "id": "steward_not_an_emc_role",
+      "level": "caution",
+      "when": {
+        "==": [
+          {
+            "var": "economic_operator_role"
+          },
+          "steward"
+        ]
+      },
+      "message": "Open-source steward is not a role under the EMC Directive. Answer as manufacturer, importer, distributor or authorised representative for this product.",
+      "ref": "Art. 3"
+    },
+    {
+      "id": "placed_before_2016",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              false
+            ]
+          },
+          {
+            "<": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2016-04-20"
+            ]
+          }
+        ]
+      },
+      "message": "All units were placed on the market before 20 April 2016: they may still be made available if they conform to the previous directive, 2004/108/EC.",
+      "ref": "Transitional provisions"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "mains-kettle-manufacturer",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus"
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [],
+        "assessment_routes": [
+          "module_a_internal_production_control"
+        ],
+        "requirements": [
+          "annex_i_1_a_emissions",
+          "annex_i_1_b_immunity",
+          "art_14_emc_assessment_and_documentation",
+          "art_15_declaration_of_conformity",
+          "art_16_17_ce_marking",
+          "art_7_retain_documentation",
+          "art_7_series_production",
+          "art_7_type_batch_serial",
+          "art_7_manufacturer_contact",
+          "art_7_use_information",
+          "art_7_corrective_action",
+          "art_7_cooperate_with_authorities",
+          "art_12_identify_economic_operators"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "battery-device-in-scope-with-no-voltage-limit",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus"
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [],
+        "assessment_routes": [
+          "module_a_internal_production_control"
+        ],
+        "requirements": [
+          "annex_i_1_a_emissions",
+          "annex_i_1_b_immunity",
+          "art_14_emc_assessment_and_documentation",
+          "art_15_declaration_of_conformity",
+          "art_16_17_ce_marking",
+          "art_7_retain_documentation",
+          "art_7_series_production",
+          "art_7_type_batch_serial",
+          "art_7_manufacturer_contact",
+          "art_7_use_information",
+          "art_7_corrective_action",
+          "art_7_cooperate_with_authorities",
+          "art_12_identify_economic_operators"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "not-yet-in-force-in-2015",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus"
+      },
+      "expected": {
+        "in_scope": true,
+        "requirements": []
+      },
+      "as_of": "2015-06-01"
+    },
+    {
+      "id": "standalone-software-out-of-scope",
+      "answers": {
+        "product_form": "standalone_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": []
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "software-component-out-of-scope",
+      "answers": {
+        "product_form": "software_component",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": []
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "wifi-router-under-red",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "emc_equipment_type": "apparatus",
+        "wireless_enablement": "enabled"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "radio_equipment_under_red"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "user-enableable-radio-under-red",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "emc_equipment_type": "apparatus",
+        "wireless_enablement": "disabled_user_enableable"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "radio_equipment_under_red"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "physically-disabled-radio-caution",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present_physically_disabled",
+        "emc_equipment_type": "apparatus"
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "disabled_radio_check_red"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "radio-enableable-only-by-update-stays-under-emc",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "emc_equipment_type": "apparatus",
+        "wireless_enablement": "disabled_manufacturer_update_only"
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "disabled_radio_check_red"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "medical-device-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus",
+        "is_medical_device": true
+      },
+      "expected": {
+        "in_scope": false
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "in-vitro-diagnostic-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus",
+        "is_in_vitro_diagnostic": true
+      },
+      "expected": {
+        "in_scope": false
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "civil-aviation-product-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus",
+        "is_civil_aviation_product": true
+      },
+      "expected": {
+        "in_scope": false
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "marine-equipment-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus",
+        "is_marine_equipment": true
+      },
+      "expected": {
+        "in_scope": false
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "not-commercial-activity-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": false,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus"
+      },
+      "expected": {
+        "in_scope": false
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "component-for-incorporation-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "component_for_incorporation"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "excluded_equipment_is_interpretation"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "inherently-benign-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "inherently_benign"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "excluded_equipment_is_interpretation"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "radio-amateur-kit-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "radio_amateur_kit"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "excluded_equipment_is_interpretation"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "fixed-installation",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "fixed_installation"
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "fixed_installation_no_ce_marking"
+        ],
+        "assessment_routes": [],
+        "requirements": [
+          "annex_i_2_fixed_installation_good_practice",
+          "annex_i_2_fixed_installation_documentation"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "fixed-installation-undocumented",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "fixed_installation",
+        "emc_fixed_installation_documented": false,
+        "ce_marking_affixed": false
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "fixed_installation_no_ce_marking",
+          "fixed_installation_undocumented"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "unanswered-role-and-type-lists-everything",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": true,
+        "requirements": [
+          "annex_i_1_a_emissions",
+          "annex_i_1_b_immunity",
+          "art_14_emc_assessment_and_documentation",
+          "art_15_declaration_of_conformity",
+          "art_16_17_ce_marking",
+          "art_7_retain_documentation",
+          "art_7_series_production",
+          "art_7_type_batch_serial",
+          "art_7_manufacturer_contact",
+          "art_7_use_information",
+          "art_7_corrective_action",
+          "art_7_cooperate_with_authorities",
+          "art_8_authorised_representative_tasks",
+          "art_9_place_only_compliant",
+          "art_9_verify_manufacturer",
+          "art_9_importer_contact",
+          "art_9_storage_transport",
+          "art_9_corrective_action",
+          "art_9_retain_declaration",
+          "art_9_cooperate_with_authorities",
+          "art_10_due_care",
+          "art_10_verify_before_supply",
+          "art_10_storage_transport",
+          "art_10_corrective_action",
+          "art_10_cooperate_with_authorities",
+          "art_12_identify_economic_operators",
+          "annex_i_2_fixed_installation_good_practice",
+          "annex_i_2_fixed_installation_documentation"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "importer-obligations",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "importer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus"
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [],
+        "requirements": [
+          "art_9_place_only_compliant",
+          "art_9_verify_manufacturer",
+          "art_9_importer_contact",
+          "art_9_storage_transport",
+          "art_9_corrective_action",
+          "art_9_retain_declaration",
+          "art_9_cooperate_with_authorities",
+          "art_12_identify_economic_operators"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "importer-under-own-brand-is-manufacturer",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "importer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus",
+        "places_under_own_name_or_modifies": true
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "importer_or_distributor_becomes_manufacturer"
+        ],
+        "requirements": [
+          "annex_i_1_a_emissions",
+          "annex_i_1_b_immunity",
+          "art_14_emc_assessment_and_documentation",
+          "art_15_declaration_of_conformity",
+          "art_16_17_ce_marking",
+          "art_7_retain_documentation",
+          "art_7_series_production",
+          "art_7_type_batch_serial",
+          "art_7_manufacturer_contact",
+          "art_7_use_information",
+          "art_7_corrective_action",
+          "art_7_cooperate_with_authorities",
+          "art_12_identify_economic_operators"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "distributor-obligations",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "distributor",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus"
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [],
+        "requirements": [
+          "art_10_due_care",
+          "art_10_verify_before_supply",
+          "art_10_storage_transport",
+          "art_10_corrective_action",
+          "art_10_cooperate_with_authorities",
+          "art_12_identify_economic_operators"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "authorised-representative-obligations",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "authorised_representative",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus"
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [],
+        "requirements": [
+          "art_8_authorised_representative_tasks"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "steward-caution",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "steward",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus"
+      },
+      "expected": {
+        "findings": [
+          "steward_not_an_emc_role"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "documentation-gaps-raise-findings",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus",
+        "emc_conformity_basis": "harmonised_standards_partial",
+        "technical_documentation_complete": false,
+        "emc_use_information_provided": false,
+        "eu_declaration_of_conformity_drawn_up": false,
+        "ce_marking_affixed": false,
+        "product_identification_marked": false
+      },
+      "expected": {
+        "findings": [
+          "partial_standards_coverage",
+          "technical_documentation_incomplete",
+          "no_declaration_of_conformity",
+          "no_ce_marking",
+          "identification_missing",
+          "use_information_missing"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "distributor-not-checking-documents",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "distributor",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus",
+        "supplier_conformity_checked": false
+      },
+      "expected": {
+        "findings": [
+          "supplier_documents_not_verified"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "no-standards-applied-caution",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus",
+        "emc_conformity_basis": "no_standards_applied"
+      },
+      "expected": {
+        "findings": [
+          "partial_standards_coverage"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "full-harmonised-standards-no-caution",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus",
+        "emc_conformity_basis": "harmonised_standards_full"
+      },
+      "expected": {
+        "findings": []
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "radio-product-gets-no-emc-gap-findings",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "emc_equipment_type": "apparatus",
+        "wireless_enablement": "enabled",
+        "ce_marking_affixed": false,
+        "eu_declaration_of_conformity_drawn_up": false
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "radio_equipment_under_red"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "units-placed-before-2016",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus",
+        "hardware_still_placed_on_market": false,
+        "hardware_last_placed_on_market": "2016-01-01"
+      },
+      "expected": {
+        "findings": [
+          "placed_before_2016"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "still-placed-no-transition-note",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "emc_equipment_type": "apparatus",
+        "hardware_still_placed_on_market": true
+      },
+      "expected": {
+        "findings": []
+      },
+      "as_of": "2026-10-01"
+    }
+  ]
+}
