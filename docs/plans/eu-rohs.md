@@ -64,7 +64,11 @@ Reused from `common` 1.4.0: `product_form`, `economic_operator_role`, `places_un
 ## 4. Decisions (confirmed by the user)
 
 1. **Voltage ratings move to `common` 1.5.0**; `eu-lvd` 1.2.0 uses them from there.
-2. **Exemptions are generic questions, not a catalog**, but the package ships sample questions (section 4a) so the shape is concrete.
+2. **Exemptions: a full list, like the CRA package's Annex III/IV category list.** Revised from "generic only" at the user's request. One choice question per annex lists every current entry (number plus our own short summary and the expiry date), and the generic questions in 4a stay as the fallback for "other". Constraints:
+   - **The annexes have changed since 2016.** The user believed the latest amendment was 2016. A web search found delegated directives of November 2025 (reported as 2025/1802, 2025/2363 and 2025/2364) that restructure the lead exemptions in Annex III (series 6 and 7(a), 7(c)), applying since 1 July 2026, and a mid-2026 draft amending Annexes III and IV for lead and cadmium. Those are secondary sources and unverified.
+   - **The list cannot be written from memory.** ADR 0012 declined to reproduce the CRA categories from memory for the same reason. EUR-Lex is blocked in this environment (HTTP 403 from the proxy), so the consolidated text cannot be read here.
+   - **Needed to proceed:** either the consolidated Annex III and IV text pasted or attached, or `eur-lex.europa.eu` allowed on the environment's network policy. Then the package records the consolidation date it was built from, and every expiry date goes in `ref`.
+   - Entries are own summaries (EU legal text may be stored with attribution; no standards text is involved).
 3. **LVD and RED stay mutually exclusive** (ADR 0045, 0047). **RoHS can apply alongside either**, so there are no fallback rules between RoHS and the other two.
 4. **REACH and WEEE are their own regulations**, each with its own package. They are out of scope here; we stay focused on RoHS.
 
