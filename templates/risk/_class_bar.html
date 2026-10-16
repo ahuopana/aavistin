@@ -1,0 +1,18 @@
+{# One stacked bar of entries per acceptance class. Context: label, segments (from apps.risk.metrics). #}
+<div class="class-bar-row">
+  <span class="class-bar-label">{{ label }}</span>
+  {% if segments %}
+    <div class="class-bar" role="img" aria-label="{{ label }}: {% for s in segments %}{{ s.count }} {{ s.label }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+      {% for s in segments %}
+        <span class="class-bar-segment class-{{ s.key }}" style="flex-grow: {{ s.count }}"></span>
+      {% endfor %}
+    </div>
+    <ul class="class-legend">
+      {% for s in segments %}
+        <li><span class="class-swatch class-{{ s.key }}" aria-hidden="true"></span><span aria-hidden="true">{{ s.glyph }}</span> <strong>{{ s.count }}</strong> {{ s.label }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <span class="field-hint">no threats or hazards yet</span>
+  {% endif %}
+</div>

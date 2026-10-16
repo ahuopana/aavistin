@@ -16,16 +16,11 @@
 
   {% include "core/_workflow.html" with current_step="risk" %}
 
-  <div class="risk-summary">
-    <div class="risk-stat"><span class="risk-stat-value">{{ total }}</span> entries</div>
-    <div class="risk-stat"><span class="risk-stat-value">{{ counts.asset }}</span> assets</div>
-    <div class="risk-stat"><span class="risk-stat-value">{{ counts.threat }}</span> threats</div>
-    <div class="risk-stat"><span class="risk-stat-value">{{ counts.hazard }}</span> hazards</div>
-    <div class="risk-stat {% if must_treat %}risk-stat-alert{% endif %}"><span class="risk-stat-value">{{ must_treat }}</span> must treat</div>
-    <div class="risk-stat"><span class="risk-stat-value">{{ unrated }}</span> unrated</div>
-    <div class="risk-stat {% if issue_count %}risk-stat-alert{% endif %}"><span class="risk-stat-value">{{ issue_count }}</span> consistency issues</div>
-    <a class="risk-stat" href="{% url 'risk:suggestions' configuration.pk %}"><span class="risk-stat-value">{{ pending_suggestions }}</span> suggestions pending</a>
-  </div>
+  <p class="field-hint">
+    {{ total }} entries: {{ counts.asset }} assets, {{ counts.threat }} threats, {{ counts.hazard }} hazards.
+    The status below covers the whole register, not the filtered list.
+  </p>
+  {% include "risk/_status.html" with m=metrics governance=metrics.governance link_configuration=configuration.pk %}
 
   <form method="get" class="risk-filters" role="search">
     <label>Type

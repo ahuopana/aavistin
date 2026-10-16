@@ -1,0 +1,19 @@
+{% load risk_tags %}
+{# Severity x likelihood grids per method, before and after treatment. Context: grids (from apps.risk.metrics). #}
+{% for grid in grids %}
+  <div class="heatmap-pair">
+    <h4>{{ grid.method.title|default:grid.method.source }} <span class="field-hint">{{ grid.method.source }} {{ grid.method.version }}</span></h4>
+    <div class="heatmaps">
+      {% include "risk/_heatmap_grid.html" with phase="inherent" caption="Before treatment" %}
+      {% include "risk/_heatmap_grid.html" with phase="residual" caption="After treatment" %}
+    </div>
+  </div>
+{% empty %}
+  <p class="field-hint">No ratings yet, so there is nothing to place on a matrix.</p>
+{% endfor %}
+<ul class="class-legend heatmap-legend">
+  <li><span class="class-swatch class-must_treat" aria-hidden="true"></span><span aria-hidden="true">&#10005;</span> must treat</li>
+  <li><span class="class-swatch class-justify" aria-hidden="true"></span><span aria-hidden="true">!</span> justify</li>
+  <li><span class="class-swatch class-accept" aria-hidden="true"></span><span aria-hidden="true">&#10003;</span> accept</li>
+  <li class="field-hint">The number is how many entries sit in the cell; hover or focus a number to see which. S = severity, L = likelihood. After treatment, an entry whose treatment cannot be relied on yet stays where it was.</li>
+</ul>

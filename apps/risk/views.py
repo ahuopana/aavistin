@@ -30,6 +30,7 @@ from . import mitigation
 from .approval import RiskAssessmentError, approve_risk_assessment
 from .consistency import check_threat_hazard_consistency
 from .impact import hazard_linkable_ids, merged_categories
+from .metrics import register_metrics
 from .mitigation import mitigation_controls, mitigation_state
 from .models import (
     AssetRating,
@@ -144,6 +145,7 @@ def register(request, pk):
     workflow = configuration_workflow(
         configuration, request.user, entries=entries, pending=pending
     )
+    metrics = register_metrics(configuration)
     return render(
         request,
         "risk/register.html",
@@ -162,13 +164,7 @@ def register(request, pk):
             "counts": counts,
             "total": len(entries),
             "pending_suggestions": pending_count,
-            "must_treat": sum(
-                1 for r in rows for c in r["ratings"] if c["acceptance"] == "must_treat"
-            ),
-            "unrated": sum(
-                1 for r in rows if r["entry"].entry_type != EntryType.ASSET and not r["ratings"]
-            ),
-            "issue_count": sum(len(r["issues"]) for r in rows),
+            "metrics": metrics,
             "type_filter": entry_type,
             "query": request.GET.get("q", ""),
             "entry_types": TYPE_ORDER,

@@ -390,6 +390,10 @@ td > .stat-bar-row {
   background: var(--color-attention);
 }
 
+.stat-bar-fill-progress {
+  background: var(--color-accent-fill);
+}
+
 .stat-bar-fill-questions {
   background: var(--color-success);
 }
@@ -1644,4 +1648,233 @@ svg.diagram .d-label {
 
 svg.diagram .d-label-attn {
   fill: var(--color-warning);
+}
+
+
+/* Risk status: class bars, risk matrices, status cards */
+
+.risk-status {
+  margin: var(--space-3) 0;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+}
+
+.status-card {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.status-card h3 {
+  margin: 0 0 var(--space-2);
+}
+
+.status-notes {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-3);
+  color: var(--color-text-muted);
+}
+
+.status-details {
+  margin: var(--space-3) 0;
+}
+
+.status-details summary {
+  cursor: pointer;
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.governance {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.class-bar-row {
+  margin-bottom: var(--space-3);
+}
+
+.class-bar-label {
+  display: block;
+  margin-bottom: var(--space-1);
+  color: var(--color-text-muted);
+}
+
+.class-bar {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+}
+
+.class-bar-segment {
+  min-width: 4px;
+}
+
+.class-bar-segment:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.class-bar-segment:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.class-bar-segment:only-child {
+  border-radius: 4px;
+}
+
+.class-bar-segment.class-must_treat,
+.class-swatch.class-must_treat {
+  background: var(--color-danger);
+}
+
+.class-bar-segment.class-justify,
+.class-swatch.class-justify {
+  background: var(--color-warning);
+}
+
+.class-bar-segment.class-accept,
+.class-swatch.class-accept {
+  background: var(--color-success);
+}
+
+.class-bar-segment.class-unrated,
+.class-swatch.class-unrated {
+  background: var(--color-text-muted);
+  opacity: 0.45;
+}
+
+.class-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: var(--space-1) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.class-swatch {
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 2px;
+  margin-right: 0.25em;
+}
+
+.class-chip {
+  display: inline-block;
+  padding: 0.05em 0.6em;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.class-chip.class-must_treat {
+  color: var(--color-danger);
+}
+
+.class-chip.class-justify {
+  color: var(--color-warning);
+}
+
+.heatmap-pair h4 {
+  margin: var(--space-3) 0 var(--space-1);
+}
+
+.heatmaps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.heatmap-figure {
+  margin: 0;
+}
+
+.heatmap-figure figcaption {
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-1);
+}
+
+.heatmap {
+  border-collapse: separate;
+  border-spacing: 2px;
+  width: auto;
+}
+
+.heatmap th,
+.heatmap td {
+  padding: 0;
+  border: 0;
+  text-align: center;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+}
+
+.heatmap-cell {
+  position: relative;
+  width: 2.6rem;
+  height: 2.2rem;
+  border-radius: 4px;
+}
+
+.heatmap-cell.class-must_treat {
+  background: color-mix(in srgb, var(--color-danger) 28%, var(--color-bg));
+}
+
+.heatmap-cell.class-justify {
+  background: color-mix(in srgb, var(--color-warning) 28%, var(--color-bg));
+}
+
+.heatmap-cell.class-accept {
+  background: color-mix(in srgb, var(--color-success) 24%, var(--color-bg));
+}
+
+.heatmap-glyph {
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  font-size: 0.7em;
+  opacity: 0.55;
+  color: var(--color-text);
+}
+
+.heatmap-count {
+  display: inline-block;
+  min-width: 1.6rem;
+  padding: 0 0.3rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.top-open {
+  margin-bottom: var(--space-3);
+}
+
+.risk-product-table td {
+  vertical-align: top;
+}
+
+.top-open th:last-child,
+.top-open td:last-child {
+  min-width: 11rem;
+}
+
+.risk-product-table th,
+.risk-product-table td {
+  white-space: nowrap;
 }

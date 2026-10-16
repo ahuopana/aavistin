@@ -117,7 +117,7 @@ def test_assessment_journey(page, live_server, world):
     form.locator("[name=software_release]").select_option(index=1)
     submit(page, form)
     open_tab(page, "Configurations")
-    configuration_row = page.locator("tr", has_text="TempSense EU 1.0").first
+    configuration_row = page.locator("tr:visible", has_text="TempSense EU 1.0").first
     expect(configuration_row).to_contain_text("Next: Answer 3 open questions")
 
     # --- The editor answers the questionnaire ----------------------------------------
