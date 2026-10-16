@@ -363,33 +363,40 @@ class ImportPipelineTests(TestCase):
         self.assertEqual(package.lint_report, [])
         self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
 
-    def test_import_eu_lvd_package_reaches_fixtures_passed(self):
+    def _approve_common(self, version):
         approve_package(
             import_package(
-                load_package("common", "1.4.0"), kind=PackageKind.QUESTION_SET, is_official=True
+                load_package("common", version), kind=PackageKind.QUESTION_SET, is_official=True
             )
         )
-        for version in ("1.0.0", "1.1.0"):
-            with self.subTest(version=version):
-                package = import_package(load_package("eu-lvd", version), is_official=True)
-                self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
-                self.assertEqual(package.lint_report, [])
-                self.assertTrue(
-                    all(r["passed"] for r in package.fixture_report), package.fixture_report
-                )
 
-    def test_real_packages_pass_with_common_1_4_0(self):
-        approve_package(
-            import_package(
-                load_package("common", "1.4.0"), kind=PackageKind.QUESTION_SET, is_official=True
-            )
-        )
-        for source, version in (("eu-cra", "1.0.0"), ("eu-red", "1.0.0"), ("eu-red", "1.1.0")):
+    def _assert_imports_clean(self, packages):
+        for source, version in packages:
             with self.subTest(source=source, version=version):
                 package = import_package(load_package(source, version), is_official=True)
                 self.assertEqual(package.lint_report, [])
                 self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
-                self.assertTrue(all(r["passed"] for r in package.fixture_report))
+                self.assertTrue(
+                    all(r["passed"] for r in package.fixture_report), package.fixture_report
+                )
+
+    def test_import_eu_lvd_package_reaches_fixtures_passed(self):
+        self._approve_common("1.4.0")
+        self._assert_imports_clean([("eu-lvd", "1.0.0"), ("eu-lvd", "1.1.0")])
+
+    def test_eu_lvd_1_2_0_takes_voltage_ratings_from_common_1_5_0(self):
+        self._approve_common("1.5.0")
+        self._assert_imports_clean([("eu-lvd", "1.2.0")])
+        own = {q["id"] for q in load_package("eu-lvd", "1.2.0")["questions"]}
+        self.assertTrue({"ac_voltage_rating", "dc_voltage_rating"}.isdisjoint(own))
+
+    def test_real_packages_pass_with_common_1_4_0(self):
+        self._approve_common("1.4.0")
+        self._assert_imports_clean([("eu-cra", "1.0.0"), ("eu-red", "1.0.0"), ("eu-red", "1.1.0")])
+
+    def test_real_packages_pass_with_common_1_5_0(self):
+        self._approve_common("1.5.0")
+        self._assert_imports_clean([("eu-cra", "1.0.0"), ("eu-red", "1.0.0"), ("eu-red", "1.1.0")])
 
     def test_eu_red_1_1_0_and_eu_lvd_never_both_carry_electrical_safety(self):
         """RED Art. 3(1)(a) applies the LVD safety objectives to radio equipment,
@@ -397,7 +404,7 @@ class ImportPipelineTests(TestCase):
         lists the safety objectives (ADR 0042). Radio equipment that RED excludes
         for defence or national security falls back to LVD (ADR 0047)."""
         red = load_package("eu-red", "1.1.0")
-        lvd = load_package("eu-lvd", "1.1.0")
+        lvd = load_package("eu-lvd", "1.2.0")
         mains = {
             "product_form": "hardware_with_software",
             "ac_voltage_rating": 230,
@@ -1165,6 +1172,7 @@ class QuestionGroupLintTests(TestCase):
             ("eu-red", "1.1.0"),
             ("eu-lvd", "1.0.0"),
             ("eu-lvd", "1.1.0"),
+            ("eu-lvd", "1.2.0"),
         ):
             with self.subTest(source=source, version=version):
                 content = load_package(source, version)

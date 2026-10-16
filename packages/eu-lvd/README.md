@@ -14,17 +14,18 @@ The EU Low Voltage Directive, Directive 2014/35/EU (CELEX `32014L0035`), as a re
 - **Findings:** below or above the voltage ranges, radio equipment (assess under RED), a disabled radio, radio equipment outside RED for defence or security (1.1.0), partial standards coverage, documentation and marking gaps, an unchecked supplier, an importer acting as manufacturer, steward chosen as role, and units placed before 20 April 2016 (Art. 27).
 - **Fixtures:** 36 example products in 1.0.0, 40 in 1.1.0 (a mains kettle, battery and DC equipment, a mains adapter, a basic component, switchgear above the range, a Wi-Fi router, dormant radios, defence and national-security radios, each Annex II category, each role, documentation gaps).
 
-Shared facts (product form, role, commercial activity, medical devices, radio capability and enablement, placement dates) and the safety and CE-marking process questions come from the shared question library `packages/common` 1.4.0. It adds the `hardware_without_software` product form (1.3.0) and the process questions, which `eu-red` 1.1.0 asks too (ADR 0042). The gap findings fire only while this package covers the product, so a product never gets them from both packages.
+Shared facts (product form, AC and DC voltage ratings (from 1.2.0), role, commercial activity, medical devices, radio capability and enablement, placement dates) and the safety and CE-marking process questions come from the shared question library `packages/common` 1.4.0 (1.5.0 from `eu-lvd` 1.2.0). It adds the `hardware_without_software` product form (1.3.0) and the process questions, which `eu-red` 1.1.0 asks too (ADR 0042). The gap findings fire only while this package covers the product, so a product never gets them from both packages.
 
 ## Versions
 
 - `1.0.0` (`2014-35@2026-10`): first version.
+- `1.2.0` (`2014-35@2026-10.2`, supersedes 1.1.0): the AC and DC voltage rating questions come from `common` 1.5.0 instead of this package, so RoHS asks them once too. No scope or requirement changes (ADR 0048).
 - `1.1.0` (`2014-35@2026-10.1`, supersedes 1.0.0): radio equipment is excluded only while RED covers it. A radio product used exclusively for defence or public or State security is outside RED (RED Art. 1(4)) and falls back to LVD, which has no such exclusion; a caution notes that a Member State may set EU product rules aside under Art. 346 TFEU. In 1.0.0 such a product was out of both packages (ADR 0047).
 
 ## Known limitations
 
 - No harmonised standards are listed; the question about them stays generic.
-- Interplay with the Machinery Regulation (electrical hazards of machinery) and with the EMC and RoHS directives is not modelled; a declaration of conformity usually covers them together.
+- Interplay with the Machinery Regulation (electrical hazards of machinery) and with the EMC directive is not modelled; RoHS is a separate package (`eu-rohs`, planned in `docs/plans/eu-rohs.md`) that can apply alongside this one; a declaration of conformity usually covers them together.
 - Requirements apply to every unit regardless of placement date; the transition from 2006/95/EC shows only as an info finding.
 
 ## Importing
@@ -32,10 +33,10 @@ Shared facts (product form, role, commercial activity, medical devices, radio ca
 Import and approve the shared question library first, then this package. Run inside the `web` container:
 
 ```bash
-docker compose exec web python manage.py import_package packages/common/1.4.0.json --kind question_set --official
-docker compose exec web python manage.py approve_package common 1.4.0
-docker compose exec web python manage.py import_package packages/eu-lvd/1.1.0.json --kind requirement --official
-docker compose exec web python manage.py approve_package eu-lvd "2014-35@2026-10.1"
+docker compose exec web python manage.py import_package packages/common/1.5.0.json --kind question_set --official
+docker compose exec web python manage.py approve_package common 1.5.0
+docker compose exec web python manage.py import_package packages/eu-lvd/1.2.0.json --kind requirement --official
+docker compose exec web python manage.py approve_package eu-lvd "2014-35@2026-10.2"
 ```
 
-Approving 1.1.0 supersedes an approved 1.0.0. The file names are `1.0.0.json` and `1.1.0.json`; the package's own `version` field, which `approve_package` keys on, is `2014-35@2026-10` and `2014-35@2026-10.1`. Content changes always bump that version: `RequirementPackage` is unique on `source` + `version`, and the questionnaire reads the approved copy in the database, not this file.
+Approving 1.2.0 supersedes an approved 1.1.0. The file names are `1.0.0.json`, `1.1.0.json` and `1.2.0.json`; the package's own `version` field, which `approve_package` keys on, is `2014-35@2026-10`, `2014-35@2026-10.1` and `2014-35@2026-10.2`. Content changes always bump that version: `RequirementPackage` is unique on `source` + `version`, and the questionnaire reads the approved copy in the database, not this file.

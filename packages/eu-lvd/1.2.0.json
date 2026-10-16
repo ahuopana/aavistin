@@ -1,0 +1,5029 @@
+{
+  "source": "eu-lvd",
+  "type": "legislation",
+  "jurisdiction": "EU",
+  "version": "2014-35@2026-10.2",
+  "supersedes": [
+    {
+      "source": "eu-lvd",
+      "version": "2014-35@2026-10.1"
+    }
+  ],
+  "title": "EU Low Voltage Directive",
+  "legal_sources": [
+    {
+      "celex": "32014L0035",
+      "eli": "http://data.europa.eu/eli/dir/2014/35/oj",
+      "citation": "Directive 2014/35/EU"
+    }
+  ],
+  "dates_of_application": {
+    "from": "2016-04-20"
+  },
+  "redistributable": true,
+  "uses": [
+    "common:product_form",
+    "common:economic_operator_role",
+    "common:places_under_own_name_or_modifies",
+    "common:is_commercial_activity",
+    "common:is_medical_device",
+    "common:is_in_vitro_diagnostic",
+    "common:ac_voltage_rating",
+    "common:dc_voltage_rating",
+    "common:wireless_interface_capability",
+    "common:wireless_enablement",
+    "common:is_exclusively_defence_product",
+    "common:is_exclusively_national_security_product",
+    "common:hardware_still_placed_on_market",
+    "common:hardware_last_placed_on_market",
+    "common:safety_risk_assessment_documented",
+    "common:technical_documentation_complete",
+    "common:electrical_ratings_marked",
+    "common:eu_declaration_of_conformity_drawn_up",
+    "common:ce_marking_affixed",
+    "common:product_identification_marked",
+    "common:safety_instructions_in_local_languages",
+    "common:supplier_conformity_checked"
+  ],
+  "question_groups": [
+    {
+      "id": "product_and_role",
+      "title": "Product and your role",
+      "questions": [
+        "product_form",
+        "economic_operator_role",
+        "places_under_own_name_or_modifies",
+        "is_commercial_activity"
+      ]
+    },
+    {
+      "id": "voltage_scope",
+      "title": "Electrical equipment and voltage rating (Art. 1)",
+      "questions": [
+        "ac_voltage_rating",
+        "dc_voltage_rating",
+        "is_basic_component",
+        "wireless_interface_capability",
+        "wireless_enablement",
+        "is_exclusively_defence_product",
+        "is_exclusively_national_security_product"
+      ]
+    },
+    {
+      "id": "exclusions",
+      "title": "Exclusions (Annex II)",
+      "questions": [
+        "lvd_annex_ii_category",
+        "is_medical_device",
+        "is_in_vitro_diagnostic"
+      ]
+    },
+    {
+      "id": "safety_objectives",
+      "title": "Safety objectives and technical documentation (Annex I, Annex III)",
+      "questions": [
+        "lvd_conformity_basis",
+        "safety_risk_assessment_documented",
+        "technical_documentation_complete",
+        "electrical_ratings_marked"
+      ]
+    },
+    {
+      "id": "marking_and_documents",
+      "title": "Declaration, CE marking and information (Art. 6-9, 15-17)",
+      "questions": [
+        "eu_declaration_of_conformity_drawn_up",
+        "ce_marking_affixed",
+        "product_identification_marked",
+        "safety_instructions_in_local_languages",
+        "supplier_conformity_checked"
+      ]
+    },
+    {
+      "id": "placing_on_market",
+      "title": "Placing on the market",
+      "questions": [
+        "hardware_still_placed_on_market",
+        "hardware_last_placed_on_market"
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "id": "is_basic_component",
+      "type": "boolean",
+      "level": "hardware",
+      "label": "Is this a basic component whose safety depends mainly on how it is built into other equipment?",
+      "condition": {
+        "==": [
+          {
+            "var": "product_form"
+          },
+          "hardware_component"
+        ]
+      },
+      "guidance": "Examples are resistors, capacitors, transistors and bare circuit boards. Components that are electrical equipment in their own right (switches, lamp holders, cable sets, power supplies, motors) are not basic components and stay in scope.",
+      "guidance_url": "https://single-market-economy.ec.europa.eu/sectors/electrical-and-electronic-engineering-industries-eei/low-voltage-directive-lvd_en"
+    },
+    {
+      "id": "lvd_annex_ii_category",
+      "type": "choice",
+      "level": "product",
+      "label": "Does the product belong to one of the categories excluded from the Low Voltage Directive?",
+      "choices": [
+        "none",
+        "explosive_atmosphere",
+        "lift_electrical_part",
+        "electricity_meter",
+        "domestic_plug_or_socket",
+        "electric_fence_controller",
+        "ship_aircraft_railway_specialised",
+        "custom_rd_evaluation_kit"
+      ],
+      "guidance": "Excluded: equipment for explosive atmospheres; electrical parts of goods and passenger lifts; electricity meters; plugs and socket outlets for domestic use; electric fence controllers; specialised equipment for ships, aircraft or railways that meets safety provisions of international bodies in which the Member States take part; custom-built evaluation kits for professionals, used only at research and development facilities. Medical devices are asked separately. Most excluded products fall under other EU or national rules instead.",
+      "guidance_url": "https://eur-lex.europa.eu/eli/dir/2014/35/oj"
+    },
+    {
+      "id": "lvd_conformity_basis",
+      "type": "choice",
+      "level": "product",
+      "label": "How do you show that the product meets the safety objectives?",
+      "condition": {
+        "and": [
+          {
+            "and": [
+              {
+                "!": {
+                  "in": [
+                    {
+                      "var": "product_form"
+                    },
+                    [
+                      "standalone_software",
+                      "software_component"
+                    ]
+                  ]
+                }
+              },
+              {
+                "or": [
+                  {
+                    "and": [
+                      {
+                        ">=": [
+                          {
+                            "var": "ac_voltage_rating"
+                          },
+                          50
+                        ]
+                      },
+                      {
+                        "<=": [
+                          {
+                            "var": "ac_voltage_rating"
+                          },
+                          1000
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "and": [
+                      {
+                        ">=": [
+                          {
+                            "var": "dc_voltage_rating"
+                          },
+                          75
+                        ]
+                      },
+                      {
+                        "<=": [
+                          {
+                            "var": "dc_voltage_rating"
+                          },
+                          1500
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "or": [
+                      {
+                        "==": [
+                          {
+                            "var": "ac_voltage_rating"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "==": [
+                          {
+                            "var": "dc_voltage_rating"
+                          },
+                          null
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "!": {
+              "and": [
+                {
+                  "and": [
+                    {
+                      "==": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        "present"
+                      ]
+                    },
+                    {
+                      "!=": [
+                        {
+                          "var": "wireless_enablement"
+                        },
+                        "disabled_manufacturer_update_only"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "!": {
+                    "or": [
+                      {
+                        "==": [
+                          {
+                            "var": "is_exclusively_defence_product"
+                          },
+                          true
+                        ]
+                      },
+                      {
+                        "==": [
+                          {
+                            "var": "is_exclusively_national_security_product"
+                          },
+                          true
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "or": [
+              {
+                "!": {
+                  "in": [
+                    {
+                      "var": "economic_operator_role"
+                    },
+                    [
+                      "importer",
+                      "distributor",
+                      "authorised_representative",
+                      "steward"
+                    ]
+                  ]
+                }
+              },
+              {
+                "==": [
+                  {
+                    "var": "places_under_own_name_or_modifies"
+                  },
+                  true
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "choices": [
+        "harmonised_standards_full",
+        "harmonised_standards_partial",
+        "international_standards",
+        "national_standards",
+        "own_solutions"
+      ],
+      "guidance": "Harmonised standards cited in the Official Journal give a presumption of conformity for the risks they cover. Where none exists, IEC standards published under the directive's procedure, and then national standards of the Member State of manufacture, can give it. Anything not covered needs your own solutions, described in the technical documentation.",
+      "guidance_url": "https://single-market-economy.ec.europa.eu/sectors/electrical-and-electronic-engineering-industries-eei/low-voltage-directive-lvd_en"
+    }
+  ],
+  "scope": {
+    "include": {
+      "and": [
+        {
+          "!": {
+            "in": [
+              {
+                "var": "product_form"
+              },
+              [
+                "standalone_software",
+                "software_component"
+              ]
+            ]
+          }
+        },
+        {
+          "or": [
+            {
+              "and": [
+                {
+                  ">=": [
+                    {
+                      "var": "ac_voltage_rating"
+                    },
+                    50
+                  ]
+                },
+                {
+                  "<=": [
+                    {
+                      "var": "ac_voltage_rating"
+                    },
+                    1000
+                  ]
+                }
+              ]
+            },
+            {
+              "and": [
+                {
+                  ">=": [
+                    {
+                      "var": "dc_voltage_rating"
+                    },
+                    75
+                  ]
+                },
+                {
+                  "<=": [
+                    {
+                      "var": "dc_voltage_rating"
+                    },
+                    1500
+                  ]
+                }
+              ]
+            },
+            {
+              "or": [
+                {
+                  "==": [
+                    {
+                      "var": "ac_voltage_rating"
+                    },
+                    null
+                  ]
+                },
+                {
+                  "==": [
+                    {
+                      "var": "dc_voltage_rating"
+                    },
+                    null
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "exclude": [
+      {
+        "id": "not_commercial_activity",
+        "when": {
+          "==": [
+            {
+              "var": "is_commercial_activity"
+            },
+            false
+          ]
+        },
+        "ref": "Art. 2(1)-(2)"
+      },
+      {
+        "id": "basic_component",
+        "when": {
+          "==": [
+            {
+              "var": "is_basic_component"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 1 (Commission LVD Guide, components)"
+      },
+      {
+        "id": "radio_equipment",
+        "when": {
+          "and": [
+            {
+              "and": [
+                {
+                  "==": [
+                    {
+                      "var": "wireless_interface_capability"
+                    },
+                    "present"
+                  ]
+                },
+                {
+                  "!=": [
+                    {
+                      "var": "wireless_enablement"
+                    },
+                    "disabled_manufacturer_update_only"
+                  ]
+                }
+              ]
+            },
+            {
+              "!": {
+                "or": [
+                  {
+                    "==": [
+                      {
+                        "var": "is_exclusively_defence_product"
+                      },
+                      true
+                    ]
+                  },
+                  {
+                    "==": [
+                      {
+                        "var": "is_exclusively_national_security_product"
+                      },
+                      true
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "ref": "Directive 2014/53/EU, Art. 3(1)(a)"
+      },
+      {
+        "id": "medical_devices",
+        "when": {
+          "or": [
+            {
+              "==": [
+                {
+                  "var": "is_medical_device"
+                },
+                true
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "is_in_vitro_diagnostic"
+                },
+                true
+              ]
+            }
+          ]
+        },
+        "ref": "Annex II (equipment for radiology and medical purposes)"
+      },
+      {
+        "id": "explosive_atmosphere_equipment",
+        "when": {
+          "==": [
+            {
+              "var": "lvd_annex_ii_category"
+            },
+            "explosive_atmosphere"
+          ]
+        },
+        "ref": "Annex II (Directive 2014/34/EU applies)"
+      },
+      {
+        "id": "lift_electrical_parts",
+        "when": {
+          "==": [
+            {
+              "var": "lvd_annex_ii_category"
+            },
+            "lift_electrical_part"
+          ]
+        },
+        "ref": "Annex II (Directive 2014/33/EU applies)"
+      },
+      {
+        "id": "electricity_meters",
+        "when": {
+          "==": [
+            {
+              "var": "lvd_annex_ii_category"
+            },
+            "electricity_meter"
+          ]
+        },
+        "ref": "Annex II (Directive 2014/32/EU applies)"
+      },
+      {
+        "id": "domestic_plugs_and_sockets",
+        "when": {
+          "==": [
+            {
+              "var": "lvd_annex_ii_category"
+            },
+            "domestic_plug_or_socket"
+          ]
+        },
+        "ref": "Annex II (national rules apply)"
+      },
+      {
+        "id": "electric_fence_controllers",
+        "when": {
+          "==": [
+            {
+              "var": "lvd_annex_ii_category"
+            },
+            "electric_fence_controller"
+          ]
+        },
+        "ref": "Annex II"
+      },
+      {
+        "id": "ship_aircraft_railway_equipment",
+        "when": {
+          "==": [
+            {
+              "var": "lvd_annex_ii_category"
+            },
+            "ship_aircraft_railway_specialised"
+          ]
+        },
+        "ref": "Annex II"
+      },
+      {
+        "id": "custom_rd_evaluation_kits",
+        "when": {
+          "==": [
+            {
+              "var": "lvd_annex_ii_category"
+            },
+            "custom_rd_evaluation_kit"
+          ]
+        },
+        "ref": "Annex II"
+      }
+    ]
+  },
+  "role": {
+    "if": [
+      {
+        "and": [
+          {
+            "in": [
+              {
+                "var": "economic_operator_role"
+              },
+              [
+                "importer",
+                "distributor"
+              ]
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "places_under_own_name_or_modifies"
+              },
+              true
+            ]
+          }
+        ]
+      },
+      "manufacturer",
+      {
+        "var": "economic_operator_role"
+      }
+    ]
+  },
+  "classifications": [],
+  "requirements": [
+    {
+      "id": "art_3_good_engineering_practice",
+      "label": "Make available only equipment built to good engineering practice in safety matters that does not endanger persons, domestic animals or property when properly installed, maintained and used",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3, Art. 6(1)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "annex_i_1_general_conditions",
+      "label": "Mark the essential characteristics, make the equipment and its parts safe to assemble and connect, and design it against the hazards in Annex I points 2 and 3",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I(1)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "annex_i_2a_contact_protection",
+      "label": "Protect persons and domestic animals against injury from direct or indirect contact",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I(2)(a)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "annex_i_2b_temperature_arcs_radiation",
+      "label": "Prevent dangerous temperatures, arcs or radiation",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I(2)(b)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "annex_i_2c_non_electrical_hazards",
+      "label": "Protect persons, domestic animals and property against non-electrical dangers known from experience",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I(2)(c)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "annex_i_2d_insulation",
+      "label": "Provide insulation suitable for foreseeable conditions",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I(2)(d)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "annex_i_3a_mechanical_requirements",
+      "label": "Meet the expected mechanical requirements so persons, domestic animals and property are not endangered",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I(3)(a)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "annex_i_3b_non_mechanical_influences",
+      "label": "Resist non-mechanical influences in the expected environmental conditions",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I(3)(b)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "annex_i_3c_overload",
+      "label": "Do not endanger persons, domestic animals or property in foreseeable overload conditions",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Annex I(3)(c)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_6_2_technical_documentation",
+      "label": "Draw up the technical documentation, including the risk analysis, and carry out internal production control",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 6(2), Annex III",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_15_declaration_of_conformity",
+      "label": "Draw up the EU declaration of conformity and keep it up to date",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 6(2), Art. 15, Annex IV",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_16_17_ce_marking",
+      "label": "Affix the CE marking",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 6(2), Art. 16, Art. 17",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_6_3_retain_documentation",
+      "label": "Keep the technical documentation and the declaration of conformity for 10 years after the equipment is placed on the market",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 6(3)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_6_4_series_production",
+      "label": "Keep series production in conformity; where the risks call for it, sample-test, investigate complaints and keep a register of complaints, non-conforming equipment and recalls",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 6(4)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_6_5_type_batch_serial",
+      "label": "Mark a type, batch or serial number or other identification",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 6(5)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_6_6_manufacturer_contact",
+      "label": "Indicate the manufacturer's name, registered trade name or trademark and postal address",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 6(6)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_6_7_instructions_safety_information",
+      "label": "Supply instructions and safety information in a language easily understood by users",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 6(7)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_6_8_corrective_action",
+      "label": "Take corrective action for non-conforming equipment and inform the authorities of risks",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 6(8)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_6_9_cooperate_with_authorities",
+      "label": "Give the authorities information and documentation on request and cooperate on eliminating risks",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 6(9)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_7_authorised_representative_tasks",
+      "label": "Keep the declaration of conformity and technical documentation available for 10 years, provide them on request, and cooperate with the authorities under the mandate",
+      "roles": [
+        "authorised_representative"
+      ],
+      "ref": "Art. 7",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_8_1_place_only_compliant",
+      "label": "Place only compliant equipment on the market",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 8(1)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_8_2_verify_manufacturer",
+      "label": "Check that the manufacturer has carried out the conformity assessment, drawn up the technical documentation, affixed the CE marking, supplied the documents and identified the equipment",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 8(2)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_8_3_importer_contact",
+      "label": "Indicate the importer's name, registered trade name or trademark and postal address",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 8(3)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_8_4_instructions_safety_information",
+      "label": "Ensure instructions and safety information accompany the equipment in a language easily understood by users",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 8(4)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_8_5_storage_transport",
+      "label": "Ensure storage and transport conditions do not jeopardise conformity",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 8(5)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_8_6_sample_testing_complaints",
+      "label": "Where the risks call for it, sample-test, investigate complaints and keep a register",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 8(6)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_8_7_corrective_action",
+      "label": "Take corrective action for non-conforming equipment and inform the authorities of risks",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 8(7)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_8_8_retain_declaration",
+      "label": "Keep a copy of the declaration of conformity for 10 years and ensure the technical documentation can be made available",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 8(8)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_8_9_cooperate_with_authorities",
+      "label": "Give the authorities information and documentation on request and cooperate on eliminating risks",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 8(9)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_9_1_due_care",
+      "label": "Act with due care in relation to the requirements of the directive",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 9(1)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_9_2_verify_before_supply",
+      "label": "Check the CE marking, the documents, the instructions and safety information, and the manufacturer's and importer's identification",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 9(2)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_9_3_storage_transport",
+      "label": "Ensure storage and transport conditions do not jeopardise conformity",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 9(3)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_9_4_corrective_action",
+      "label": "Make sure corrective action is taken for non-conforming equipment and inform the authorities of risks",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 9(4)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_9_5_cooperate_with_authorities",
+      "label": "Give the authorities information and documentation on request and cooperate on eliminating risks",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 9(5)",
+      "applies_from": "2016-04-20"
+    },
+    {
+      "id": "art_11_identify_economic_operators",
+      "label": "On request, identify for 10 years the economic operators who supplied you and to whom you supplied the equipment",
+      "roles": [
+        "manufacturer",
+        "importer",
+        "distributor"
+      ],
+      "ref": "Art. 11",
+      "applies_from": "2016-04-20"
+    }
+  ],
+  "assessment_routes": [
+    {
+      "id": "module_a_internal_production_control",
+      "label": "Internal production control (module A)",
+      "allowed_when": true
+    }
+  ],
+  "finding_rules": [
+    {
+      "id": "below_voltage_range",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "!": {
+                  "in": [
+                    {
+                      "var": "product_form"
+                    },
+                    [
+                      "standalone_software",
+                      "software_component"
+                    ]
+                  ]
+                }
+              },
+              {
+                "!=": [
+                  {
+                    "var": "ac_voltage_rating"
+                  },
+                  null
+                ]
+              },
+              {
+                "!=": [
+                  {
+                    "var": "dc_voltage_rating"
+                  },
+                  null
+                ]
+              }
+            ]
+          },
+          {
+            "<": [
+              {
+                "var": "ac_voltage_rating"
+              },
+              50
+            ]
+          },
+          {
+            "<": [
+              {
+                "var": "dc_voltage_rating"
+              },
+              75
+            ]
+          }
+        ]
+      },
+      "message": "Below the LVD voltage ranges. Consumer products are covered by the General Product Safety Regulation (EU) 2023/988 instead; radio equipment by RED, with no voltage limit.",
+      "ref": "Art. 1"
+    },
+    {
+      "id": "above_voltage_range",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "!": {
+              "in": [
+                {
+                  "var": "product_form"
+                },
+                [
+                  "standalone_software",
+                  "software_component"
+                ]
+              ]
+            }
+          },
+          {
+            "or": [
+              {
+                ">": [
+                  {
+                    "var": "ac_voltage_rating"
+                  },
+                  1000
+                ]
+              },
+              {
+                ">": [
+                  {
+                    "var": "dc_voltage_rating"
+                  },
+                  1500
+                ]
+              }
+            ]
+          },
+          {
+            "!": {
+              "or": [
+                {
+                  "and": [
+                    {
+                      ">=": [
+                        {
+                          "var": "ac_voltage_rating"
+                        },
+                        50
+                      ]
+                    },
+                    {
+                      "<=": [
+                        {
+                          "var": "ac_voltage_rating"
+                        },
+                        1000
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "and": [
+                    {
+                      ">=": [
+                        {
+                          "var": "dc_voltage_rating"
+                        },
+                        75
+                      ]
+                    },
+                    {
+                      "<=": [
+                        {
+                          "var": "dc_voltage_rating"
+                        },
+                        1500
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "message": "Above the LVD voltage ranges: the directive does not apply. Check other legislation (for example the Machinery Regulation) and national rules.",
+      "ref": "Art. 1"
+    },
+    {
+      "id": "radio_equipment_under_red",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "wireless_interface_capability"
+                  },
+                  "present"
+                ]
+              },
+              {
+                "!=": [
+                  {
+                    "var": "wireless_enablement"
+                  },
+                  "disabled_manufacturer_update_only"
+                ]
+              }
+            ]
+          },
+          {
+            "!": {
+              "or": [
+                {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                },
+                {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "message": "Radio equipment: the LVD safety objectives apply through RED Art. 3(1)(a), with no voltage limit. Assess electrical safety under the RED package.",
+      "ref": "Directive 2014/53/EU, Art. 3(1)(a)"
+    },
+    {
+      "id": "disabled_radio_check_red",
+      "level": "caution",
+      "when": {
+        "or": [
+          {
+            "==": [
+              {
+                "var": "wireless_interface_capability"
+              },
+              "present_physically_disabled"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "wireless_interface_capability"
+                  },
+                  "present"
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "wireless_enablement"
+                  },
+                  "disabled_manufacturer_update_only"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "message": "Radio hardware present but disabled (physically, or until a manufacturer update): the product is under LVD, not RED, while the radio stays disabled. Enabling it makes the product radio equipment and requires re-assessment under RED.",
+      "ref": "Directive 2014/53/EU, Art. 2(1)(1)"
+    },
+    {
+      "id": "radio_outside_red_security",
+      "level": "caution",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "or": [
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              50
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              1000
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              75
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              1500
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              null
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_basic_component"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "explosive_atmosphere"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "lift_electrical_part"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electricity_meter"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "domestic_plug_or_socket"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electric_fence_controller"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "ship_aircraft_railway_specialised"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "custom_rd_evaluation_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "wireless_interface_capability"
+                  },
+                  "present"
+                ]
+              },
+              {
+                "!=": [
+                  {
+                    "var": "wireless_enablement"
+                  },
+                  "disabled_manufacturer_update_only"
+                ]
+              }
+            ]
+          },
+          {
+            "or": [
+              {
+                "==": [
+                  {
+                    "var": "is_exclusively_defence_product"
+                  },
+                  true
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "is_exclusively_national_security_product"
+                  },
+                  true
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "message": "Radio equipment used exclusively for defence or public or State security is outside RED, so its electrical safety falls back to the LVD. A Member State may set EU product rules aside for its essential security interests (Art. 346 TFEU): check the national rules and the procurement terms.",
+      "ref": "Directive 2014/53/EU, Art. 1(4); TFEU Art. 346"
+    },
+    {
+      "id": "partial_standards_coverage",
+      "level": "caution",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "or": [
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              50
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              1000
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              75
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              1500
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              null
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_basic_component"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "explosive_atmosphere"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "lift_electrical_part"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electricity_meter"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "domestic_plug_or_socket"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electric_fence_controller"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "ship_aircraft_railway_specialised"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "custom_rd_evaluation_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "in": [
+              {
+                "var": "lvd_conformity_basis"
+              },
+              [
+                "harmonised_standards_partial",
+                "own_solutions"
+              ]
+            ]
+          }
+        ]
+      },
+      "message": "No presumption of conformity for the risks not covered by harmonised standards: the technical documentation must describe the solutions adopted for them and the risk analysis must cover them.",
+      "ref": "Art. 12, Annex III(2)"
+    },
+    {
+      "id": "international_or_national_standards",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "or": [
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              50
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              1000
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              75
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              1500
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              null
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_basic_component"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "explosive_atmosphere"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "lift_electrical_part"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electricity_meter"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "domestic_plug_or_socket"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electric_fence_controller"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "ship_aircraft_railway_specialised"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "custom_rd_evaluation_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "in": [
+              {
+                "var": "lvd_conformity_basis"
+              },
+              [
+                "international_standards",
+                "national_standards"
+              ]
+            ]
+          }
+        ]
+      },
+      "message": "International or national standards give a presumption of conformity only where no harmonised standard covers the risk, and only for standards published under the directive's procedure. Check the current list.",
+      "ref": "Art. 13, Art. 14"
+    },
+    {
+      "id": "no_risk_assessment",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "or": [
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              50
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              1000
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              75
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              1500
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              null
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_basic_component"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "explosive_atmosphere"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "lift_electrical_part"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electricity_meter"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "domestic_plug_or_socket"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electric_fence_controller"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "ship_aircraft_railway_specialised"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "custom_rd_evaluation_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "safety_risk_assessment_documented"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Document a risk analysis and assessment; the technical documentation must include it.",
+      "ref": "Annex III(2)"
+    },
+    {
+      "id": "technical_documentation_incomplete",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "or": [
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              50
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              1000
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              75
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              1500
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              null
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_basic_component"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "explosive_atmosphere"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "lift_electrical_part"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electricity_meter"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "domestic_plug_or_socket"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electric_fence_controller"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "ship_aircraft_railway_specialised"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "custom_rd_evaluation_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "technical_documentation_complete"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Complete the technical documentation before placing the product on the market.",
+      "ref": "Art. 6(2), Annex III(2)"
+    },
+    {
+      "id": "ratings_not_marked",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "or": [
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              50
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              1000
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              75
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              1500
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              null
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_basic_component"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "explosive_atmosphere"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "lift_electrical_part"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electricity_meter"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "domestic_plug_or_socket"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electric_fence_controller"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "ship_aircraft_railway_specialised"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "custom_rd_evaluation_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "electrical_ratings_marked"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Mark the electrical ratings and other essential characteristics on the equipment, or in an accompanying document.",
+      "ref": "Annex I(1)(a)"
+    },
+    {
+      "id": "no_declaration_of_conformity",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "or": [
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              50
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              1000
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              75
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              1500
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              null
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_basic_component"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "explosive_atmosphere"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "lift_electrical_part"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electricity_meter"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "domestic_plug_or_socket"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electric_fence_controller"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "ship_aircraft_railway_specialised"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "custom_rd_evaluation_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "eu_declaration_of_conformity_drawn_up"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Draw up the EU declaration of conformity before placing the product on the market.",
+      "ref": "Art. 15, Annex IV"
+    },
+    {
+      "id": "no_ce_marking",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "or": [
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              50
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              1000
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              75
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              1500
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              null
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_basic_component"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "explosive_atmosphere"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "lift_electrical_part"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electricity_meter"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "domestic_plug_or_socket"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electric_fence_controller"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "ship_aircraft_railway_specialised"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "custom_rd_evaluation_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "ce_marking_affixed"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Affix the CE marking before placing the product on the market.",
+      "ref": "Art. 16, Art. 17"
+    },
+    {
+      "id": "identification_missing",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "or": [
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              50
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              1000
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              75
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              1500
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              null
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_basic_component"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "explosive_atmosphere"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "lift_electrical_part"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electricity_meter"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "domestic_plug_or_socket"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electric_fence_controller"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "ship_aircraft_railway_specialised"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "custom_rd_evaluation_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "product_identification_marked"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Mark a type, batch or serial number and the manufacturer's name and postal address on the units, or on the packaging or documents where that is not possible.",
+      "ref": "Art. 6(5)-(6)"
+    },
+    {
+      "id": "instructions_not_in_local_languages",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "or": [
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              50
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              1000
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              75
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              1500
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              null
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_basic_component"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "explosive_atmosphere"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "lift_electrical_part"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electricity_meter"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "domestic_plug_or_socket"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electric_fence_controller"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "ship_aircraft_railway_specialised"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "custom_rd_evaluation_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "safety_instructions_in_local_languages"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Supply instructions and safety information in a language easily understood by users in every Member State where the product is sold.",
+      "ref": "Art. 6(7), Art. 8(4), Art. 9(2)"
+    },
+    {
+      "id": "supplier_documents_not_verified",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "or": [
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              50
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              1000
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "and": [
+                          {
+                            ">=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              75
+                            ]
+                          },
+                          {
+                            "<=": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              1500
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "ac_voltage_rating"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "dc_voltage_rating"
+                              },
+                              null
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_basic_component"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "and": [
+                    {
+                      "and": [
+                        {
+                          "==": [
+                            {
+                              "var": "wireless_interface_capability"
+                            },
+                            "present"
+                          ]
+                        },
+                        {
+                          "!=": [
+                            {
+                              "var": "wireless_enablement"
+                            },
+                            "disabled_manufacturer_update_only"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "!": {
+                        "or": [
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_defence_product"
+                              },
+                              true
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "is_exclusively_national_security_product"
+                              },
+                              true
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_medical_device"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_in_vitro_diagnostic"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "explosive_atmosphere"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "lift_electrical_part"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electricity_meter"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "domestic_plug_or_socket"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "electric_fence_controller"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "ship_aircraft_railway_specialised"
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "lvd_annex_ii_category"
+                    },
+                    "custom_rd_evaluation_kit"
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "supplier_conformity_checked"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Check the CE marking, the instructions and safety information and the identification of the manufacturer and importer before supplying the product.",
+      "ref": "Art. 8(2), Art. 9(2)"
+    },
+    {
+      "id": "importer_or_distributor_becomes_manufacturer",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "in": [
+              {
+                "var": "economic_operator_role"
+              },
+              [
+                "importer",
+                "distributor"
+              ]
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "places_under_own_name_or_modifies"
+              },
+              true
+            ]
+          }
+        ]
+      },
+      "message": "Placing the product under your own name or modifying it makes you the manufacturer: the manufacturer's obligations apply to you.",
+      "ref": "Art. 10"
+    },
+    {
+      "id": "steward_not_an_lvd_role",
+      "level": "caution",
+      "when": {
+        "==": [
+          {
+            "var": "economic_operator_role"
+          },
+          "steward"
+        ]
+      },
+      "message": "Open-source steward is not a role under the LVD. Answer as manufacturer, importer, distributor or authorised representative for this product.",
+      "ref": "Art. 2"
+    },
+    {
+      "id": "placed_before_2016",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              false
+            ]
+          },
+          {
+            "<": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2016-04-20"
+            ]
+          }
+        ]
+      },
+      "message": "All units were placed on the market before 20 April 2016: they may still be made available if they conform to the previous directive, 2006/95/EC.",
+      "ref": "Art. 27"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "mains-kettle-manufacturer",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [],
+        "assessment_routes": [
+          "module_a_internal_production_control"
+        ],
+        "requirements": [
+          "art_3_good_engineering_practice",
+          "annex_i_1_general_conditions",
+          "annex_i_2a_contact_protection",
+          "annex_i_2b_temperature_arcs_radiation",
+          "annex_i_2c_non_electrical_hazards",
+          "annex_i_2d_insulation",
+          "annex_i_3a_mechanical_requirements",
+          "annex_i_3b_non_mechanical_influences",
+          "annex_i_3c_overload",
+          "art_6_2_technical_documentation",
+          "art_15_declaration_of_conformity",
+          "art_16_17_ce_marking",
+          "art_6_3_retain_documentation",
+          "art_6_4_series_production",
+          "art_6_5_type_batch_serial",
+          "art_6_6_manufacturer_contact",
+          "art_6_7_instructions_safety_information",
+          "art_6_8_corrective_action",
+          "art_6_9_cooperate_with_authorities",
+          "art_11_identify_economic_operators"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "lvd-not-yet-in-force-in-2015",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": true,
+        "requirements": []
+      },
+      "as_of": "2015-06-01"
+    },
+    {
+      "id": "battery-torch-below-range",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 0,
+        "dc_voltage_rating": 6,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "below_voltage_range"
+        ]
+      }
+    },
+    {
+      "id": "48v-dc-supply-below-range",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 0,
+        "dc_voltage_rating": 48,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "below_voltage_range"
+        ]
+      }
+    },
+    {
+      "id": "110v-dc-input-in-range",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 0,
+        "dc_voltage_rating": 110,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": []
+      }
+    },
+    {
+      "id": "mains-adapter-with-12v-output-in-scope",
+      "answers": {
+        "product_form": "hardware_component",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 12,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "is_basic_component": false
+      },
+      "expected": {
+        "in_scope": true
+      }
+    },
+    {
+      "id": "basic-component-excluded",
+      "answers": {
+        "product_form": "hardware_component",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "is_basic_component": true
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "medium-voltage-switchgear-above-range",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 12000,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "above_voltage_range"
+        ]
+      }
+    },
+    {
+      "id": "standalone-software-out-of-scope",
+      "answers": {
+        "product_form": "standalone_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": []
+      }
+    },
+    {
+      "id": "aavistin-paid-support-out-of-scope",
+      "answers": {
+        "product_form": "standalone_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "unanswered-voltage-hides-nothing",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer"
+      },
+      "expected": {
+        "in_scope": true,
+        "requirements": [
+          "art_3_good_engineering_practice",
+          "annex_i_1_general_conditions",
+          "annex_i_2a_contact_protection",
+          "annex_i_2b_temperature_arcs_radiation",
+          "annex_i_2c_non_electrical_hazards",
+          "annex_i_2d_insulation",
+          "annex_i_3a_mechanical_requirements",
+          "annex_i_3b_non_mechanical_influences",
+          "annex_i_3c_overload",
+          "art_6_2_technical_documentation",
+          "art_15_declaration_of_conformity",
+          "art_16_17_ce_marking",
+          "art_6_3_retain_documentation",
+          "art_6_4_series_production",
+          "art_6_5_type_batch_serial",
+          "art_6_6_manufacturer_contact",
+          "art_6_7_instructions_safety_information",
+          "art_6_8_corrective_action",
+          "art_6_9_cooperate_with_authorities",
+          "art_11_identify_economic_operators"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "wifi-router-under-red",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "radio_equipment_under_red"
+        ]
+      }
+    },
+    {
+      "id": "disabled-radio-caution",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present_physically_disabled"
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "disabled_radio_check_red"
+        ]
+      }
+    },
+    {
+      "id": "radio-enableable-only-by-update-stays-under-lvd",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "disabled_manufacturer_update_only"
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "disabled_radio_check_red"
+        ]
+      }
+    },
+    {
+      "id": "user-enableable-radio-under-red",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "disabled_user_enableable"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "radio_equipment_under_red"
+        ]
+      }
+    },
+    {
+      "id": "national-security-radio-falls-back-to-lvd",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_exclusively_national_security_product": true
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "radio_outside_red_security"
+        ],
+        "requirements": [
+          "art_3_good_engineering_practice",
+          "annex_i_1_general_conditions",
+          "annex_i_2a_contact_protection",
+          "annex_i_2b_temperature_arcs_radiation",
+          "annex_i_2c_non_electrical_hazards",
+          "annex_i_2d_insulation",
+          "annex_i_3a_mechanical_requirements",
+          "annex_i_3b_non_mechanical_influences",
+          "annex_i_3c_overload",
+          "art_6_2_technical_documentation",
+          "art_15_declaration_of_conformity",
+          "art_16_17_ce_marking",
+          "art_6_3_retain_documentation",
+          "art_6_4_series_production",
+          "art_6_5_type_batch_serial",
+          "art_6_6_manufacturer_contact",
+          "art_6_7_instructions_safety_information",
+          "art_6_8_corrective_action",
+          "art_6_9_cooperate_with_authorities",
+          "art_11_identify_economic_operators"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "defence-radio-falls-back-to-lvd",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_exclusively_defence_product": true
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "radio_outside_red_security"
+        ]
+      }
+    },
+    {
+      "id": "national-security-without-radio-stays-under-lvd",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "is_exclusively_national_security_product": true
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": []
+      }
+    },
+    {
+      "id": "civil-radio-stays-under-red",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_exclusively_national_security_product": false,
+        "is_exclusively_defence_product": false
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "radio_equipment_under_red"
+        ]
+      }
+    },
+    {
+      "id": "medical-device-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "is_medical_device": true
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "annex-ii-explosive-atmosphere-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "explosive_atmosphere",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "annex-ii-lift-electrical-part-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "lift_electrical_part",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "annex-ii-electricity-meter-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "electricity_meter",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "annex-ii-domestic-plug-or-socket-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "domestic_plug_or_socket",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "annex-ii-electric-fence-controller-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "electric_fence_controller",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "annex-ii-ship-aircraft-railway-specialised-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "ship_aircraft_railway_specialised",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "annex-ii-custom-rd-evaluation-kit-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "custom_rd_evaluation_kit",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "not-commercial-activity-excluded",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": false,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "importer-obligations",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "importer",
+        "wireless_interface_capability": "not_present",
+        "places_under_own_name_or_modifies": false
+      },
+      "expected": {
+        "in_scope": true,
+        "requirements": [
+          "art_8_1_place_only_compliant",
+          "art_8_2_verify_manufacturer",
+          "art_8_3_importer_contact",
+          "art_8_4_instructions_safety_information",
+          "art_8_5_storage_transport",
+          "art_8_6_sample_testing_complaints",
+          "art_8_7_corrective_action",
+          "art_8_8_retain_declaration",
+          "art_8_9_cooperate_with_authorities",
+          "art_11_identify_economic_operators"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "importer-under-own-brand-is-manufacturer",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "importer",
+        "wireless_interface_capability": "not_present",
+        "places_under_own_name_or_modifies": true
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "importer_or_distributor_becomes_manufacturer"
+        ],
+        "requirements": [
+          "art_3_good_engineering_practice",
+          "annex_i_1_general_conditions",
+          "annex_i_2a_contact_protection",
+          "annex_i_2b_temperature_arcs_radiation",
+          "annex_i_2c_non_electrical_hazards",
+          "annex_i_2d_insulation",
+          "annex_i_3a_mechanical_requirements",
+          "annex_i_3b_non_mechanical_influences",
+          "annex_i_3c_overload",
+          "art_6_2_technical_documentation",
+          "art_15_declaration_of_conformity",
+          "art_16_17_ce_marking",
+          "art_6_3_retain_documentation",
+          "art_6_4_series_production",
+          "art_6_5_type_batch_serial",
+          "art_6_6_manufacturer_contact",
+          "art_6_7_instructions_safety_information",
+          "art_6_8_corrective_action",
+          "art_6_9_cooperate_with_authorities",
+          "art_11_identify_economic_operators"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "distributor-obligations",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "distributor",
+        "wireless_interface_capability": "not_present",
+        "places_under_own_name_or_modifies": false
+      },
+      "expected": {
+        "in_scope": true,
+        "requirements": [
+          "art_9_1_due_care",
+          "art_9_2_verify_before_supply",
+          "art_9_3_storage_transport",
+          "art_9_4_corrective_action",
+          "art_9_5_cooperate_with_authorities",
+          "art_11_identify_economic_operators"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "authorised-representative-obligations",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "authorised_representative",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": true,
+        "requirements": [
+          "art_7_authorised_representative_tasks"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "unanswered-role-lists-everything",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "in_scope": true,
+        "requirements": [
+          "art_3_good_engineering_practice",
+          "annex_i_1_general_conditions",
+          "annex_i_2a_contact_protection",
+          "annex_i_2b_temperature_arcs_radiation",
+          "annex_i_2c_non_electrical_hazards",
+          "annex_i_2d_insulation",
+          "annex_i_3a_mechanical_requirements",
+          "annex_i_3b_non_mechanical_influences",
+          "annex_i_3c_overload",
+          "art_6_2_technical_documentation",
+          "art_15_declaration_of_conformity",
+          "art_16_17_ce_marking",
+          "art_6_3_retain_documentation",
+          "art_6_4_series_production",
+          "art_6_5_type_batch_serial",
+          "art_6_6_manufacturer_contact",
+          "art_6_7_instructions_safety_information",
+          "art_6_8_corrective_action",
+          "art_6_9_cooperate_with_authorities",
+          "art_7_authorised_representative_tasks",
+          "art_8_1_place_only_compliant",
+          "art_8_2_verify_manufacturer",
+          "art_8_3_importer_contact",
+          "art_8_4_instructions_safety_information",
+          "art_8_5_storage_transport",
+          "art_8_6_sample_testing_complaints",
+          "art_8_7_corrective_action",
+          "art_8_8_retain_declaration",
+          "art_8_9_cooperate_with_authorities",
+          "art_9_1_due_care",
+          "art_9_2_verify_before_supply",
+          "art_9_3_storage_transport",
+          "art_9_4_corrective_action",
+          "art_9_5_cooperate_with_authorities",
+          "art_11_identify_economic_operators"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "steward-caution",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "steward",
+        "wireless_interface_capability": "not_present"
+      },
+      "expected": {
+        "findings": [
+          "steward_not_an_lvd_role"
+        ],
+        "requirements": []
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "documentation-gaps-raise-findings",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "safety_risk_assessment_documented": false,
+        "technical_documentation_complete": false,
+        "electrical_ratings_marked": false,
+        "eu_declaration_of_conformity_drawn_up": false,
+        "ce_marking_affixed": false,
+        "product_identification_marked": false,
+        "safety_instructions_in_local_languages": false,
+        "lvd_conformity_basis": "own_solutions"
+      },
+      "expected": {
+        "findings": [
+          "no_risk_assessment",
+          "technical_documentation_incomplete",
+          "ratings_not_marked",
+          "no_declaration_of_conformity",
+          "no_ce_marking",
+          "identification_missing",
+          "instructions_not_in_local_languages",
+          "partial_standards_coverage"
+        ]
+      }
+    },
+    {
+      "id": "distributor-not-checking-documents",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "distributor",
+        "wireless_interface_capability": "not_present",
+        "places_under_own_name_or_modifies": false,
+        "supplier_conformity_checked": false
+      },
+      "expected": {
+        "findings": [
+          "supplier_documents_not_verified"
+        ]
+      }
+    },
+    {
+      "id": "radio-product-gets-no-lvd-standards-finding",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "lvd_conformity_basis": "own_solutions",
+        "technical_documentation_complete": false
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "radio_equipment_under_red"
+        ]
+      }
+    },
+    {
+      "id": "iec-standards-info",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "lvd_conformity_basis": "international_standards"
+      },
+      "expected": {
+        "findings": [
+          "international_or_national_standards"
+        ]
+      }
+    },
+    {
+      "id": "units-placed-before-2016",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "hardware_still_placed_on_market": false,
+        "hardware_last_placed_on_market": "2015-12-31"
+      },
+      "expected": {
+        "findings": [
+          "placed_before_2016"
+        ]
+      }
+    },
+    {
+      "id": "still-placed-no-transition-note",
+      "answers": {
+        "product_form": "hardware_without_software",
+        "ac_voltage_rating": 230,
+        "dc_voltage_rating": 0,
+        "lvd_annex_ii_category": "none",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "wireless_interface_capability": "not_present",
+        "hardware_still_placed_on_market": true
+      },
+      "expected": {
+        "findings": []
+      }
+    }
+  ]
+}
