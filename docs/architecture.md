@@ -143,13 +143,13 @@ Regulations and other obligations are content, not code: versioned, schema-valid
 
 | Source type | Binding nature | Applicability | Examples |
 | --- | --- | --- | --- |
-| Legislation | Legal | Rule-based from answers | CRA, RED, LVD, GDPR |
+| Legislation | Legal | Rule-based from answers | CRA, RED, LVD, EMC, GDPR |
 | Harmonised standard | Presumption of conformity | Linked from legislation | EN 18031, EN 62368 |
 | QMS / internal procedure | Internal | Selected per organisation or family | ISO 9001 procedures |
 | Customer requirement | Contractual | Selected per product or customer | Customer security specs |
 | Guidance | Non-binding | Reference only | Blue Guide, RED guide, CRA FAQ |
 
-Only legislation can create legal obligations; the schema enforces this, and the UI labels guidance as non-binding. First targets: CRA, RED, LVD and GDPR; NIS2 as customer-driven supply-chain requirements; IEC 62443 later.
+Only legislation can create legal obligations; the schema enforces this, and the UI labels guidance as non-binding. First targets: CRA, RED, LVD, EMC and GDPR; NIS2 as customer-driven supply-chain requirements; IEC 62443 later.
 
 A package contains:
 

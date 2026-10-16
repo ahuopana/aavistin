@@ -2,7 +2,7 @@
 
 Open-source compliance and risk-assessment tool for product manufacturers.
 Describe a product, answer one questionnaire, and see which regulations
-apply (EU CRA, RED, LVD and others), what they require, and how the product's
+apply (EU CRA, RED, LVD, EMC and others), what they require, and how the product's
 risks are rated and treated. Approvals are frozen, audited records that go
 stale when anything they relied on changes.
 
@@ -63,7 +63,7 @@ versions are kept for history.
 | --- | --- | --- | --- |
 | 1 | `common` | Shared question set | Questions several regulations ask, answered once |
 | 2 | `default-cia-5x5` | Risk method | The default risk scoring (severity × likelihood) |
-| 3 | `eu-cra`, `eu-lvd`, `eu-red` | Requirement (applicability) | The EU Cyber Resilience Act, Low Voltage Directive and Radio Equipment Directive |
+| 3 | `eu-cra`, `eu-emc`, `eu-lvd`, `eu-red` | Requirement (applicability) | The EU Cyber Resilience Act, Electromagnetic Compatibility Directive, Low Voltage Directive and Radio Equipment Directive |
 
 To explore with invented data instead, import `demo-widget-safety`
 (requirement), `demo-safety-5x5` (risk method) and `demo-widget-risks` (risk
