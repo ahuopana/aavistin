@@ -1,4 +1,4 @@
-# 32. Risk metrics: definitions and roll-up
+# 46. Risk metrics: definitions and roll-up
 
 Status: Accepted
 
