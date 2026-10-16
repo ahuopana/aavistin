@@ -1,12 +1,12 @@
 """Portfolio-level risk metrics: the same exposure classes and risk matrices
 as a product's Risk status, rolled up over every product the user can see,
-plus two ageing views (docs/adr/0047-portfolio-risk-overview.md).
+plus two ageing views (docs/adr/0048-portfolio-risk-overview.md).
 
 Read-only. Methods are still never merged: one matrix per method, and the
 only cross-method unit is the acceptance class. Ages use what is stored:
 
 * *Time since last change* counts the entry's own edits and its treatments'
-  edits (ratings and consequences touch the entry, ADR 0047).
+  edits (ratings and consequences touch the entry, ADR 0048).
 * *Open since* counts from the day the entry was added to the register,
   because the register does not record when a risk was first left
   unmitigated. An entry is open while its class after treatment is

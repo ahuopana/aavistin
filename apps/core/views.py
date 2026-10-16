@@ -44,7 +44,7 @@ def compliance(request):
 @login_required
 def risk_overview(request):
     """Risk across every product the user can see: exposure, risk matrices
-    per method, and how long risks have gone unchanged or open (ADR 0047)."""
+    per method, and how long risks have gone unchanged or open (ADR 0048)."""
     products = editable_products(request.user, role=None).select_related(
         "product_family", "product_family__organisation"
     )
