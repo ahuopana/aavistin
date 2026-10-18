@@ -30,3 +30,7 @@ Before the package backs a real compliance decision, check against the Official 
 
 - `common` 1.2.0 is a superset of 1.1.1, so the CRA package lints clean against either.
 - Art. 4 and Art. 5 are not modelled until the Commission adopts the acts they depend on.
+
+## Correction (eu-red 1.3.0)
+
+Checked against the OJ text of Delegated Regulation 2022/30: Art. 2(1) exempts medical and in vitro diagnostic devices from (d), (e) and (f); Art. 2(2) exempts aviation, vehicle and road toll products from (e) and (f) only. 1.0.0 to 1.2.0 switched (d) off for the latter and left it on for medical devices. 1.3.0 fixes the classification and the three fixtures. Art. 1 and Art. 10 paragraph citations were corrected in 1.2.0.

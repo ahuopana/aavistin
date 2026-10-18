@@ -15,7 +15,7 @@ General product-law concepts (making available, placing on the market, economic 
 - **Scope:** hardware with a radio that can intentionally emit or receive (including receive-only and radio modules); software alone is not radio equipment. Excluded: no commercial activity, Annex I equipment (amateur radio not made available, marine equipment, airborne products, custom evaluation kits for R&D), and equipment used exclusively for defence or public and State security.
 - **Disabled radios:** physically disabled radios and radios that only a manufacturer update can enable are out of scope, with an info or caution finding. A radio the user can switch on is in scope.
 - **Roles:** manufacturer, importer, distributor, authorised representative. An importer or distributor that places the product under its own name or modifies it is treated as the manufacturer (Art. 14).
-- **Classifications:** Art. 3(3)(d), (e), (f) per Delegated Regulation 2022/30, with its exemptions (civil aviation, type-approved vehicles, electronic road tolls; medical and in-vitro diagnostic devices for (e) and (f)); Art. 3(3)(g) for smartphones; Art. 3(4) common charger categories. Several can apply at once.
+- **Classifications:** Art. 3(3)(d), (e), (f) per Delegated Regulation 2022/30, with its exemptions (medical and in-vitro diagnostic devices for (d), (e) and (f); civil aviation, type-approved vehicles and electronic road tolls for (e) and (f) only; fixed in 1.3.0); Art. 3(3)(g) for smartphones; Art. 3(4) common charger categories. Several can apply at once.
 - **Requirements:** essential requirements Art. 3(1)(a) (from 1.1.0: health protection plus the eight LVD Annex I safety objectives, with no voltage limit), 3(1)(b), 3(2), 3(3)(d)-(g), 3(4), 3a; manufacturer obligations (Art. 10, 17, 18, 19, 20, 21); authorised representative (Art. 11), importer (Art. 12) and distributor (Art. 13) obligations.
 - **Dates:** each dated requirement applies only to units placed on or after its date (2022/30: 1 August 2025; 2019/320: 17 March 2022; common charger: 28 December 2024, laptops 28 April 2026). While no placement date is answered, nothing is hidden.
 - **Routes:** module A only when harmonised standards for Art. 3(2) and every applicable Art. 3(3) requirement are applied in full (for 2022/30: EN 18031-1/-2/-3 without the options the OJ citation restricts); modules B+C and H always (Art. 17).
@@ -30,6 +30,7 @@ General product-law concepts (making available, placing on the market, economic 
 - `1.0.0` (`2014-53@2026-10`): first version. Art. 3(1)(a) is one requirement that points to the LVD safety objectives.
 - `1.1.0` (`2014-53@2026-10.1`, supersedes 1.0.0): Art. 3(1)(a) is broken down into health protection and the eight LVD Annex I safety objectives (own summaries; the objectives apply without the LVD voltage limits), and the questionnaire asks the safety and CE-marking process questions that `eu-lvd` asks, with action-required findings for a "no". A radio product is excluded from `eu-lvd`, so without this it lost those checks (ADR 0042). Not legally reviewed either.
 - `1.2.0` (`2014-53@2026-10.2`, supersedes 1.1.0): citation fixes only, no change in behaviour. The Annex I exclusions cite Art. 1(2) and defence or security Art. 1(3) (Art. 1(4) is the LVD disapplication); retention is Art. 10(4), series production Art. 10(5), corrective action Art. 10(11)-(12); the notified-body trigger is Art. 17(4).
+- `1.3.0` (`2014-53@2026-10.3`, supersedes 1.2.0): Art. 3(3)(d) now follows Delegated Regulation 2022/30 Art. 2. Medical and in vitro diagnostic devices are exempt from (d), (e) and (f) (Art. 2(1)); civil aviation, vehicle and road toll products are exempt from (e) and (f) only, so (d) still applies to them (Art. 2(2)). Before, (d) was switched off for aviation, vehicle and toll products and left on for medical devices. Three fixtures are renamed and corrected.
 
 ## Known limitations
 
@@ -44,8 +45,8 @@ Import and approve the shared question library first, then this package. Run ins
 ```bash
 docker compose exec web python manage.py import_package packages/common/1.4.0.json --kind question_set --official
 docker compose exec web python manage.py approve_package common 1.4.0
-docker compose exec web python manage.py import_package packages/eu-red/1.2.0.json --kind requirement --official
+docker compose exec web python manage.py import_package packages/eu-red/1.3.0.json --kind requirement --official
 docker compose exec web python manage.py approve_package eu-red "2014-53@2026-10.1"
 ```
 
-Approving 1.2.0 supersedes an approved 1.1.0 (and so on down the chain). The file names are `1.0.0.json`, `1.1.0.json` and `1.2.0.json`; the package's own `version` field, which `approve_package` keys on, is `2014-53@2026-10`, `2014-53@2026-10.1` and `2014-53@2026-10.2`. Content changes always bump that version.
+Approving 1.3.0 supersedes an approved 1.2.0 (and so on down the chain). The file names are `1.0.0.json`, `1.1.0.json`, `1.2.0.json` and `1.3.0.json`; the package's own `version` field, which `approve_package` keys on, is `2014-53@2026-10`, `2014-53@2026-10.1`, `2014-53@2026-10.2` and `2014-53@2026-10.3`. Content changes always bump that version.
