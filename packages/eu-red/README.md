@@ -29,6 +29,7 @@ General product-law concepts (making available, placing on the market, economic 
 
 - `1.0.0` (`2014-53@2026-10`): first version. Art. 3(1)(a) is one requirement that points to the LVD safety objectives.
 - `1.1.0` (`2014-53@2026-10.1`, supersedes 1.0.0): Art. 3(1)(a) is broken down into health protection and the eight LVD Annex I safety objectives (own summaries; the objectives apply without the LVD voltage limits), and the questionnaire asks the safety and CE-marking process questions that `eu-lvd` asks, with action-required findings for a "no". A radio product is excluded from `eu-lvd`, so without this it lost those checks (ADR 0042). Not legally reviewed either.
+- `1.2.0` (`2014-53@2026-10.2`, supersedes 1.1.0): citation fixes only, no change in behaviour. The Annex I exclusions cite Art. 1(2) and defence or security Art. 1(3) (Art. 1(4) is the LVD disapplication); retention is Art. 10(4), series production Art. 10(5), corrective action Art. 10(11)-(12); the notified-body trigger is Art. 17(4).
 
 ## Known limitations
 
@@ -43,8 +44,8 @@ Import and approve the shared question library first, then this package. Run ins
 ```bash
 docker compose exec web python manage.py import_package packages/common/1.4.0.json --kind question_set --official
 docker compose exec web python manage.py approve_package common 1.4.0
-docker compose exec web python manage.py import_package packages/eu-red/1.1.0.json --kind requirement --official
+docker compose exec web python manage.py import_package packages/eu-red/1.2.0.json --kind requirement --official
 docker compose exec web python manage.py approve_package eu-red "2014-53@2026-10.1"
 ```
 
-Approving 1.1.0 supersedes an approved 1.0.0. The file names are `1.0.0.json` and `1.1.0.json`; the package's own `version` field, which `approve_package` keys on, is `2014-53@2026-10` and `2014-53@2026-10.1`. Content changes always bump that version.
+Approving 1.2.0 supersedes an approved 1.1.0 (and so on down the chain). The file names are `1.0.0.json`, `1.1.0.json` and `1.2.0.json`; the package's own `version` field, which `approve_package` keys on, is `2014-53@2026-10` and `2014-53@2026-10.1`. Content changes always bump that version.

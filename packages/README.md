@@ -15,3 +15,12 @@ It declares questions once; requirement packages reference them with
 `"uses": ["common:uses_mfa"]` instead of redeclaring them. A question may
 declare `implied_by` to derive its value from other answers. See
 `docs/adr/0015-shared-question-library.md`.
+
+## Versioning
+
+A package's own `version` field identifies it; the importer refuses a
+source/version pair that already exists ("bump the package version to
+import changes"). Never edit an imported version in place, not even for
+a citation fix or a README-only wording change inside the JSON: copy the
+file to the next minor file name (`1.1.0.json` to `1.2.0.json`), bump
+`version`, and list the previous version under `supersedes`.
