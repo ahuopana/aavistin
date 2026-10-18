@@ -352,7 +352,7 @@
             true
           ]
         },
-        "ref": "Art. 1(3), Annex I(1)"
+        "ref": "Art. 1(2), Annex I(1)"
       },
       {
         "id": "marine_equipment",
@@ -364,7 +364,7 @@
             true
           ]
         },
-        "ref": "Art. 1(3), Annex I(2)"
+        "ref": "Art. 1(2), Annex I(2)"
       },
       {
         "id": "airborne_products",
@@ -376,7 +376,7 @@
             true
           ]
         },
-        "ref": "Art. 1(3), Annex I(3)"
+        "ref": "Art. 1(2), Annex I(3)"
       },
       {
         "id": "evaluation_kits",
@@ -388,7 +388,7 @@
             true
           ]
         },
-        "ref": "Art. 1(3), Annex I(4)"
+        "ref": "Art. 1(2), Annex I(4)"
       },
       {
         "id": "defence",
@@ -400,7 +400,7 @@
             true
           ]
         },
-        "ref": "Art. 1(4)"
+        "ref": "Art. 1(3)"
       },
       {
         "id": "public_or_state_security",
@@ -412,7 +412,7 @@
             true
           ]
         },
-        "ref": "Art. 1(4)"
+        "ref": "Art. 1(3)"
       }
     ]
   },
@@ -1632,7 +1632,7 @@
       "roles": [
         "manufacturer"
       ],
-      "ref": "Art. 10(4)"
+      "ref": "Art. 10(5)"
     },
     {
       "id": "art_10_identification",
@@ -1680,7 +1680,7 @@
       "roles": [
         "manufacturer"
       ],
-      "ref": "Art. 10"
+      "ref": "Art. 10(4)"
     },
     {
       "id": "art_10_corrective_action_and_cooperation",
@@ -1688,7 +1688,7 @@
       "roles": [
         "manufacturer"
       ],
-      "ref": "Art. 10"
+      "ref": "Art. 10(11)-(12)"
     },
     {
       "id": "art_11_authorised_representative_tasks",
@@ -1970,7 +1970,7 @@
         ]
       },
       "message": "Harmonised standards were not applied in full for Article 3(2) or for the Article 3(3) requirements that apply: a notified body must be involved (modules B+C or H).",
-      "ref": "Art. 17(3); Blue Guide 4.1.2, 5.1"
+      "ref": "Art. 17(4); Blue Guide 4.1.2, 5.1"
     },
     {
       "id": "dormant_radio",

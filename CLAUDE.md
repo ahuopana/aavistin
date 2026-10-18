@@ -1,10 +1,10 @@
 # Project guide for Claude Code
 
-Open-source compliance tool for product manufacturers: users assess which regulations (EU CRA, RED, LVD, GDPR and others) apply to their products, and later perform risk assessments. The full design is in `docs/ARCHITECTURE.md`; read it before starting any task and treat it as the source of truth.
+Open-source compliance tool for product manufacturers: users assess which regulations (EU CRA, RED, LVD, GDPR and others) apply to their products, and later perform risk assessments. The full design is in `docs/architecture.md`; read it before starting any task and treat it as the source of truth.
 
 ## Working agreements
 
-- Design work continues in parallel. When `docs/ARCHITECTURE.md` changes, re-read the changed sections before continuing. If code and design disagree, stop and ask rather than guessing.
+- Design work continues in parallel. When `docs/architecture.md` changes, re-read the changed sections before continuing. If code and design disagree, stop and ask rather than guessing.
 - Record any decision not covered by the architecture doc as a short ADR in `docs/adr/NNNN-title.md`.
 - Work milestone by milestone (below). Each milestone ends with passing tests, `ruff` clean and a short summary of what was built and what was deferred.
 
@@ -32,7 +32,7 @@ Open-source compliance tool for product manufacturers: users assess which regula
 3. **Product model:** Product, HW variant and revision (with target markets), SW release, SW option, Configuration.
 4. **Requirement packages:** JSON Schema for packages, importer, semantic linter, fixture runner, diff against previous version, approval before publish. Use a small made-up demo package for tests; real regulation packages are authored separately.
 5. **Assessments:** questionnaire filtered by target markets and conditions, layered answers with provenance and override justification, carry-forward as "needs confirmation", rule evaluation into results and findings, approval with frozen snapshot, stale detection.
-6. **Risk assessment:** per `docs/ARCHITECTURE.md` sections "Risk assessment: methods and catalogs" and "Risk register".
+6. **Risk assessment:** per `docs/architecture.md` sections "Risk assessment: methods and catalogs" and "Risk register".
     - Method and catalog package schemas, extending the importer, linter and fixture runner from milestone 4; ship `default-cia-5x5` and a small demo catalog.
     - Product-level register with typed entries (asset, threat, hazard), threat consequences by impact category, hazard causes, and threat ↔ hazard links.
     - One rating per applicable method per entry; cross-method consistency rules; optional severity mappings.

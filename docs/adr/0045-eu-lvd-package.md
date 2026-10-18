@@ -14,7 +14,7 @@ Status: Accepted (content is a first pass, not legally reviewed).
 - **Annex II as one choice**, with one scope exclusion per category. Medical and radiology equipment reuses the shared `is_medical_device` and `is_in_vitro_diagnostic` questions instead of a second question.
 - **Two exclusions are interpretations, labelled as such in `ref`:** basic components whose safety depends on how they are built in (Commission LVD guidelines), and radio equipment, whose LVD safety objectives apply through RED Art. 3(1)(a) with no voltage limit. "Radio equipment" uses the same test as `eu-red`'s scope (ADR 0023), so exactly one of the two packages covers electrical safety: a radio that is physically disabled or enableable only by a manufacturer update leaves the product under LVD, with a caution that enabling it moves the product to RED.
 - **One route, internal production control (module A).** The directive has no notified-body route.
-- **No placement-date conditions on requirements.** All apply from 20 April 2016. Units placed earlier under 2006/95/EC (Art. 27) get an info finding only.
+- **No placement-date conditions on requirements.** All apply from 20 April 2016. Units placed earlier under 2006/95/EC (Art. 25) get an info finding only.
 - **Documentation and marking gaps are self-assessed booleans** shown only to whoever acts as manufacturer (or to importers and distributors for the supplier check) and only while the product may be in scope. A "no" raises an action-required finding.
 
 ## Consequences

@@ -85,7 +85,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-# PostgreSQL in development, CI and production; see docs/ARCHITECTURE.md.
+# PostgreSQL in development, CI and production; see docs/architecture.md.
 
 DATABASES = {
     "default": env.db(
