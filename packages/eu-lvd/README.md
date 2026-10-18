@@ -39,4 +39,4 @@ docker compose exec web python manage.py import_package packages/eu-lvd/1.2.0.js
 docker compose exec web python manage.py approve_package eu-lvd "2014-35@2026-10.1"
 ```
 
-Approving 1.2.0 supersedes an approved 1.1.0 (and so on down the chain). The file names are `1.0.0.json`, `1.1.0.json` and `1.2.0.json`; the package's own `version` field, which `approve_package` keys on, is `2014-35@2026-10` and `2014-35@2026-10.1`. Content changes always bump that version: `RequirementPackage` is unique on `source` + `version`, and the questionnaire reads the approved copy in the database, not this file.
+Approving 1.2.0 supersedes an approved 1.1.0 (and so on down the chain). The file names are `1.0.0.json`, `1.1.0.json` and `1.2.0.json`; the package's own `version` field, which `approve_package` keys on, is `2014-35@2026-10`, `2014-35@2026-10.1` and `2014-35@2026-10.2`. Content changes always bump that version: `RequirementPackage` is unique on `source` + `version`, and the questionnaire reads the approved copy in the database, not this file.
