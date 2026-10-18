@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "eur-lex": {
+      "command": "npx",
+      "args": ["-y", "@cyanheads/eur-lex-mcp-server@latest"]
+    }
+  }
+}
