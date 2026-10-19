@@ -1,0 +1,5335 @@
+{
+  "source": "eu-red",
+  "type": "legislation",
+  "jurisdiction": "EU",
+  "version": "2014-53@2026-10.4",
+  "title": "EU Radio Equipment Directive",
+  "legal_sources": [
+    {
+      "celex": "32014L0053",
+      "citation": "Directive 2014/53/EU (Radio Equipment Directive)"
+    },
+    {
+      "celex": "32022R0030",
+      "citation": "Delegated Regulation (EU) 2022/30, Arts. 1-2 only (which of Art. 3(3)(d)-(f) apply, and the exemptions); the rest of the regulation and the harmonised standards are not modelled"
+    },
+    {
+      "celex": "32023R2444",
+      "citation": "Delegated Regulation (EU) 2023/2444, application from 1 August 2025"
+    },
+    {
+      "celex": "32019R0320",
+      "citation": "Delegated Regulation (EU) 2019/320, Art. 3(3)(g)"
+    },
+    {
+      "celex": "32022L2380",
+      "citation": "Directive (EU) 2022/2380, common charger"
+    }
+  ],
+  "dates_of_application": {
+    "from": "2016-06-13"
+  },
+  "redistributable": true,
+  "uses": [
+    "common:product_form",
+    "common:economic_operator_role",
+    "common:places_under_own_name_or_modifies",
+    "common:is_commercial_activity",
+    "common:is_medical_device",
+    "common:is_in_vitro_diagnostic",
+    "common:is_exclusively_vehicle_component",
+    "common:is_civil_aviation_product",
+    "common:is_marine_equipment",
+    "common:is_exclusively_national_security_product",
+    "common:is_exclusively_defence_product",
+    "common:is_toy",
+    "common:is_childcare_product",
+    "common:is_wearable",
+    "common:hardware_first_placed_on_market",
+    "common:hardware_still_placed_on_market",
+    "common:hardware_last_placed_on_market",
+    "common:wireless_interface_capability",
+    "common:wireless_enablement",
+    "common:communicates_over_internet",
+    "common:processes_personal_data",
+    "common:transfers_money_or_value",
+    "common:requires_user_authentication",
+    "common:default_credentials",
+    "common:update_mechanism",
+    "common:verifies_update_authenticity",
+    "common:encrypts_data_in_transit",
+    "common:safety_risk_assessment_documented",
+    "common:technical_documentation_complete",
+    "common:electrical_ratings_marked",
+    "common:eu_declaration_of_conformity_drawn_up",
+    "common:ce_marking_affixed",
+    "common:product_identification_marked",
+    "common:safety_instructions_in_local_languages",
+    "common:supplier_conformity_checked"
+  ],
+  "questions": [
+    {
+      "id": "is_amateur_radio_equipment",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is this amateur radio equipment that is not made available on the market (a kit for radio amateurs to assemble, or equipment they build or modify for their own use)?",
+      "guidance": "Commercially available amateur radio equipment is in scope. The exclusion covers kits and self-built or self-modified equipment used by licensed radio amateurs.",
+      "guidance_url": "https://single-market-economy.ec.europa.eu/sectors/electrical-and-electronic-engineering-industries-eei/radio-equipment-directive-red_en"
+    },
+    {
+      "id": "is_custom_evaluation_kit",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is this a custom-built evaluation kit for professionals, used solely at research and development facilities?",
+      "guidance_url": "https://single-market-economy.ec.europa.eu/sectors/electrical-and-electronic-engineering-industries-eei/radio-equipment-directive-red_en"
+    },
+    {
+      "id": "is_electronic_road_toll_equipment",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product on-board equipment for electronic road toll systems under Directive (EU) 2019/520?"
+    },
+    {
+      "id": "common_charger_category",
+      "type": "choice",
+      "level": "product",
+      "label": "Which of these categories is the product?",
+      "choices": [
+        "Mobile phone",
+        "Tablet",
+        "Digital camera",
+        "Headphones",
+        "Headset",
+        "Handheld videogame console",
+        "Portable speaker",
+        "E-reader",
+        "Keyboard",
+        "Mouse",
+        "Portable navigation system",
+        "Earbuds",
+        "Laptop",
+        "None of these"
+      ],
+      "guidance": "These are the categories of radio equipment covered by the common charger rules. A product in none of them answers 'None of these'.",
+      "guidance_url": "https://single-market-economy.ec.europa.eu/sectors/electrical-and-electronic-engineering-industries-eei/radio-equipment-directive-red_en"
+    },
+    {
+      "id": "rechargeable_via_wired_charging",
+      "type": "boolean",
+      "level": "hardware",
+      "label": "Can the product's battery be recharged through a cable?",
+      "condition": {
+        "and": [
+          {
+            "!=": [
+              {
+                "var": "common_charger_category"
+              },
+              "None of these"
+            ]
+          },
+          {
+            "!=": [
+              {
+                "var": "common_charger_category"
+              },
+              null
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "wired_charging_above_15w",
+      "type": "boolean",
+      "level": "hardware",
+      "label": "Does wired charging need more than 5 V, more than 3 A or more than 15 W?",
+      "condition": {
+        "==": [
+          {
+            "var": "rechargeable_via_wired_charging"
+          },
+          true
+        ]
+      }
+    },
+    {
+      "id": "is_smartphone",
+      "type": "boolean",
+      "level": "product",
+      "label": "Is the product a mobile phone with the features of a handheld computer (a smartphone)?",
+      "condition": {
+        "==": [
+          {
+            "var": "common_charger_category"
+          },
+          "Mobile phone"
+        ]
+      }
+    },
+    {
+      "id": "harmonised_standards_art_3_2_applied_in_full",
+      "type": "boolean",
+      "level": "product",
+      "label": "Have you applied, in full, harmonised standards that cover effective and efficient use of radio spectrum (Article 3(2)) for this product?",
+      "guidance": "Only standards whose references are published in the Official Journal under the RED give a presumption of conformity. If you applied them only partly, or none exists for your radio technology, a notified body must be involved. See the Blue Guide, sections 4.1.2 and 5.1.",
+      "guidance_url": "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=oj%3AJOC_2022_247_R_0001"
+    },
+    {
+      "id": "harmonised_standards_art_3_3_applied_in_full",
+      "type": "boolean",
+      "level": "product",
+      "label": "Have you applied, in full, harmonised standards for every Article 3(3) requirement that applies to the product (for network protection, privacy and fraud: EN 18031-1, -2 or -3, without the options the Official Journal citation restricts)?",
+      "guidance": "The EN 18031 series is cited with restrictions: where the standard lets you choose an option that the citation excludes (for example, letting the user skip setting a password), the standard no longer gives a presumption of conformity and a notified body must be involved.",
+      "guidance_url": "https://single-market-economy.ec.europa.eu/sectors/electrical-and-electronic-engineering-industries-eei/radio-equipment-directive-red_en"
+    }
+  ],
+  "question_groups": [
+    {
+      "id": "product_and_role",
+      "title": "Product and your role (Art. 2, Art. 10-14)",
+      "questions": [
+        "product_form",
+        "economic_operator_role",
+        "places_under_own_name_or_modifies",
+        "is_commercial_activity"
+      ]
+    },
+    {
+      "id": "radio",
+      "title": "Radio equipment (Art. 2(1)(1))",
+      "questions": [
+        "wireless_interface_capability",
+        "wireless_enablement"
+      ]
+    },
+    {
+      "id": "exclusions",
+      "title": "Exclusions from RED scope (Art. 1, Annex I)",
+      "questions": [
+        "is_amateur_radio_equipment",
+        "is_marine_equipment",
+        "is_civil_aviation_product",
+        "is_custom_evaluation_kit",
+        "is_exclusively_defence_product",
+        "is_exclusively_national_security_product"
+      ]
+    },
+    {
+      "id": "placement",
+      "title": "Market placement",
+      "questions": [
+        "hardware_first_placed_on_market",
+        "hardware_still_placed_on_market",
+        "hardware_last_placed_on_market"
+      ]
+    },
+    {
+      "id": "cyber_categories",
+      "title": "Network, privacy and fraud protection: which apply (Art. 3(3)(d)-(f), Delegated Regulation (EU) 2022/30)",
+      "questions": [
+        "communicates_over_internet",
+        "processes_personal_data",
+        "transfers_money_or_value",
+        "is_toy",
+        "is_childcare_product",
+        "is_wearable",
+        "is_medical_device",
+        "is_in_vitro_diagnostic",
+        "is_exclusively_vehicle_component",
+        "is_electronic_road_toll_equipment"
+      ]
+    },
+    {
+      "id": "cyber_measures",
+      "title": "Network, privacy and fraud protection: measures (Art. 3(3)(d)-(f))",
+      "questions": [
+        "requires_user_authentication",
+        "default_credentials",
+        "update_mechanism",
+        "verifies_update_authenticity",
+        "encrypts_data_in_transit"
+      ]
+    },
+    {
+      "id": "charger_and_emergency",
+      "title": "Common charger and emergency caller location (Art. 3(3)(g), 3(4))",
+      "questions": [
+        "common_charger_category",
+        "rechargeable_via_wired_charging",
+        "wired_charging_above_15w",
+        "is_smartphone"
+      ]
+    },
+    {
+      "id": "health_and_safety",
+      "title": "Health and safety (Art. 3(1)(a))",
+      "questions": [
+        "safety_risk_assessment_documented",
+        "electrical_ratings_marked"
+      ]
+    },
+    {
+      "id": "documentation_and_marking",
+      "title": "Technical documentation, declaration, CE marking and information (Art. 10-13, 18-21)",
+      "questions": [
+        "technical_documentation_complete",
+        "eu_declaration_of_conformity_drawn_up",
+        "ce_marking_affixed",
+        "product_identification_marked",
+        "safety_instructions_in_local_languages",
+        "supplier_conformity_checked"
+      ]
+    },
+    {
+      "id": "conformity",
+      "title": "Harmonised standards and conformity assessment (Art. 16-17)",
+      "questions": [
+        "harmonised_standards_art_3_2_applied_in_full",
+        "harmonised_standards_art_3_3_applied_in_full"
+      ]
+    }
+  ],
+  "scope": {
+    "include": {
+      "and": [
+        {
+          "!": {
+            "in": [
+              {
+                "var": "product_form"
+              },
+              [
+                "standalone_software",
+                "software_component"
+              ]
+            ]
+          }
+        },
+        {
+          "!": {
+            "in": [
+              {
+                "var": "wireless_interface_capability"
+              },
+              [
+                "not_present",
+                "present_physically_disabled"
+              ]
+            ]
+          }
+        },
+        {
+          "!=": [
+            {
+              "var": "wireless_enablement"
+            },
+            "disabled_manufacturer_update_only"
+          ]
+        }
+      ]
+    },
+    "exclude": [
+      {
+        "id": "not_commercial_activity",
+        "when": {
+          "==": [
+            {
+              "var": "is_commercial_activity"
+            },
+            false
+          ]
+        },
+        "ref": "Art. 2(1)(10)-(11); Blue Guide 2.2-2.3"
+      },
+      {
+        "id": "amateur_radio",
+        "when": {
+          "==": [
+            {
+              "var": "is_amateur_radio_equipment"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 1(2), Annex I(1)"
+      },
+      {
+        "id": "marine_equipment",
+        "when": {
+          "==": [
+            {
+              "var": "is_marine_equipment"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 1(2), Annex I(2)"
+      },
+      {
+        "id": "airborne_products",
+        "when": {
+          "==": [
+            {
+              "var": "is_civil_aviation_product"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 1(2), Annex I(3)"
+      },
+      {
+        "id": "evaluation_kits",
+        "when": {
+          "==": [
+            {
+              "var": "is_custom_evaluation_kit"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 1(2), Annex I(4)"
+      },
+      {
+        "id": "defence",
+        "when": {
+          "==": [
+            {
+              "var": "is_exclusively_defence_product"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 1(3)"
+      },
+      {
+        "id": "public_or_state_security",
+        "when": {
+          "==": [
+            {
+              "var": "is_exclusively_national_security_product"
+            },
+            true
+          ]
+        },
+        "ref": "Art. 1(3)"
+      }
+    ]
+  },
+  "role": {
+    "if": [
+      {
+        "and": [
+          {
+            "in": [
+              {
+                "var": "economic_operator_role"
+              },
+              [
+                "importer",
+                "distributor"
+              ]
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "places_under_own_name_or_modifies"
+              },
+              true
+            ]
+          }
+        ]
+      },
+      "manufacturer",
+      {
+        "var": "economic_operator_role"
+      }
+    ]
+  },
+  "classifications": [
+    {
+      "id": "art_3_3_d_network_protection",
+      "label": "Article 3(3)(d): internet-connected, must not harm the network (not for medical or in vitro diagnostic devices)",
+      "when": {
+        "and": [
+          {
+            "==": [
+              {
+                "var": "communicates_over_internet"
+              },
+              true
+            ]
+          },
+          {
+            "!": {
+              "or": [
+                {
+                  "==": [
+                    {
+                      "var": "is_medical_device"
+                    },
+                    true
+                  ]
+                },
+                {
+                  "==": [
+                    {
+                      "var": "is_in_vitro_diagnostic"
+                    },
+                    true
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_3_3_e_privacy",
+      "label": "Article 3(3)(e): personal data and privacy",
+      "when": {
+        "and": [
+          {
+            "==": [
+              {
+                "var": "processes_personal_data"
+              },
+              true
+            ]
+          },
+          {
+            "or": [
+              {
+                "==": [
+                  {
+                    "var": "communicates_over_internet"
+                  },
+                  true
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "is_childcare_product"
+                  },
+                  true
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "is_toy"
+                  },
+                  true
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "is_wearable"
+                  },
+                  true
+                ]
+              }
+            ]
+          },
+          {
+            "!": {
+              "or": [
+                {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_civil_aviation_product"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_exclusively_vehicle_component"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_electronic_road_toll_equipment"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "==": [
+                    {
+                      "var": "is_medical_device"
+                    },
+                    true
+                  ]
+                },
+                {
+                  "==": [
+                    {
+                      "var": "is_in_vitro_diagnostic"
+                    },
+                    true
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_3_3_f_fraud_protection",
+      "label": "Article 3(3)(f): money transfer, protection from fraud",
+      "when": {
+        "and": [
+          {
+            "==": [
+              {
+                "var": "communicates_over_internet"
+              },
+              true
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "transfers_money_or_value"
+              },
+              true
+            ]
+          },
+          {
+            "!": {
+              "or": [
+                {
+                  "or": [
+                    {
+                      "==": [
+                        {
+                          "var": "is_civil_aviation_product"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_exclusively_vehicle_component"
+                        },
+                        true
+                      ]
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "is_electronic_road_toll_equipment"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "==": [
+                    {
+                      "var": "is_medical_device"
+                    },
+                    true
+                  ]
+                },
+                {
+                  "==": [
+                    {
+                      "var": "is_in_vitro_diagnostic"
+                    },
+                    true
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_3_3_g_emergency_caller_location",
+      "label": "Article 3(3)(g): smartphone, emergency caller location",
+      "when": {
+        "==": [
+          {
+            "var": "is_smartphone"
+          },
+          true
+        ]
+      }
+    },
+    {
+      "id": "common_charger",
+      "label": "Article 3(4): common charger category",
+      "when": {
+        "and": [
+          {
+            "in": [
+              {
+                "var": "common_charger_category"
+              },
+              [
+                "Mobile phone",
+                "Tablet",
+                "Digital camera",
+                "Headphones",
+                "Headset",
+                "Handheld videogame console",
+                "Portable speaker",
+                "E-reader",
+                "Keyboard",
+                "Mouse",
+                "Portable navigation system",
+                "Earbuds",
+                "Laptop"
+              ]
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "rechargeable_via_wired_charging"
+              },
+              true
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "requirements": [
+    {
+      "id": "art_3_1_a_health_protection",
+      "label": "Protect the health of persons and domestic animals, for example from exposure to the equipment's radio-frequency fields and from acoustic levels",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(1)(a)"
+    },
+    {
+      "id": "art_3_1_a_general_conditions",
+      "label": "Mark the essential characteristics, make the equipment and its parts safe to assemble and connect, and design it against the electrical and external hazards below, with no voltage limit",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(1)(a); Directive 2014/35/EU, Annex I(1)"
+    },
+    {
+      "id": "art_3_1_a_contact_protection",
+      "label": "Protect persons and domestic animals against injury from direct or indirect contact",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(1)(a); Directive 2014/35/EU, Annex I(2)(a)"
+    },
+    {
+      "id": "art_3_1_a_temperature_arcs_radiation",
+      "label": "Prevent dangerous temperatures, arcs or radiation",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(1)(a); Directive 2014/35/EU, Annex I(2)(b)"
+    },
+    {
+      "id": "art_3_1_a_non_electrical_hazards",
+      "label": "Protect persons, domestic animals and property against non-electrical dangers known from experience",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(1)(a); Directive 2014/35/EU, Annex I(2)(c)"
+    },
+    {
+      "id": "art_3_1_a_insulation",
+      "label": "Provide insulation suitable for foreseeable conditions",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(1)(a); Directive 2014/35/EU, Annex I(2)(d)"
+    },
+    {
+      "id": "art_3_1_a_mechanical_requirements",
+      "label": "Meet the expected mechanical requirements so persons, domestic animals and property are not endangered",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(1)(a); Directive 2014/35/EU, Annex I(3)(a)"
+    },
+    {
+      "id": "art_3_1_a_non_mechanical_influences",
+      "label": "Resist non-mechanical influences in the expected environmental conditions",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(1)(a); Directive 2014/35/EU, Annex I(3)(b)"
+    },
+    {
+      "id": "art_3_1_a_overload",
+      "label": "Do not endanger persons, domestic animals or property in foreseeable overload conditions",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(1)(a); Directive 2014/35/EU, Annex I(3)(c)"
+    },
+    {
+      "id": "art_3_1_b_emc",
+      "label": "Ensure an adequate level of electromagnetic compatibility",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(1)(b)"
+    },
+    {
+      "id": "art_3_2_effective_use_of_spectrum",
+      "label": "Use radio spectrum effectively and efficiently, so as to avoid harmful interference",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(2)"
+    },
+    {
+      "id": "art_3_3_d_no_harm_to_network",
+      "label": "Do not harm the network or its functioning, nor misuse network resources",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(3)(d); Delegated Regulation (EU) 2022/30, Art. 1(1)",
+      "applies_to_classes": [
+        "art_3_3_d_network_protection"
+      ],
+      "applies_from": "2025-08-01",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2025-08-01"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2025-08-01"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_3_3_e_protect_personal_data",
+      "label": "Incorporate safeguards to protect the personal data and privacy of the user and subscriber",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(3)(e); Delegated Regulation (EU) 2022/30, Art. 1(2)",
+      "applies_to_classes": [
+        "art_3_3_e_privacy"
+      ],
+      "applies_from": "2025-08-01",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2025-08-01"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2025-08-01"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_3_3_f_protect_from_fraud",
+      "label": "Support features that ensure protection from fraud",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(3)(f); Delegated Regulation (EU) 2022/30, Art. 1(3)",
+      "applies_to_classes": [
+        "art_3_3_f_fraud_protection"
+      ],
+      "applies_from": "2025-08-01",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2025-08-01"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2025-08-01"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_3_3_g_emergency_caller_location",
+      "label": "Support features that ensure access to emergency services, including caller location from satellite and Wi-Fi positioning",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(3)(g); Delegated Regulation (EU) 2019/320",
+      "applies_to_classes": [
+        "art_3_3_g_emergency_caller_location"
+      ],
+      "applies_from": "2022-03-17",
+      "applies_when": {
+        "or": [
+          {
+            ">=": [
+              {
+                "var": "hardware_first_placed_on_market"
+              },
+              "2022-03-17"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "hardware_still_placed_on_market"
+              },
+              true
+            ]
+          },
+          {
+            ">=": [
+              {
+                "var": "hardware_last_placed_on_market"
+              },
+              "2022-03-17"
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "hardware_first_placed_on_market"
+                  },
+                  null
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "hardware_still_placed_on_market"
+                  },
+                  null
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_3_4_usb_c_receptacle",
+      "label": "Fit a USB Type-C receptacle for wired charging, and keep charging working with any compatible charger",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(4), Annex Ia Part I; Directive (EU) 2022/2380",
+      "applies_to_classes": [
+        "common_charger"
+      ],
+      "applies_from": "2024-12-28",
+      "applies_when": {
+        "or": [
+          {
+            "and": [
+              {
+                "!=": [
+                  {
+                    "var": "common_charger_category"
+                  },
+                  "Laptop"
+                ]
+              },
+              {
+                "or": [
+                  {
+                    ">=": [
+                      {
+                        "var": "hardware_first_placed_on_market"
+                      },
+                      "2024-12-28"
+                    ]
+                  },
+                  {
+                    "==": [
+                      {
+                        "var": "hardware_still_placed_on_market"
+                      },
+                      true
+                    ]
+                  },
+                  {
+                    ">=": [
+                      {
+                        "var": "hardware_last_placed_on_market"
+                      },
+                      "2024-12-28"
+                    ]
+                  },
+                  {
+                    "and": [
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_first_placed_on_market"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_still_placed_on_market"
+                          },
+                          null
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "common_charger_category"
+                  },
+                  "Laptop"
+                ]
+              },
+              {
+                "or": [
+                  {
+                    ">=": [
+                      {
+                        "var": "hardware_first_placed_on_market"
+                      },
+                      "2026-04-28"
+                    ]
+                  },
+                  {
+                    "==": [
+                      {
+                        "var": "hardware_still_placed_on_market"
+                      },
+                      true
+                    ]
+                  },
+                  {
+                    ">=": [
+                      {
+                        "var": "hardware_last_placed_on_market"
+                      },
+                      "2026-04-28"
+                    ]
+                  },
+                  {
+                    "and": [
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_first_placed_on_market"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_still_placed_on_market"
+                          },
+                          null
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_3_4_usb_power_delivery",
+      "label": "Support the USB Power Delivery protocol, because charging needs more than 5 V, 3 A or 15 W",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 3(4), Annex Ia Part I; Directive (EU) 2022/2380",
+      "applies_to_classes": [
+        "common_charger"
+      ],
+      "applies_from": "2024-12-28",
+      "applies_when": {
+        "and": [
+          {
+            "==": [
+              {
+                "var": "wired_charging_above_15w"
+              },
+              true
+            ]
+          },
+          {
+            "or": [
+              {
+                "and": [
+                  {
+                    "!=": [
+                      {
+                        "var": "common_charger_category"
+                      },
+                      "Laptop"
+                    ]
+                  },
+                  {
+                    "or": [
+                      {
+                        ">=": [
+                          {
+                            "var": "hardware_first_placed_on_market"
+                          },
+                          "2024-12-28"
+                        ]
+                      },
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_still_placed_on_market"
+                          },
+                          true
+                        ]
+                      },
+                      {
+                        ">=": [
+                          {
+                            "var": "hardware_last_placed_on_market"
+                          },
+                          "2024-12-28"
+                        ]
+                      },
+                      {
+                        "and": [
+                          {
+                            "==": [
+                              {
+                                "var": "hardware_first_placed_on_market"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "hardware_still_placed_on_market"
+                              },
+                              null
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "and": [
+                  {
+                    "==": [
+                      {
+                        "var": "common_charger_category"
+                      },
+                      "Laptop"
+                    ]
+                  },
+                  {
+                    "or": [
+                      {
+                        ">=": [
+                          {
+                            "var": "hardware_first_placed_on_market"
+                          },
+                          "2026-04-28"
+                        ]
+                      },
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_still_placed_on_market"
+                          },
+                          true
+                        ]
+                      },
+                      {
+                        ">=": [
+                          {
+                            "var": "hardware_last_placed_on_market"
+                          },
+                          "2026-04-28"
+                        ]
+                      },
+                      {
+                        "and": [
+                          {
+                            "==": [
+                              {
+                                "var": "hardware_first_placed_on_market"
+                              },
+                              null
+                            ]
+                          },
+                          {
+                            "==": [
+                              {
+                                "var": "hardware_still_placed_on_market"
+                              },
+                              null
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_3a_offer_without_charger",
+      "label": "Offer the product also without a charging device",
+      "roles": [
+        "manufacturer",
+        "importer",
+        "distributor"
+      ],
+      "ref": "Art. 3a; Directive (EU) 2022/2380",
+      "applies_to_classes": [
+        "common_charger"
+      ],
+      "applies_from": "2024-12-28",
+      "applies_when": {
+        "or": [
+          {
+            "and": [
+              {
+                "!=": [
+                  {
+                    "var": "common_charger_category"
+                  },
+                  "Laptop"
+                ]
+              },
+              {
+                "or": [
+                  {
+                    ">=": [
+                      {
+                        "var": "hardware_first_placed_on_market"
+                      },
+                      "2024-12-28"
+                    ]
+                  },
+                  {
+                    "==": [
+                      {
+                        "var": "hardware_still_placed_on_market"
+                      },
+                      true
+                    ]
+                  },
+                  {
+                    ">=": [
+                      {
+                        "var": "hardware_last_placed_on_market"
+                      },
+                      "2024-12-28"
+                    ]
+                  },
+                  {
+                    "and": [
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_first_placed_on_market"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_still_placed_on_market"
+                          },
+                          null
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "common_charger_category"
+                  },
+                  "Laptop"
+                ]
+              },
+              {
+                "or": [
+                  {
+                    ">=": [
+                      {
+                        "var": "hardware_first_placed_on_market"
+                      },
+                      "2026-04-28"
+                    ]
+                  },
+                  {
+                    "==": [
+                      {
+                        "var": "hardware_still_placed_on_market"
+                      },
+                      true
+                    ]
+                  },
+                  {
+                    ">=": [
+                      {
+                        "var": "hardware_last_placed_on_market"
+                      },
+                      "2026-04-28"
+                    ]
+                  },
+                  {
+                    "and": [
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_first_placed_on_market"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_still_placed_on_market"
+                          },
+                          null
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_10_8_charging_information",
+      "label": "Show the charger pictogram and label, and state the charging power and USB Power Delivery support",
+      "roles": [
+        "manufacturer",
+        "importer",
+        "distributor"
+      ],
+      "ref": "Art. 10(8), Annex Ic; Directive (EU) 2022/2380",
+      "applies_to_classes": [
+        "common_charger"
+      ],
+      "applies_from": "2024-12-28",
+      "applies_when": {
+        "or": [
+          {
+            "and": [
+              {
+                "!=": [
+                  {
+                    "var": "common_charger_category"
+                  },
+                  "Laptop"
+                ]
+              },
+              {
+                "or": [
+                  {
+                    ">=": [
+                      {
+                        "var": "hardware_first_placed_on_market"
+                      },
+                      "2024-12-28"
+                    ]
+                  },
+                  {
+                    "==": [
+                      {
+                        "var": "hardware_still_placed_on_market"
+                      },
+                      true
+                    ]
+                  },
+                  {
+                    ">=": [
+                      {
+                        "var": "hardware_last_placed_on_market"
+                      },
+                      "2024-12-28"
+                    ]
+                  },
+                  {
+                    "and": [
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_first_placed_on_market"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_still_placed_on_market"
+                          },
+                          null
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "and": [
+              {
+                "==": [
+                  {
+                    "var": "common_charger_category"
+                  },
+                  "Laptop"
+                ]
+              },
+              {
+                "or": [
+                  {
+                    ">=": [
+                      {
+                        "var": "hardware_first_placed_on_market"
+                      },
+                      "2026-04-28"
+                    ]
+                  },
+                  {
+                    "==": [
+                      {
+                        "var": "hardware_still_placed_on_market"
+                      },
+                      true
+                    ]
+                  },
+                  {
+                    ">=": [
+                      {
+                        "var": "hardware_last_placed_on_market"
+                      },
+                      "2026-04-28"
+                    ]
+                  },
+                  {
+                    "and": [
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_first_placed_on_market"
+                          },
+                          null
+                        ]
+                      },
+                      {
+                        "==": [
+                          {
+                            "var": "hardware_still_placed_on_market"
+                          },
+                          null
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "art_10_2_operable_in_a_member_state",
+      "label": "Construct the equipment so that it can be operated in at least one Member State without infringing the rules on radio spectrum use",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 10(2)"
+    },
+    {
+      "id": "art_10_3_conformity_assessment",
+      "label": "Draw up the technical documentation and carry out the conformity assessment procedure",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 10(3), Art. 17, Art. 21, Annex V; Blue Guide 4.3, 5.1"
+    },
+    {
+      "id": "art_10_4_series_production",
+      "label": "Have procedures so that series production remains in conformity, taking account of design changes and new standards",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 10(5)"
+    },
+    {
+      "id": "art_10_identification",
+      "label": "Mark the equipment with a type, batch or serial number, and your name, trade name or mark and postal address",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 10(6)-(7)"
+    },
+    {
+      "id": "art_10_8_instructions_and_frequency_information",
+      "label": "Supply instructions and safety information in a language the users understand, including the frequency bands and maximum radio-frequency power",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 10(8)"
+    },
+    {
+      "id": "art_10_9_declaration_of_conformity",
+      "label": "Draw up the EU declaration of conformity and supply it, or a simplified version, with each item",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 10(9), Art. 18, Annexes VI and VII; Blue Guide 4.4"
+    },
+    {
+      "id": "art_10_10_member_state_restrictions",
+      "label": "Indicate on the packaging any restrictions on putting into service or requirements for authorisation of use in Member States",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 10(10)"
+    },
+    {
+      "id": "art_19_20_ce_marking",
+      "label": "Affix the CE marking, with the notified body's number where a notified body was involved",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 19, Art. 20; Blue Guide 4.5.1"
+    },
+    {
+      "id": "art_10_retain_documentation",
+      "label": "Keep the technical documentation and the EU declaration of conformity for 10 years after the equipment has been placed on the market",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 10(4)"
+    },
+    {
+      "id": "art_10_corrective_action_and_cooperation",
+      "label": "Take corrective action for non-conforming equipment, inform the authorities of risks, and cooperate with them",
+      "roles": [
+        "manufacturer"
+      ],
+      "ref": "Art. 10(11)-(12)"
+    },
+    {
+      "id": "art_11_authorised_representative_tasks",
+      "label": "Keep the declaration and technical documentation available to authorities, provide information on request, and cooperate on corrective action, under a written mandate",
+      "roles": [
+        "authorised_representative"
+      ],
+      "ref": "Art. 11; Blue Guide 3.2"
+    },
+    {
+      "id": "art_12_importer_checks",
+      "label": "Before placing on the market, check the conformity assessment, technical documentation, CE marking, required documents, and the manufacturer's identification",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 12; Blue Guide 3.3"
+    },
+    {
+      "id": "art_12_importer_identification",
+      "label": "Mark the equipment with your name, trade name or mark and postal address, and supply instructions and safety information in a language the users understand",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 12"
+    },
+    {
+      "id": "art_12_importer_storage_and_cooperation",
+      "label": "Keep storage and transport conditions from compromising conformity; sample-test, keep a register of complaints and recalls, take corrective action, keep the declaration for 10 years, and cooperate with authorities",
+      "roles": [
+        "importer"
+      ],
+      "ref": "Art. 12"
+    },
+    {
+      "id": "art_13_distributor_checks",
+      "label": "Before making available, check the CE marking, the required documents and instructions, and the manufacturer's and importer's identification",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 13; Blue Guide 3.4"
+    },
+    {
+      "id": "art_13_distributor_cooperation",
+      "label": "Keep storage and transport conditions from compromising conformity, take corrective action, and cooperate with authorities",
+      "roles": [
+        "distributor"
+      ],
+      "ref": "Art. 13"
+    }
+  ],
+  "assessment_routes": [
+    {
+      "id": "module_a_internal_control",
+      "label": "Internal production control (module A, Annex II)",
+      "allowed_when": {
+        "and": [
+          {
+            "==": [
+              {
+                "var": "harmonised_standards_art_3_2_applied_in_full"
+              },
+              true
+            ]
+          },
+          {
+            "or": [
+              {
+                "!": {
+                  "or": [
+                    {
+                      "or": [
+                        {
+                          "var": "class__art_3_3_d_network_protection"
+                        },
+                        {
+                          "var": "class__art_3_3_e_privacy"
+                        },
+                        {
+                          "var": "class__art_3_3_f_fraud_protection"
+                        }
+                      ]
+                    },
+                    {
+                      "var": "class__art_3_3_g_emergency_caller_location"
+                    }
+                  ]
+                }
+              },
+              {
+                "==": [
+                  {
+                    "var": "harmonised_standards_art_3_3_applied_in_full"
+                  },
+                  true
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "module_b_c_type_examination",
+      "label": "EU-type examination with conformity to type (modules B and C, Annex III)",
+      "allowed_when": true
+    },
+    {
+      "id": "module_h_full_quality_assurance",
+      "label": "Full quality assurance (module H, Annex IV)",
+      "allowed_when": true
+    }
+  ],
+  "finding_rules": [
+    {
+      "id": "notified_body_required",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "!": {
+              "and": [
+                {
+                  "==": [
+                    {
+                      "var": "harmonised_standards_art_3_2_applied_in_full"
+                    },
+                    true
+                  ]
+                },
+                {
+                  "or": [
+                    {
+                      "!": {
+                        "or": [
+                          {
+                            "or": [
+                              {
+                                "var": "class__art_3_3_d_network_protection"
+                              },
+                              {
+                                "var": "class__art_3_3_e_privacy"
+                              },
+                              {
+                                "var": "class__art_3_3_f_fraud_protection"
+                              }
+                            ]
+                          },
+                          {
+                            "var": "class__art_3_3_g_emergency_caller_location"
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "==": [
+                        {
+                          "var": "harmonised_standards_art_3_3_applied_in_full"
+                        },
+                        true
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "message": "Harmonised standards were not applied in full for Article 3(2) or for the Article 3(3) requirements that apply: a notified body must be involved (modules B+C or H).",
+      "ref": "Art. 17(4); Blue Guide 4.1.2, 5.1"
+    },
+    {
+      "id": "dormant_radio",
+      "level": "caution",
+      "when": {
+        "and": [
+          {
+            "==": [
+              {
+                "var": "wireless_interface_capability"
+              },
+              "present"
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "wireless_enablement"
+              },
+              "disabled_manufacturer_update_only"
+            ]
+          }
+        ]
+      },
+      "message": "Radio hardware is present but disabled; enabling it by update or option makes the product radio equipment and requires re-assessment.",
+      "ref": "Art. 2(1)(1)"
+    },
+    {
+      "id": "physically_disabled_radio",
+      "level": "info",
+      "when": {
+        "==": [
+          {
+            "var": "wireless_interface_capability"
+          },
+          "present_physically_disabled"
+        ]
+      },
+      "message": "A radio that cannot emit or receive is not treated as radio equipment; if it is made operable again, the RED applies.",
+      "ref": "Art. 2(1)(1)"
+    },
+    {
+      "id": "user_enableable_radio",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "wireless_enablement"
+              },
+              "disabled_user_enableable"
+            ]
+          }
+        ]
+      },
+      "message": "The user can switch the radio on, so the product is radio equipment even when shipped with it off.",
+      "ref": "Art. 2(1)(1)"
+    },
+    {
+      "id": "operator_becomes_manufacturer",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "and": [
+              {
+                "in": [
+                  {
+                    "var": "economic_operator_role"
+                  },
+                  [
+                    "importer",
+                    "distributor"
+                  ]
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "places_under_own_name_or_modifies"
+                  },
+                  true
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "message": "An importer or distributor that places the product under its own name or modifies it in a way that may affect compliance has the manufacturer's obligations.",
+      "ref": "Art. 14; Blue Guide 3.1"
+    },
+    {
+      "id": "steward_not_a_red_role",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "economic_operator_role"
+              },
+              "steward"
+            ]
+          }
+        ]
+      },
+      "message": "The RED has no open-source steward role: whoever places the radio equipment on the market is its manufacturer or importer.",
+      "ref": "Art. 2(1)(12)-(15)"
+    },
+    {
+      "id": "shared_default_credentials",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "and": [
+              {
+                "or": [
+                  {
+                    "var": "class__art_3_3_d_network_protection"
+                  },
+                  {
+                    "var": "class__art_3_3_e_privacy"
+                  },
+                  {
+                    "var": "class__art_3_3_f_fraud_protection"
+                  }
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "default_credentials"
+                  },
+                  "shared_default"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "message": "The same default password on every unit does not meet the network, privacy and fraud protection requirements, and the EN 18031 citation excludes it.",
+      "ref": "Art. 3(3)(d)-(f); EN 18031-1:2024 (authentication), as cited"
+    },
+    {
+      "id": "updates_not_verified",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "and": [
+              {
+                "or": [
+                  {
+                    "var": "class__art_3_3_d_network_protection"
+                  },
+                  {
+                    "var": "class__art_3_3_e_privacy"
+                  },
+                  {
+                    "var": "class__art_3_3_f_fraud_protection"
+                  }
+                ]
+              },
+              {
+                "!=": [
+                  {
+                    "var": "update_mechanism"
+                  },
+                  "none"
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "verifies_update_authenticity"
+                  },
+                  false
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "message": "Updates installed without verifying their authenticity let an attacker replace the software.",
+      "ref": "Art. 3(3)(d)-(f); EN 18031-1:2024 (secure update), as cited"
+    },
+    {
+      "id": "no_update_mechanism",
+      "level": "caution",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "and": [
+              {
+                "or": [
+                  {
+                    "var": "class__art_3_3_d_network_protection"
+                  },
+                  {
+                    "var": "class__art_3_3_e_privacy"
+                  },
+                  {
+                    "var": "class__art_3_3_f_fraud_protection"
+                  }
+                ]
+              },
+              {
+                "==": [
+                  {
+                    "var": "update_mechanism"
+                  },
+                  "none"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "message": "Without an update mechanism, vulnerabilities found after placing on the market cannot be fixed in the field; justify it in the risk assessment.",
+      "ref": "Art. 3(3)(d)-(f)"
+    },
+    {
+      "id": "personal_data_not_encrypted_in_transit",
+      "level": "caution",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "and": [
+              {
+                "var": "class__art_3_3_e_privacy"
+              },
+              {
+                "in": [
+                  {
+                    "var": "encrypts_data_in_transit"
+                  },
+                  [
+                    "none",
+                    "some_channels"
+                  ]
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "message": "Personal data on some external channels is not protected; justify it in the risk assessment or encrypt it.",
+      "ref": "Art. 3(3)(e); EN 18031-2:2024 (secure communication), as cited"
+    },
+    {
+      "id": "cra_also_applies",
+      "level": "info",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "or": [
+              {
+                "var": "class__art_3_3_d_network_protection"
+              },
+              {
+                "var": "class__art_3_3_e_privacy"
+              },
+              {
+                "var": "class__art_3_3_f_fraud_protection"
+              }
+            ]
+          }
+        ]
+      },
+      "message": "From 11 December 2027 the Cyber Resilience Act also covers this product's cybersecurity; assess it with the EU CRA package too.",
+      "ref": "Regulation (EU) 2024/2847"
+    },
+    {
+      "id": "no_safety_risk_assessment",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "safety_risk_assessment_documented"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Document an analysis and assessment of the risks; the technical documentation must include it, and it covers the safety objectives of Art. 3(1)(a).",
+      "ref": "Art. 21, Annex V"
+    },
+    {
+      "id": "technical_documentation_incomplete",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "technical_documentation_complete"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Complete the technical documentation before placing the product on the market.",
+      "ref": "Art. 10(3), Art. 21, Annex V"
+    },
+    {
+      "id": "ratings_not_marked",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "electrical_ratings_marked"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Mark the electrical ratings and other essential characteristics on the equipment, or in an accompanying document.",
+      "ref": "Art. 3(1)(a); Directive 2014/35/EU, Annex I(1)"
+    },
+    {
+      "id": "no_declaration_of_conformity",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "eu_declaration_of_conformity_drawn_up"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Draw up the EU declaration of conformity before placing the product on the market.",
+      "ref": "Art. 10(9), Art. 18"
+    },
+    {
+      "id": "no_ce_marking",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "ce_marking_affixed"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Affix the CE marking before placing the product on the market.",
+      "ref": "Art. 19, Art. 20"
+    },
+    {
+      "id": "identification_missing",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "product_identification_marked"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Mark a type, batch or serial number and the manufacturer's name and postal address on the units, or on the packaging or documents where that is not possible.",
+      "ref": "Art. 10(6)-(7)"
+    },
+    {
+      "id": "instructions_not_in_local_languages",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "safety_instructions_in_local_languages"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Supply instructions and safety information in a language easily understood by users in every Member State where the product is sold.",
+      "ref": "Art. 10(8), Art. 12, Art. 13"
+    },
+    {
+      "id": "supplier_documents_not_verified",
+      "level": "action_required",
+      "when": {
+        "and": [
+          {
+            "and": [
+              {
+                "and": [
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "product_form"
+                        },
+                        [
+                          "standalone_software",
+                          "software_component"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!": {
+                      "in": [
+                        {
+                          "var": "wireless_interface_capability"
+                        },
+                        [
+                          "not_present",
+                          "present_physically_disabled"
+                        ]
+                      ]
+                    }
+                  },
+                  {
+                    "!=": [
+                      {
+                        "var": "wireless_enablement"
+                      },
+                      "disabled_manufacturer_update_only"
+                    ]
+                  }
+                ]
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_commercial_activity"
+                    },
+                    false
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_amateur_radio_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_marine_equipment"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_civil_aviation_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_custom_evaluation_kit"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_defence_product"
+                    },
+                    true
+                  ]
+                }
+              },
+              {
+                "!": {
+                  "==": [
+                    {
+                      "var": "is_exclusively_national_security_product"
+                    },
+                    true
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "supplier_conformity_checked"
+              },
+              false
+            ]
+          }
+        ]
+      },
+      "message": "Check the CE marking, the instructions and safety information and the identification of the manufacturer and importer before supplying the product.",
+      "ref": "Art. 12, Art. 13"
+    },
+    {
+      "id": "delegated_regulation_2022_30_coverage",
+      "level": "info",
+      "when": {
+        "or": [
+          {
+            "==": [
+              {
+                "var": "class__art_3_3_d_network_protection"
+              },
+              true
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "class__art_3_3_e_privacy"
+              },
+              true
+            ]
+          },
+          {
+            "==": [
+              {
+                "var": "class__art_3_3_f_fraud_protection"
+              },
+              true
+            ]
+          }
+        ]
+      },
+      "message": "Art. 3(3)(d), (e) and (f) are switched on by Delegated Regulation (EU) 2022/30. This package models only its Arts. 1-2: which of the three requirements apply to the product and the exemptions. It is an own summary and has not been legally reviewed, so it does not show that the delegated regulation is fully met. Check the product against the regulation itself and the cited harmonised standards.",
+      "ref": "Delegated Regulation (EU) 2022/30, Arts. 1-2"
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "demo-seed-aavistin-community-release-out-of-scope",
+      "answers": {
+        "product_form": "standalone_software",
+        "has_data_connection": true,
+        "wireless_interface_capability": "not_present",
+        "is_free_and_open_source": true,
+        "economic_operator_role": "manufacturer",
+        "is_commercial_activity": false
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": []
+      }
+    },
+    {
+      "id": "demo-seed-aavistin-paid-support-out-of-scope",
+      "answers": {
+        "product_form": "standalone_software",
+        "has_data_connection": true,
+        "wireless_interface_capability": "not_present",
+        "is_free_and_open_source": true,
+        "economic_operator_role": "manufacturer",
+        "is_commercial_activity": true
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": []
+      }
+    },
+    {
+      "id": "wifi-device-in-scope",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "harmonised_standards_art_3_2_applied_in_full": true,
+        "harmonised_standards_art_3_3_applied_in_full": true
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": []
+      }
+    },
+    {
+      "id": "unanswered-radio-hides-nothing",
+      "answers": {},
+      "expected": {
+        "in_scope": true
+      }
+    },
+    {
+      "id": "software-alone-is-not-radio-equipment",
+      "answers": {
+        "product_form": "standalone_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "radio-module-component-in-scope",
+      "answers": {
+        "product_form": "hardware_component",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "harmonised_standards_art_3_2_applied_in_full": true,
+        "harmonised_standards_art_3_3_applied_in_full": true
+      },
+      "expected": {
+        "in_scope": true
+      }
+    },
+    {
+      "id": "no-radio-out-of-scope",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "not_present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "physically-disabled-radio-out-of-scope",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present_physically_disabled",
+        "wireless_enablement": null,
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "physically_disabled_radio"
+        ]
+      }
+    },
+    {
+      "id": "radio-enableable-only-by-update-is-dormant",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "disabled_manufacturer_update_only",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer"
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": [
+          "dormant_radio"
+        ]
+      }
+    },
+    {
+      "id": "user-enableable-radio-in-scope",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "disabled_user_enableable",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "harmonised_standards_art_3_2_applied_in_full": true,
+        "harmonised_standards_art_3_3_applied_in_full": true
+      },
+      "expected": {
+        "in_scope": true,
+        "findings": [
+          "user_enableable_radio"
+        ]
+      }
+    },
+    {
+      "id": "not-commercial-activity-excluded",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": false,
+        "economic_operator_role": "manufacturer"
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "amateur-radio-kit-excluded",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "is_amateur_radio_equipment": true
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "marine-equipment-excluded",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "is_marine_equipment": true
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "airborne-equipment-excluded",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "is_civil_aviation_product": true
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "evaluation-kit-excluded",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "is_custom_evaluation_kit": true
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "defence-excluded",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "is_exclusively_defence_product": true
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "state-security-excluded",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "is_exclusively_national_security_product": true
+      },
+      "expected": {
+        "in_scope": false
+      }
+    },
+    {
+      "id": "local-only-radio-has-no-cyber-category",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": false,
+        "processes_personal_data": true
+      },
+      "expected": {
+        "classifications": []
+      }
+    },
+    {
+      "id": "internet-connected-camera",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": true,
+        "processes_personal_data": true,
+        "transfers_money_or_value": false
+      },
+      "expected": {
+        "classifications": [
+          "art_3_3_d_network_protection",
+          "art_3_3_e_privacy"
+        ]
+      }
+    },
+    {
+      "id": "payment-terminal-all-three",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": true,
+        "processes_personal_data": true,
+        "transfers_money_or_value": true
+      },
+      "expected": {
+        "classifications": [
+          "art_3_3_d_network_protection",
+          "art_3_3_e_privacy",
+          "art_3_3_f_fraud_protection"
+        ]
+      }
+    },
+    {
+      "id": "offline-wearable-with-personal-data",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": false,
+        "is_wearable": true,
+        "processes_personal_data": true
+      },
+      "expected": {
+        "classifications": [
+          "art_3_3_e_privacy"
+        ]
+      }
+    },
+    {
+      "id": "baby-monitor-local-only",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": false,
+        "is_childcare_product": true,
+        "processes_personal_data": true
+      },
+      "expected": {
+        "classifications": [
+          "art_3_3_e_privacy"
+        ]
+      }
+    },
+    {
+      "id": "radio-toy-without-personal-data",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": false,
+        "is_toy": true,
+        "processes_personal_data": false
+      },
+      "expected": {
+        "classifications": []
+      }
+    },
+    {
+      "id": "medical-device-exempt-from-all-three",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": true,
+        "processes_personal_data": true,
+        "transfers_money_or_value": true,
+        "is_medical_device": true
+      },
+      "expected": {
+        "classifications": []
+      }
+    },
+    {
+      "id": "vehicle-component-exempt-from-privacy-and-fraud",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": true,
+        "processes_personal_data": true,
+        "is_exclusively_vehicle_component": true
+      },
+      "expected": {
+        "in_scope": true,
+        "classifications": [
+          "art_3_3_d_network_protection"
+        ]
+      }
+    },
+    {
+      "id": "road-toll-unit-exempt-from-privacy-and-fraud",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": true,
+        "processes_personal_data": true,
+        "is_electronic_road_toll_equipment": true
+      },
+      "expected": {
+        "classifications": [
+          "art_3_3_d_network_protection"
+        ]
+      }
+    },
+    {
+      "id": "smartphone",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "common_charger_category": "Mobile phone",
+        "is_smartphone": true,
+        "rechargeable_via_wired_charging": true,
+        "communicates_over_internet": true,
+        "processes_personal_data": true,
+        "transfers_money_or_value": true
+      },
+      "expected": {
+        "classifications": [
+          "art_3_3_d_network_protection",
+          "art_3_3_e_privacy",
+          "art_3_3_f_fraud_protection",
+          "art_3_3_g_emergency_caller_location",
+          "common_charger"
+        ]
+      }
+    },
+    {
+      "id": "headphones-without-cable-charging-not-common-charger",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "common_charger_category": "Headphones",
+        "rechargeable_via_wired_charging": false
+      },
+      "expected": {
+        "classifications": []
+      }
+    },
+    {
+      "id": "standards-in-full-allow-internal-control",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": true,
+        "harmonised_standards_art_3_2_applied_in_full": true,
+        "harmonised_standards_art_3_3_applied_in_full": true
+      },
+      "expected": {
+        "assessment_routes": [
+          "module_a_internal_control",
+          "module_b_c_type_examination",
+          "module_h_full_quality_assurance"
+        ],
+        "findings": [
+          "cra_also_applies",
+          "delegated_regulation_2022_30_coverage"
+        ]
+      }
+    },
+    {
+      "id": "spectrum-standard-only-partly-applied",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "harmonised_standards_art_3_2_applied_in_full": false
+      },
+      "expected": {
+        "assessment_routes": [
+          "module_b_c_type_examination",
+          "module_h_full_quality_assurance"
+        ],
+        "findings": [
+          "notified_body_required"
+        ]
+      }
+    },
+    {
+      "id": "en-18031-restricted-option-needs-notified-body",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": true,
+        "harmonised_standards_art_3_2_applied_in_full": true,
+        "harmonised_standards_art_3_3_applied_in_full": false
+      },
+      "expected": {
+        "assessment_routes": [
+          "module_b_c_type_examination",
+          "module_h_full_quality_assurance"
+        ],
+        "findings": [
+          "notified_body_required",
+          "cra_also_applies",
+          "delegated_regulation_2022_30_coverage"
+        ]
+      }
+    },
+    {
+      "id": "no-art-3-3-category-needs-only-spectrum-standards",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": false,
+        "harmonised_standards_art_3_2_applied_in_full": true
+      },
+      "expected": {
+        "assessment_routes": [
+          "module_a_internal_control",
+          "module_b_c_type_examination",
+          "module_h_full_quality_assurance"
+        ],
+        "findings": []
+      }
+    },
+    {
+      "id": "security-gaps-raise-findings",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": true,
+        "processes_personal_data": true,
+        "harmonised_standards_art_3_2_applied_in_full": true,
+        "harmonised_standards_art_3_3_applied_in_full": true,
+        "requires_user_authentication": true,
+        "default_credentials": "shared_default",
+        "update_mechanism": "manual",
+        "verifies_update_authenticity": false,
+        "encrypts_data_in_transit": "some_channels"
+      },
+      "expected": {
+        "findings": [
+          "shared_default_credentials",
+          "updates_not_verified",
+          "personal_data_not_encrypted_in_transit",
+          "cra_also_applies",
+          "delegated_regulation_2022_30_coverage"
+        ]
+      }
+    },
+    {
+      "id": "no-update-mechanism-caution",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": true,
+        "harmonised_standards_art_3_2_applied_in_full": true,
+        "harmonised_standards_art_3_3_applied_in_full": true,
+        "update_mechanism": "none"
+      },
+      "expected": {
+        "findings": [
+          "no_update_mechanism",
+          "cra_also_applies",
+          "delegated_regulation_2022_30_coverage"
+        ]
+      }
+    },
+    {
+      "id": "steward-has-no-red-role",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "steward",
+        "harmonised_standards_art_3_2_applied_in_full": true,
+        "harmonised_standards_art_3_3_applied_in_full": true
+      },
+      "expected": {
+        "findings": [
+          "steward_not_a_red_role"
+        ]
+      }
+    },
+    {
+      "id": "manufacturer-of-local-radio",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": false,
+        "common_charger_category": "None of these",
+        "hardware_first_placed_on_market": "2024-03-01",
+        "hardware_still_placed_on_market": true
+      },
+      "expected": {
+        "requirements": [
+          "art_3_1_a_health_protection",
+          "art_3_1_a_general_conditions",
+          "art_3_1_a_contact_protection",
+          "art_3_1_a_temperature_arcs_radiation",
+          "art_3_1_a_non_electrical_hazards",
+          "art_3_1_a_insulation",
+          "art_3_1_a_mechanical_requirements",
+          "art_3_1_a_non_mechanical_influences",
+          "art_3_1_a_overload",
+          "art_3_1_b_emc",
+          "art_3_2_effective_use_of_spectrum",
+          "art_10_2_operable_in_a_member_state",
+          "art_10_3_conformity_assessment",
+          "art_10_4_series_production",
+          "art_10_identification",
+          "art_10_8_instructions_and_frequency_information",
+          "art_10_9_declaration_of_conformity",
+          "art_10_10_member_state_restrictions",
+          "art_19_20_ce_marking",
+          "art_10_retain_documentation",
+          "art_10_corrective_action_and_cooperation"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "cyber-requirements-for-units-placed-from-august-2025",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": true,
+        "processes_personal_data": true,
+        "transfers_money_or_value": false,
+        "common_charger_category": "None of these",
+        "hardware_first_placed_on_market": "2024-03-01",
+        "hardware_still_placed_on_market": true
+      },
+      "expected": {
+        "requirements": [
+          "art_3_1_a_health_protection",
+          "art_3_1_a_general_conditions",
+          "art_3_1_a_contact_protection",
+          "art_3_1_a_temperature_arcs_radiation",
+          "art_3_1_a_non_electrical_hazards",
+          "art_3_1_a_insulation",
+          "art_3_1_a_mechanical_requirements",
+          "art_3_1_a_non_mechanical_influences",
+          "art_3_1_a_overload",
+          "art_3_1_b_emc",
+          "art_3_2_effective_use_of_spectrum",
+          "art_10_2_operable_in_a_member_state",
+          "art_10_3_conformity_assessment",
+          "art_10_4_series_production",
+          "art_10_identification",
+          "art_10_8_instructions_and_frequency_information",
+          "art_10_9_declaration_of_conformity",
+          "art_10_10_member_state_restrictions",
+          "art_19_20_ce_marking",
+          "art_10_retain_documentation",
+          "art_10_corrective_action_and_cooperation",
+          "art_3_3_d_no_harm_to_network",
+          "art_3_3_e_protect_personal_data"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "cyber-requirements-not-for-units-placed-only-before",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": true,
+        "processes_personal_data": true,
+        "common_charger_category": "None of these",
+        "hardware_first_placed_on_market": "2023-01-01",
+        "hardware_still_placed_on_market": false,
+        "hardware_last_placed_on_market": "2025-06-30"
+      },
+      "expected": {
+        "requirements": [
+          "art_3_1_a_health_protection",
+          "art_3_1_a_general_conditions",
+          "art_3_1_a_contact_protection",
+          "art_3_1_a_temperature_arcs_radiation",
+          "art_3_1_a_non_electrical_hazards",
+          "art_3_1_a_insulation",
+          "art_3_1_a_mechanical_requirements",
+          "art_3_1_a_non_mechanical_influences",
+          "art_3_1_a_overload",
+          "art_3_1_b_emc",
+          "art_3_2_effective_use_of_spectrum",
+          "art_10_2_operable_in_a_member_state",
+          "art_10_3_conformity_assessment",
+          "art_10_4_series_production",
+          "art_10_identification",
+          "art_10_8_instructions_and_frequency_information",
+          "art_10_9_declaration_of_conformity",
+          "art_10_10_member_state_restrictions",
+          "art_19_20_ce_marking",
+          "art_10_retain_documentation",
+          "art_10_corrective_action_and_cooperation"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "cyber-requirements-upcoming-before-august-2025",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": true,
+        "common_charger_category": "None of these",
+        "hardware_still_placed_on_market": true
+      },
+      "expected": {
+        "requirements": [
+          "art_3_1_a_health_protection",
+          "art_3_1_a_general_conditions",
+          "art_3_1_a_contact_protection",
+          "art_3_1_a_temperature_arcs_radiation",
+          "art_3_1_a_non_electrical_hazards",
+          "art_3_1_a_insulation",
+          "art_3_1_a_mechanical_requirements",
+          "art_3_1_a_non_mechanical_influences",
+          "art_3_1_a_overload",
+          "art_3_1_b_emc",
+          "art_3_2_effective_use_of_spectrum",
+          "art_10_2_operable_in_a_member_state",
+          "art_10_3_conformity_assessment",
+          "art_10_4_series_production",
+          "art_10_identification",
+          "art_10_8_instructions_and_frequency_information",
+          "art_10_9_declaration_of_conformity",
+          "art_10_10_member_state_restrictions",
+          "art_19_20_ce_marking",
+          "art_10_retain_documentation",
+          "art_10_corrective_action_and_cooperation"
+        ]
+      },
+      "as_of": "2025-03-01"
+    },
+    {
+      "id": "headphones-common-charger",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "common_charger_category": "Headphones",
+        "rechargeable_via_wired_charging": true,
+        "wired_charging_above_15w": false,
+        "communicates_over_internet": false,
+        "hardware_first_placed_on_market": "2025-02-01",
+        "hardware_still_placed_on_market": true
+      },
+      "expected": {
+        "requirements": [
+          "art_3_1_a_health_protection",
+          "art_3_1_a_general_conditions",
+          "art_3_1_a_contact_protection",
+          "art_3_1_a_temperature_arcs_radiation",
+          "art_3_1_a_non_electrical_hazards",
+          "art_3_1_a_insulation",
+          "art_3_1_a_mechanical_requirements",
+          "art_3_1_a_non_mechanical_influences",
+          "art_3_1_a_overload",
+          "art_3_1_b_emc",
+          "art_3_2_effective_use_of_spectrum",
+          "art_10_2_operable_in_a_member_state",
+          "art_10_3_conformity_assessment",
+          "art_10_4_series_production",
+          "art_10_identification",
+          "art_10_8_instructions_and_frequency_information",
+          "art_10_9_declaration_of_conformity",
+          "art_10_10_member_state_restrictions",
+          "art_19_20_ce_marking",
+          "art_10_retain_documentation",
+          "art_10_corrective_action_and_cooperation",
+          "art_3_4_usb_c_receptacle",
+          "art_3a_offer_without_charger",
+          "art_10_8_charging_information"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "laptop-common-charger-from-april-2026",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "common_charger_category": "Laptop",
+        "rechargeable_via_wired_charging": true,
+        "wired_charging_above_15w": true,
+        "communicates_over_internet": false,
+        "hardware_first_placed_on_market": "2025-09-01",
+        "hardware_still_placed_on_market": false,
+        "hardware_last_placed_on_market": "2026-03-31"
+      },
+      "expected": {
+        "requirements": [
+          "art_3_1_a_health_protection",
+          "art_3_1_a_general_conditions",
+          "art_3_1_a_contact_protection",
+          "art_3_1_a_temperature_arcs_radiation",
+          "art_3_1_a_non_electrical_hazards",
+          "art_3_1_a_insulation",
+          "art_3_1_a_mechanical_requirements",
+          "art_3_1_a_non_mechanical_influences",
+          "art_3_1_a_overload",
+          "art_3_1_b_emc",
+          "art_3_2_effective_use_of_spectrum",
+          "art_10_2_operable_in_a_member_state",
+          "art_10_3_conformity_assessment",
+          "art_10_4_series_production",
+          "art_10_identification",
+          "art_10_8_instructions_and_frequency_information",
+          "art_10_9_declaration_of_conformity",
+          "art_10_10_member_state_restrictions",
+          "art_19_20_ce_marking",
+          "art_10_retain_documentation",
+          "art_10_corrective_action_and_cooperation"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "laptop-placed-after-april-2026-needs-usb-pd",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "common_charger_category": "Laptop",
+        "rechargeable_via_wired_charging": true,
+        "wired_charging_above_15w": true,
+        "communicates_over_internet": false,
+        "hardware_first_placed_on_market": "2026-06-01",
+        "hardware_still_placed_on_market": true
+      },
+      "expected": {
+        "requirements": [
+          "art_3_1_a_health_protection",
+          "art_3_1_a_general_conditions",
+          "art_3_1_a_contact_protection",
+          "art_3_1_a_temperature_arcs_radiation",
+          "art_3_1_a_non_electrical_hazards",
+          "art_3_1_a_insulation",
+          "art_3_1_a_mechanical_requirements",
+          "art_3_1_a_non_mechanical_influences",
+          "art_3_1_a_overload",
+          "art_3_1_b_emc",
+          "art_3_2_effective_use_of_spectrum",
+          "art_10_2_operable_in_a_member_state",
+          "art_10_3_conformity_assessment",
+          "art_10_4_series_production",
+          "art_10_identification",
+          "art_10_8_instructions_and_frequency_information",
+          "art_10_9_declaration_of_conformity",
+          "art_10_10_member_state_restrictions",
+          "art_19_20_ce_marking",
+          "art_10_retain_documentation",
+          "art_10_corrective_action_and_cooperation",
+          "art_3_4_usb_c_receptacle",
+          "art_3a_offer_without_charger",
+          "art_10_8_charging_information",
+          "art_3_4_usb_power_delivery"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "importer-obligations",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "importer",
+        "communicates_over_internet": false,
+        "common_charger_category": "None of these"
+      },
+      "expected": {
+        "requirements": [
+          "art_12_importer_checks",
+          "art_12_importer_identification",
+          "art_12_importer_storage_and_cooperation"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "importer-under-own-name-is-manufacturer",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "importer",
+        "places_under_own_name_or_modifies": true,
+        "communicates_over_internet": false,
+        "common_charger_category": "None of these",
+        "harmonised_standards_art_3_2_applied_in_full": true,
+        "harmonised_standards_art_3_3_applied_in_full": true
+      },
+      "expected": {
+        "requirements": [
+          "art_3_1_a_health_protection",
+          "art_3_1_a_general_conditions",
+          "art_3_1_a_contact_protection",
+          "art_3_1_a_temperature_arcs_radiation",
+          "art_3_1_a_non_electrical_hazards",
+          "art_3_1_a_insulation",
+          "art_3_1_a_mechanical_requirements",
+          "art_3_1_a_non_mechanical_influences",
+          "art_3_1_a_overload",
+          "art_3_1_b_emc",
+          "art_3_2_effective_use_of_spectrum",
+          "art_10_2_operable_in_a_member_state",
+          "art_10_3_conformity_assessment",
+          "art_10_4_series_production",
+          "art_10_identification",
+          "art_10_8_instructions_and_frequency_information",
+          "art_10_9_declaration_of_conformity",
+          "art_10_10_member_state_restrictions",
+          "art_19_20_ce_marking",
+          "art_10_retain_documentation",
+          "art_10_corrective_action_and_cooperation"
+        ],
+        "findings": [
+          "operator_becomes_manufacturer"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "distributor-of-headphones",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "distributor",
+        "common_charger_category": "Headphones",
+        "rechargeable_via_wired_charging": true,
+        "communicates_over_internet": false
+      },
+      "expected": {
+        "requirements": [
+          "art_13_distributor_checks",
+          "art_13_distributor_cooperation",
+          "art_3a_offer_without_charger",
+          "art_10_8_charging_information"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "authorised-representative",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "authorised_representative",
+        "communicates_over_internet": false,
+        "common_charger_category": "None of these"
+      },
+      "expected": {
+        "requirements": [
+          "art_11_authorised_representative_tasks"
+        ]
+      },
+      "as_of": "2026-10-01"
+    },
+    {
+      "id": "safety-and-documentation-gaps-raise-findings",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": false,
+        "common_charger_category": "None of these",
+        "hardware_first_placed_on_market": "2024-03-01",
+        "hardware_still_placed_on_market": true,
+        "harmonised_standards_art_3_2_applied_in_full": true,
+        "safety_risk_assessment_documented": false,
+        "technical_documentation_complete": false,
+        "electrical_ratings_marked": false,
+        "eu_declaration_of_conformity_drawn_up": false,
+        "ce_marking_affixed": false,
+        "product_identification_marked": false,
+        "safety_instructions_in_local_languages": false
+      },
+      "expected": {
+        "findings": [
+          "no_safety_risk_assessment",
+          "technical_documentation_incomplete",
+          "ratings_not_marked",
+          "no_declaration_of_conformity",
+          "no_ce_marking",
+          "identification_missing",
+          "instructions_not_in_local_languages"
+        ]
+      }
+    },
+    {
+      "id": "no-radio-no-red-gap-findings",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "not_present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": false,
+        "common_charger_category": "None of these",
+        "hardware_first_placed_on_market": "2024-03-01",
+        "hardware_still_placed_on_market": true,
+        "harmonised_standards_art_3_2_applied_in_full": true,
+        "safety_risk_assessment_documented": false,
+        "technical_documentation_complete": false,
+        "electrical_ratings_marked": false,
+        "eu_declaration_of_conformity_drawn_up": false,
+        "ce_marking_affixed": false,
+        "product_identification_marked": false,
+        "safety_instructions_in_local_languages": false,
+        "supplier_conformity_checked": false
+      },
+      "expected": {
+        "in_scope": false,
+        "findings": []
+      }
+    },
+    {
+      "id": "distributor-not-checking-documents",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "distributor",
+        "communicates_over_internet": false,
+        "common_charger_category": "None of these",
+        "hardware_first_placed_on_market": "2024-03-01",
+        "hardware_still_placed_on_market": true,
+        "harmonised_standards_art_3_2_applied_in_full": true,
+        "places_under_own_name_or_modifies": false,
+        "supplier_conformity_checked": false
+      },
+      "expected": {
+        "findings": [
+          "supplier_documents_not_verified"
+        ]
+      }
+    },
+    {
+      "id": "connected-product-gets-2022-30-coverage-notice",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": true,
+        "processes_personal_data": true
+      },
+      "expected": {
+        "findings": [
+          "notified_body_required",
+          "cra_also_applies",
+          "delegated_regulation_2022_30_coverage"
+        ]
+      }
+    },
+    {
+      "id": "offline-radio-gets-no-2022-30-coverage-notice",
+      "answers": {
+        "product_form": "hardware_with_software",
+        "wireless_interface_capability": "present",
+        "wireless_enablement": "enabled",
+        "is_commercial_activity": true,
+        "economic_operator_role": "manufacturer",
+        "communicates_over_internet": false,
+        "processes_personal_data": false
+      },
+      "expected": {
+        "findings": [
+          "notified_body_required"
+        ]
+      }
+    }
+  ],
+  "supersedes": [
+    {
+      "source": "eu-red",
+      "version": "2014-53@2026-10.3"
+    }
+  ]
+}

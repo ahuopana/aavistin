@@ -31,6 +31,7 @@ General product-law concepts (making available, placing on the market, economic 
 - `1.1.0` (`2014-53@2026-10.1`, supersedes 1.0.0): Art. 3(1)(a) is broken down into health protection and the eight LVD Annex I safety objectives (own summaries; the objectives apply without the LVD voltage limits), and the questionnaire asks the safety and CE-marking process questions that `eu-lvd` asks, with action-required findings for a "no". A radio product is excluded from `eu-lvd`, so without this it lost those checks (ADR 0042). Not legally reviewed either.
 - `1.2.0` (`2014-53@2026-10.2`, supersedes 1.1.0): citation fixes only, no change in behaviour. The Annex I exclusions cite Art. 1(2) and defence or security Art. 1(3) (Art. 1(4) is the LVD disapplication); retention is Art. 10(4), series production Art. 10(5), corrective action Art. 10(11)-(12); the notified-body trigger is Art. 17(4).
 - `1.3.0` (`2014-53@2026-10.3`, supersedes 1.2.0): Art. 3(3)(d) now follows Delegated Regulation 2022/30 Art. 2. Medical and in vitro diagnostic devices are exempt from (d), (e) and (f) (Art. 2(1)); civil aviation, vehicle and road toll products are exempt from (e) and (f) only, so (d) still applies to them (Art. 2(2)). Before, (d) was switched off for aviation, vehicle and toll products and left on for medical devices. Three fixtures are renamed and corrected.
+- `1.4.0` (`2014-53@2026-10.4`, supersedes 1.3.0): states how far Delegated Regulation 2022/30 is followed. The `legal_sources` citation says only Arts. 1-2 are modelled, and the info finding `delegated_regulation_2022_30_coverage` appears whenever Art. 3(3)(d), (e) or (f) applies: own summary, not legally reviewed, not proof that the regulation is met. Two fixtures added; four existing ones now also expect the finding.
 
 ## Known limitations
 
@@ -45,8 +46,8 @@ Import and approve the shared question library first, then this package. Run ins
 ```bash
 docker compose exec web python manage.py import_package packages/common/1.4.0.json --kind question_set --official
 docker compose exec web python manage.py approve_package common 1.4.0
-docker compose exec web python manage.py import_package packages/eu-red/1.3.0.json --kind requirement --official
+docker compose exec web python manage.py import_package packages/eu-red/1.4.0.json --kind requirement --official
 docker compose exec web python manage.py approve_package eu-red "2014-53@2026-10.1"
 ```
 
-Approving 1.3.0 supersedes an approved 1.2.0 (and so on down the chain). The file names are `1.0.0.json`, `1.1.0.json`, `1.2.0.json` and `1.3.0.json`; the package's own `version` field, which `approve_package` keys on, is `2014-53@2026-10`, `2014-53@2026-10.1`, `2014-53@2026-10.2` and `2014-53@2026-10.3`. Content changes always bump that version.
+Approving 1.4.0 supersedes an approved 1.3.0 (and so on down the chain). The file names are `1.0.0.json`, `1.1.0.json`, `1.2.0.json`, `1.3.0.json` and `1.4.0.json`; the package's own `version` field, which `approve_package` keys on, is `2014-53@2026-10`, `2014-53@2026-10.1`, `2014-53@2026-10.2`, `2014-53@2026-10.3` and `2014-53@2026-10.4`. Content changes always bump that version.

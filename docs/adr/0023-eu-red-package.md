@@ -34,3 +34,7 @@ Before the package backs a real compliance decision, check against the Official 
 ## Correction (eu-red 1.3.0)
 
 Checked against the OJ text of Delegated Regulation 2022/30: Art. 2(1) exempts medical and in vitro diagnostic devices from (d), (e) and (f); Art. 2(2) exempts aviation, vehicle and road toll products from (e) and (f) only. 1.0.0 to 1.2.0 switched (d) off for the latter and left it on for medical devices. 1.3.0 fixes the classification and the three fixtures. Art. 1 and Art. 10 paragraph citations were corrected in 1.2.0.
+
+## Coverage notice (eu-red 1.4.0)
+
+The 2022/30 logic is part of `eu-red`, not a separate package: requirement packages have no dependency mechanism, so a forgotten second import would silently drop Art. 3(3)(d)-(f). To avoid implying full coverage, the `legal_sources` citation names the articles modelled (Arts. 1-2), and the info finding `delegated_regulation_2022_30_coverage` fires whenever (d), (e) or (f) applies. Structured coverage and review-status fields were considered and dropped.
