@@ -32,6 +32,7 @@ General product-law concepts (making available, placing on the market, economic 
 - `1.2.0` (`2014-53@2026-10.2`, supersedes 1.1.0): citation fixes only, no change in behaviour. The Annex I exclusions cite Art. 1(2) and defence or security Art. 1(3) (Art. 1(4) is the LVD disapplication); retention is Art. 10(4), series production Art. 10(5), corrective action Art. 10(11)-(12); the notified-body trigger is Art. 17(4).
 - `1.3.0` (`2014-53@2026-10.3`, supersedes 1.2.0): Art. 3(3)(d) now follows Delegated Regulation 2022/30 Art. 2. Medical and in vitro diagnostic devices are exempt from (d), (e) and (f) (Art. 2(1)); civil aviation, vehicle and road toll products are exempt from (e) and (f) only, so (d) still applies to them (Art. 2(2)). Before, (d) was switched off for aviation, vehicle and toll products and left on for medical devices. Three fixtures are renamed and corrected.
 - `1.4.0` (`2014-53@2026-10.4`, supersedes 1.3.0): states how far Delegated Regulation 2022/30 is followed. The `legal_sources` citation says only Arts. 1-2 are modelled, and the info finding `delegated_regulation_2022_30_coverage` appears whenever Art. 3(3)(d), (e) or (f) applies: own summary, not legally reviewed, not proof that the regulation is met. Two fixtures added; four existing ones now also expect the finding.
+- `1.5.0` (`2014-53@2026-10.5`, supersedes 1.4.0): `cra_also_applies` now fires for any radio product with a data connection, including local-only radios, except medical and in vitro diagnostic devices and type-approved vehicle components (CRA Art. 2(2)); its message says the CRA reporting duties (Art. 14) apply from 11 September 2026 and the rest from 11 December 2027 (CRA Art. 71(2)), also to products already on the market for Art. 14 (Art. 69(3)). The CE-marking requirement says the notified-body number is needed only where Annex IV is used (Art. 20(3)). `no_safety_risk_assessment` no longer cites Annex V, which has no risk-assessment item; it cites Art. 17(1) and Annex III, Module B, point 3(c). Four fixtures added, nine updated.
 
 ## Known limitations
 
@@ -46,8 +47,8 @@ Import and approve the shared question library first, then this package. Run ins
 ```bash
 docker compose exec web python manage.py import_package packages/common/1.4.0.json --kind question_set --official
 docker compose exec web python manage.py approve_package common 1.4.0
-docker compose exec web python manage.py import_package packages/eu-red/1.4.0.json --kind requirement --official
+docker compose exec web python manage.py import_package packages/eu-red/1.5.0.json --kind requirement --official
 docker compose exec web python manage.py approve_package eu-red "2014-53@2026-10.1"
 ```
 
-Approving 1.4.0 supersedes an approved 1.3.0 (and so on down the chain). The file names are `1.0.0.json`, `1.1.0.json`, `1.2.0.json`, `1.3.0.json` and `1.4.0.json`; the package's own `version` field, which `approve_package` keys on, is `2014-53@2026-10`, `2014-53@2026-10.1`, `2014-53@2026-10.2`, `2014-53@2026-10.3` and `2014-53@2026-10.4`. Content changes always bump that version.
+Approving 1.5.0 supersedes an approved 1.4.0 (and so on down the chain). The file names are `1.0.0.json`, `1.1.0.json` and so on; the package's own `version` field, which `approve_package` keys on, is a separate string (`2014-53@2026-10.5` for `1.5.0.json`). Content changes always bump that version.

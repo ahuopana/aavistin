@@ -22,6 +22,7 @@ Shared facts (product form, role, commercial activity, medical devices, radio ca
 - `1.1.0` (`2014-35@2026-10.1`, supersedes 1.0.0): radio equipment is excluded only while RED covers it. A radio product used exclusively for defence or public or State security is outside RED (RED Art. 1(3)) and falls back to LVD, which has no such exclusion; a caution notes that a Member State may set EU product rules aside under Art. 346 TFEU. In 1.0.0 such a product was out of both packages (ADR 0047).
 - `1.2.0` (`2014-35@2026-10.2`, supersedes 1.1.0): citation fixes only, no change in behaviour. The transitional provision is Art. 25 (Art. 27 is the repeal), and the RED defence or security exclusion is RED Art. 1(3).
 - `1.3.0` (`2014-35@2026-10.3`, supersedes 1.2.0): version bump only, content identical to 1.2.0, so that the `eu-red` and `eu-lvd` versions move together.
+- `1.4.0` (`2014-35@2026-10.4`, supersedes 1.3.0): the Art. 11 duty to identify economic operators now also applies to the authorised representative ("economic operators" covers all four roles, Art. 2(7)). The authorised-representative fixture expects it.
 
 ## Known limitations
 
@@ -36,8 +37,8 @@ Import and approve the shared question library first, then this package. Run ins
 ```bash
 docker compose exec web python manage.py import_package packages/common/1.4.0.json --kind question_set --official
 docker compose exec web python manage.py approve_package common 1.4.0
-docker compose exec web python manage.py import_package packages/eu-lvd/1.3.0.json --kind requirement --official
+docker compose exec web python manage.py import_package packages/eu-lvd/1.4.0.json --kind requirement --official
 docker compose exec web python manage.py approve_package eu-lvd "2014-35@2026-10.1"
 ```
 
-Approving 1.3.0 supersedes an approved 1.2.0 (and so on down the chain). The file names are `1.0.0.json`, `1.1.0.json`, `1.2.0.json` and `1.3.0.json`; the package's own `version` field, which `approve_package` keys on, is `2014-35@2026-10`, `2014-35@2026-10.1`, `2014-35@2026-10.2` and `2014-35@2026-10.3`. Content changes always bump that version: `RequirementPackage` is unique on `source` + `version`, and the questionnaire reads the approved copy in the database, not this file.
+Approving 1.4.0 supersedes an approved 1.3.0 (and so on down the chain). The file names are `1.0.0.json`, `1.1.0.json` and so on; the package's own `version` field, which `approve_package` keys on, is a separate string (`2014-35@2026-10.4` for `1.4.0.json`). Content changes always bump that version: `RequirementPackage` is unique on `source` + `version`, and the questionnaire reads the approved copy in the database, not this file.

@@ -38,3 +38,7 @@ Checked against the OJ text of Delegated Regulation 2022/30: Art. 2(1) exempts m
 ## Coverage notice (eu-red 1.4.0)
 
 The 2022/30 logic is part of `eu-red`, not a separate package: requirement packages have no dependency mechanism, so a forgotten second import would silently drop Art. 3(3)(d)-(f). To avoid implying full coverage, the `legal_sources` citation names the articles modelled (Arts. 1-2), and the info finding `delegated_regulation_2022_30_coverage` fires whenever (d), (e) or (f) applies. Structured coverage and review-status fields were considered and dropped.
+
+## CRA pointer and citation fixes (eu-red 1.5.0)
+
+`cra_also_applies` was tied to Art. 3(3)(d)-(f) being triggered, so it missed local-only radios (a local radio link is a data connection under CRA Art. 2(1)) and still fired for vehicle components the CRA excludes (Art. 2(2)(c)). It now follows the RED scope, minus medical and in vitro diagnostic devices and vehicle components. Rarer CRA exclusions (identical spare parts, classified information) are left to the `eu-cra` package, which the finding points to. The CRA reporting date was also wrong: Art. 14 applies from 11 September 2026 (Art. 71(2)), the rest from 11 December 2027.
