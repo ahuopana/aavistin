@@ -11,7 +11,7 @@ Requirement packages reference its questions with `"uses": ["common:<question_id
 - `1.1.1`: reworded the "widest inbound exposure" question and added guidance.
 - `1.2.0`: 1.1.1 plus the facts `eu-red` needs (radio enablement, internet connection, money transfer, toy, childcare, wearable); role and placement questions link to the Blue Guide. `eu-cra` lints clean against it.
 - `1.3.0`: 1.2.0 plus the `hardware_without_software` product form, for electrical products with no programmable parts (used by `eu-lvd`). `eu-cra` and `eu-red` pass against it.
-- `1.4.0`: 1.3.0 plus product-safety and CE-marking process questions shared by `eu-lvd` and `eu-red` 1.1.0 (safety risk assessment, technical documentation, electrical ratings, declaration of conformity, CE marking, identification, instructions in local languages, supplier checks; ADR 0042).
+- `1.4.0`: 1.3.0 plus product-safety and CE-marking process questions shared by `eu-lvd`, `eu-emc` and `eu-red` 1.1.0 (safety risk assessment, technical documentation, electrical ratings, declaration of conformity, CE marking, identification, instructions in local languages, supplier checks; ADR 0042).
 
 ## Importing
 

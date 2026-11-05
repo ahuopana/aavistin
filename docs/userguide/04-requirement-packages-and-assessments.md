@@ -10,7 +10,10 @@ it only knows how to evaluate a package against your answers. See the
 [EU CRA package](https://github.com/ahuopana/aavistin/tree/main/packages/eu-cra)
 and the
 [EU Low Voltage Directive package](https://github.com/ahuopana/aavistin/tree/main/packages/eu-lvd)
-for real examples.
+for real examples. The
+[EU EMC Directive package](https://github.com/ahuopana/aavistin/tree/main/packages/eu-emc)
+works the same way; a mains-powered product without a radio is in both, and a
+missing declaration of conformity or CE marking then shows as a finding under each.
 
 Each package targets a **jurisdiction** (e.g. EU, US). A package is only
 active for a configuration if that configuration's target markets include
