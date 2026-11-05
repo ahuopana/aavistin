@@ -192,6 +192,11 @@ class ComplianceBreakdownTests(RatioFixture):
         )
         self.assertContains(response, "Requirements in scope whose package has no")
 
+    def test_risk_ratio_links_to_the_risk_status_tab(self):
+        self._ready_answers(has_wireless=False)
+        response = self.client.get(reverse("products:product_detail", args=[self.product.pk]))
+        self.assertContains(response, 'href="?tab=risk"')
+
     def test_excluded_product_shows_not_in_scope(self):
         self._ready_answers(has_wireless=True)
         Answer.objects.filter(question_id="is_toy_widget").update(value=True)

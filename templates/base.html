@@ -24,6 +24,7 @@
         {% if user.is_authenticated %}
           <a href="{% url 'orgs:portfolio' %}">Portfolio</a>
           <a href="{% url 'core:compliance' %}">Compliance</a>
+          <a href="{% url 'core:risk_overview' %}">Risk</a>
           <a href="{% url 'core:compare' %}">Compare</a>
           {% if nav_is_approver %}<a href="{% url 'core:approvals' %}">Approvals</a>{% endif %}
         {% endif %}

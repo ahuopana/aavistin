@@ -43,7 +43,7 @@
             <td>{% include "core/_stat_bar.html" with label="" ok=row.questions.0 total=row.questions.1 fill="questions" %}</td>
             <td>{% url 'products:product_compliance' row.product.pk as compliance_url %}{% include "core/_stat_bar.html" with label="" ok=row.compliance.0 total=row.compliance.1 fill="compliance" empty=row.compliance.empty href=compliance_url hint=compliance_hint %}</td>
             <td>{% if row.action_required %}<a href="{{ compliance_url }}"><span class="badge badge-deleted">{{ row.action_required }}</span></a>{% else %}&mdash;{% endif %}</td>
-            <td>{% include "core/_stat_bar.html" with label="" ok=row.risk.0 total=row.risk.1 fill="risk" %}</td>
+            <td>{% url 'products:product_detail' row.product.pk as risk_url %}{% include "core/_stat_bar.html" with label="" ok=row.risk.0 total=row.risk.1 fill="risk" href=risk_url|add:"?tab=risk" %}</td>
             <td>{% if row.must_treat %}<span class="class-chip class-must_treat">&#10005; {{ row.must_treat }}</span>{% else %}0{% endif %}</td>
             <td>{{ row.unrated }}</td>
           </tr>

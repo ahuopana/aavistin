@@ -1878,3 +1878,56 @@ svg.diagram .d-label-attn {
 .risk-product-table td {
   white-space: nowrap;
 }
+
+/* Portfolio risk overview: ageing charts */
+
+.age-chart {
+  margin: 0 0 var(--space-3);
+}
+
+.age-chart figcaption {
+  margin-bottom: var(--space-2);
+  font-weight: 600;
+}
+
+.age-row {
+  display: grid;
+  grid-template-columns: 9em 1fr 3em;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.age-label {
+  color: var(--color-text-muted);
+}
+
+.age-bar {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+}
+
+.age-count {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.risk-overview-table th,
+.risk-overview-table td {
+  vertical-align: bottom;
+}
+
+.risk-overview-table th:not(:first-child),
+.risk-overview-table td:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.risk-table.risk-overview-table {
+  table-layout: auto;
+}
+
+.risk-table.risk-overview-table th:nth-child(n) {
+  width: auto;
+}
