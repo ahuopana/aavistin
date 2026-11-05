@@ -80,8 +80,8 @@ Run these inside the `web` container, which has the app's dependencies and the
 database connection (`exec` if the stack is up, `run --rm` otherwise):
 
 ```bash
-docker compose exec web python manage.py import_package packages/common/1.4.0.json --kind question_set --official
-docker compose exec web python manage.py approve_package common 1.4.0
+docker compose exec web python manage.py import_package packages/common/1.5.0.json --kind question_set --official
+docker compose exec web python manage.py approve_package common 1.5.0
 docker compose exec web python manage.py package_status
 ```
 

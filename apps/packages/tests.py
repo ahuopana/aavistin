@@ -378,7 +378,7 @@ class ImportPipelineTests(TestCase):
                     all(r["passed"] for r in package.fixture_report), package.fixture_report
                 )
 
-    def test_import_eu_emc_package_reaches_fixtures_passed(self):
+    def test_import_eu_emc_1_0_0_reaches_fixtures_passed(self):
         approve_package(
             import_package(
                 load_package("common", "1.4.0"), kind=PackageKind.QUESTION_SET, is_official=True
@@ -388,6 +388,23 @@ class ImportPipelineTests(TestCase):
         self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
         self.assertEqual(package.lint_report, [])
         self.assertTrue(all(r["passed"] for r in package.fixture_report), package.fixture_report)
+
+    def test_ce_directive_packages_pass_with_common_1_5_0(self):
+        """common 1.5.0 adds the documentation-retention question; eu-lvd and
+        eu-red 1.2.0 and eu-emc 1.1.0 ask it (ADR 0050)."""
+        approve_package(
+            import_package(
+                load_package("common", "1.5.0"), kind=PackageKind.QUESTION_SET, is_official=True
+            )
+        )
+        for source, version in (("eu-lvd", "1.2.0"), ("eu-red", "1.2.0"), ("eu-emc", "1.1.0")):
+            with self.subTest(source=source, version=version):
+                package = import_package(load_package(source, version), is_official=True)
+                self.assertEqual(package.lint_report, [])
+                self.assertEqual(package.status, PackageStatus.FIXTURES_PASSED)
+                self.assertTrue(
+                    all(r["passed"] for r in package.fixture_report), package.fixture_report
+                )
 
     def test_real_packages_pass_with_common_1_4_0(self):
         approve_package(
@@ -471,10 +488,10 @@ class ImportPipelineTests(TestCase):
         """RED Art. 3(1)(b) covers EMC for radio equipment, so the EMC package
         excludes it with the same radio test as LVD and RED. A mains device
         without a radio is in both LVD and EMC; a battery device only in EMC
-        (ADR 0048)."""
-        red = load_package("eu-red", "1.1.0")
-        lvd = load_package("eu-lvd", "1.1.0")
-        emc = load_package("eu-emc", "1.0.0")
+        (ADR 0049)."""
+        red = load_package("eu-red", "1.2.0")
+        lvd = load_package("eu-lvd", "1.2.0")
+        emc = load_package("eu-emc", "1.1.0")
         base = {
             "product_form": "hardware_with_software",
             "lvd_annex_ii_category": "none",
@@ -533,7 +550,7 @@ class ImportPipelineTests(TestCase):
                 self.assertEqual([s for s, r in results.items() if r["in_scope"]], expected)
 
     def test_eu_emc_and_lvd_both_raise_the_shared_ce_marking_finding(self):
-        """Accepted duplication (ADR 0048): the shared answer is gated by each
+        """Accepted duplication (ADR 0049): the shared answer is gated by each
         package's own scope, so a product in both gets one finding from each."""
         answers = {
             "product_form": "hardware_without_software",
@@ -546,7 +563,7 @@ class ImportPipelineTests(TestCase):
             "wireless_interface_capability": "not_present",
             "ce_marking_affixed": False,
         }
-        for source, version in (("eu-lvd", "1.1.0"), ("eu-emc", "1.0.0")):
+        for source, version in (("eu-lvd", "1.2.0"), ("eu-emc", "1.1.0")):
             with self.subTest(source=source):
                 result = evaluate_package(load_package(source, version), answers)
                 self.assertIn("no_ce_marking", [f["id"] for f in result["findings"]])
@@ -1261,6 +1278,9 @@ class QuestionGroupLintTests(TestCase):
             ("eu-lvd", "1.0.0"),
             ("eu-lvd", "1.1.0"),
             ("eu-emc", "1.0.0"),
+            ("eu-lvd", "1.2.0"),
+            ("eu-red", "1.2.0"),
+            ("eu-emc", "1.1.0"),
         ):
             with self.subTest(source=source, version=version):
                 content = load_package(source, version)
