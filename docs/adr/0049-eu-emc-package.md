@@ -1,4 +1,4 @@
-# 48. EU EMC package
+# 49. EU EMC package
 
 Status: Accepted (content is a first pass, not legally reviewed).
 
@@ -23,3 +23,7 @@ Status: Accepted (content is a first pass, not legally reviewed).
 - The `eu-lvd` and `eu-red` READMEs no longer say EMC is unmodelled; ADR 0045 and ADR 0042 note that EMC is now a separate package.
 - Not modelled: vehicle type-approval EMC rules, the Machinery Regulation and RoHS; harmonised standards are not listed.
 - The legal-review list for this package: all article numbers, the Annex I summaries, the fixed-installation treatment, the three interpretive exclusions, and the module A route against the Official Journal text.
+
+## Addendum (ADR 0050)
+
+The wording and references of this package were checked against the Official Journal text and corrected in `eu-emc` 1.1.0; the fixture count is now 37, the requirement count 29 and the retention question is added. The accepted duplication with `eu-lvd` is unchanged.
