@@ -10,6 +10,7 @@
       <dt>PDF SHA-256</dt><dd><code>{{ report.pdf_sha256 }}</code></dd>
     </dl>
     {% if not report.is_current %}<p class="field-hint">A source snapshot has gone stale since this report was issued. The report itself is unchanged.</p>{% endif %}
+    {% if error %}<p class="message message-error">{{ error }}</p>{% endif %}
     {% if result == "match" %}<p><strong>The uploaded file is identical to the issued report.</strong></p>
     {% elif result == "mismatch" %}<p><strong>The uploaded file does not match this report.</strong></p>{% endif %}
     <form method="post" enctype="multipart/form-data">

@@ -15,6 +15,19 @@ the top navigation gives you:
 - **Compliance** — a portfolio-wide view of every product you can see,
   with its compliance and risk status, and the list of approved reports.
 
+### Two-factor authentication
+
+Administrators and local accounts sign in with a second step. The first
+time you sign in you are asked to set up an authenticator app (Microsoft
+Authenticator, Google Authenticator, Authy, 1Password or similar): scan
+the QR code, enter the 6-digit code it shows, and save the ten recovery
+codes you are given. After that, each sign-in asks for a code from the
+app. A recovery code works once if you cannot use the app. If you lose
+both your phone and your recovery codes, ask an administrator to reset
+your two-factor setup; you will enrol again at your next sign-in. You
+can generate new recovery codes from your profile. LDAP users who are not
+administrators are protected by their directory instead.
+
 ## Roles
 
 Access is granted per organisation, product family or product, as

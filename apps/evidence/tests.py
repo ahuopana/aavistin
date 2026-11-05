@@ -747,3 +747,56 @@ class UploadsDisabledTests(EvidenceFixture):
         self.client.force_login(self.editor)
         response = self.client.get(reverse("evidence:detail", args=[evidence.pk]))
         self.assertNotContains(response, "Uploaded file")
+
+
+class UploadLimitTests(EvidenceFixture):
+    def upload(self, name, content, **kwargs):
+        return store_evidence_file(SimpleUploadedFile(name, content, **kwargs))
+
+    def test_accepts_a_valid_pdf_and_ignores_client_content_type(self):
+        stored = self.upload("policy.pdf", b"%PDF-1.7 body", content_type="text/html")
+        self.assertEqual(stored.content_type, "application/pdf")
+
+    def test_rejects_disallowed_extension(self):
+        for name in ("run.exe", "page.html", "script.svg", "noextension"):
+            with self.subTest(name=name), self.assertRaises(EvidenceError):
+                self.upload(name, b"data")
+
+    def test_rejects_extension_content_mismatch(self):
+        with self.assertRaises(EvidenceError):
+            self.upload("fake.pdf", b"<html><script>alert(1)</script></html>")
+        with self.assertRaises(EvidenceError):
+            self.upload("fake.png", b"%PDF-1.7")
+
+    def test_rejects_empty_file(self):
+        with self.assertRaises(EvidenceError):
+            self.upload("empty.txt", b"")
+
+    @override_settings(EVIDENCE_MAX_UPLOAD_BYTES=100)
+    def test_rejects_oversized_file(self):
+        with self.assertRaisesMessage(EvidenceError, "larger than"):
+            self.upload("big.txt", b"x" * 101)
+        self.assertEqual(EvidenceFile.objects.count(), 0)
+
+    @override_settings(EVIDENCE_ALLOWED_EXTENSIONS=frozenset({"txt"}))
+    def test_allowlist_is_configurable(self):
+        self.upload("notes.txt", b"hello")
+        with self.assertRaises(EvidenceError):
+            self.upload("policy.pdf", b"%PDF-1.7")
+
+    def test_download_is_sandboxed(self):
+        from apps.orgs.models import Role, RoleAssignment
+
+        RoleAssignment.objects.create(role=Role.VIEWER, user=self.user, product=self.product)
+        evidence = Evidence.objects.create(
+            product=self.product,
+            title="Doc",
+            kind=EvidenceKind.FILE,
+            file=self.upload("doc.txt", b"hello"),
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("evidence:download", args=[evidence.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("sandbox", response["Content-Security-Policy"])
+        self.assertEqual(response["X-Content-Type-Options"], "nosniff")
+        self.assertIn("attachment", response["Content-Disposition"])

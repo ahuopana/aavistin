@@ -5,6 +5,7 @@ RoleAssignment / SoDPolicy, not persistence concerns.
 """
 
 from django.db.models import Q
+from django.http import Http404
 from django.urls import reverse
 
 from .models import Organisation, ProductFamily, RoleAssignment, SoDPolicy
@@ -48,6 +49,24 @@ def roles_for_user(user, *, organisation=None, product_family=None, product=None
 
 def has_role(user, role: str, **scope) -> bool:
     return role in roles_for_user(user, **scope)
+
+
+def can_view_product(user, product) -> bool:
+    """Read access: a superuser, or anyone holding any role that reaches ``product``
+    (directly, or inherited from its family or organisation)."""
+    if not user.is_authenticated:
+        return False
+    return user.is_superuser or bool(roles_for_user(user, product=product))
+
+
+def require_product_view(user, product):
+    """Return ``product``, or raise ``Http404`` when ``user`` may not see it.
+
+    404 rather than a redirect or 403, so product ids can't be probed for existence.
+    """
+    if not can_view_product(user, product):
+        raise Http404("Not found.")
+    return product
 
 
 def visible_organisations(user):

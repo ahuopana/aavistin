@@ -12,6 +12,7 @@ def render_pdf(content: dict, *, report_id: str, content_hash: str) -> bytes:
             "report_id": report_id,
             "content_hash": content_hash,
             "draft": content["status"] != "approved",
+            "verify_enabled": settings.REPORT_VERIFY_ENABLED,
             "logo": settings.BASE_DIR / "static" / "img" / "aavistin-lockup-horizontal.svg",
         },
     )

@@ -32,6 +32,7 @@ services:
       - "${WEB_PORT:-8000}:8000"
     environment:
       DEBUG: "True"
+      MFA_ENFORCE: "False"  # local development only (ADR 0050)
       MEDIA_ROOT: /app/media
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
       DATABASE_URL: postgres://aavistin:aavistin@db:5432/aavistin
@@ -51,6 +52,7 @@ services:
       - .:/app
     environment:
       DEBUG: "True"
+      MFA_ENFORCE: "False"  # local development only (ADR 0050)
       MEDIA_ROOT: /app/media
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
       DATABASE_URL: postgres://aavistin:aavistin@db:5432/aavistin
@@ -66,6 +68,7 @@ services:
       - .:/app
     environment:
       DEBUG: "True"
+      MFA_ENFORCE: "False"  # local development only (ADR 0050)
       MEDIA_ROOT: /app/media
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
       DATABASE_URL: postgres://aavistin:aavistin@db:5432/aavistin
